@@ -1,0 +1,61 @@
+{
+    "name": "conduit-ui/knowledge",
+    "description": "AI-powered knowledge base with semantic search and ChromaDB integration",
+    "keywords": ["knowledge", "ai", "semantic-search", "chromadb", "cli"],
+    "homepage": "https://github.com/conduit-ui/knowledge",
+    "type": "library",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/conduit-ui/knowledge/issues",
+        "source": "https://github.com/conduit-ui/knowledge"
+    },
+    "authors": [
+        {
+            "name": "Jordan Partridge",
+            "email": "jordan@partridge.rocks"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel-zero/framework": "^12.0.2"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.25.1",
+        "mockery/mockery": "^1.6.12",
+        "pestphp/pest": "^3.8.4|^4.1.2",
+        "phpstan/extension-installer": "*",
+        "phpstan/phpstan": "^1.0",
+        "phpstan/phpstan-deprecation-rules": "^1.2",
+        "phpstan/phpstan-strict-rules": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint",
+        "analyse": "vendor/bin/phpstan analyse"
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "bin": ["application"]
+}
