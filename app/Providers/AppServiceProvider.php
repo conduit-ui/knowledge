@@ -8,6 +8,8 @@ use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
+use App\Services\DatabaseInitializer;
+use App\Services\KnowledgePathService;
 use App\Services\SemanticSearchService;
 use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
@@ -34,6 +36,14 @@ class AppServiceProvider extends ServiceProvider
 
         config(['view.paths' => [$viewPath]]);
         config(['view.compiled' => $cachePath]);
+
+        // Initialize database (create ~/.knowledge/ and run migrations if needed)
+        // Skip during testing - tests manage their own database
+        // @codeCoverageIgnoreStart
+        if (! $this->app->runningUnitTests()) {
+            $this->app->make(DatabaseInitializer::class)->initialize();
+        }
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -41,6 +51,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Register knowledge path service
+        $this->app->singleton(KnowledgePathService::class, function () {
+            return new KnowledgePathService;
+        });
+
+        // Register database initializer
+        $this->app->singleton(DatabaseInitializer::class, function ($app) {
+            return new DatabaseInitializer($app->make(KnowledgePathService::class));
+        });
+
         // Register ChromaDB client
         $this->app->singleton(ChromaDBClientInterface::class, function () {
             $host = config('search.chromadb.host', 'localhost');
