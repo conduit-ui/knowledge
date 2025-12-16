@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Models\Entry;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,7 +14,9 @@ class SemanticSearchService
 {
     public function __construct(
         private readonly EmbeddingServiceInterface $embeddingService,
-        private readonly bool $semanticEnabled = false
+        private readonly bool $semanticEnabled = false,
+        private readonly ?ChromaDBClientInterface $chromaDBClient = null,
+        private readonly bool $useChromaDB = false
     ) {}
 
     /**
@@ -49,6 +52,16 @@ class SemanticSearchService
     }
 
     /**
+     * Check if ChromaDB is available and enabled.
+     */
+    public function hasChromaDBSupport(): bool
+    {
+        return $this->useChromaDB
+            && $this->chromaDBClient !== null
+            && $this->chromaDBClient->isAvailable();
+    }
+
+    /**
      * Perform semantic search using embeddings.
      *
      * @param  string  $query  The search query
@@ -63,6 +76,115 @@ class SemanticSearchService
             return new Collection;
         }
 
+        // Use ChromaDB if available and enabled
+        if ($this->hasChromaDBSupport()) {
+            return $this->chromaDBSearch($query, $queryEmbedding, $filters);
+        }
+
+        // Fallback to SQLite-based semantic search
+        return $this->sqliteSemanticSearch($queryEmbedding, $filters);
+    }
+
+    /**
+     * Perform semantic search using ChromaDB.
+     *
+     * @param  string  $query  The search query
+     * @param  array<int, float>  $queryEmbedding  Query embedding vector
+     * @param  array<string, mixed>  $filters  Additional filters
+     * @return Collection<int, Entry>
+     */
+    private function chromaDBSearch(string $query, array $queryEmbedding, array $filters): Collection
+    {
+        if ($this->chromaDBClient === null) {
+            return new Collection;
+        }
+
+        try {
+            $collection = $this->chromaDBClient->getOrCreateCollection('knowledge_entries');
+            $maxResults = config('search.max_results', 20);
+
+            // Build ChromaDB metadata filters
+            $where = [];
+            if (isset($filters['category'])) {
+                $where['category'] = $filters['category'];
+            }
+            if (isset($filters['module'])) {
+                $where['module'] = $filters['module'];
+            }
+            if (isset($filters['priority'])) {
+                $where['priority'] = $filters['priority'];
+            }
+            if (isset($filters['status'])) {
+                $where['status'] = $filters['status'];
+            }
+
+            $results = $this->chromaDBClient->query(
+                $collection['id'],
+                $queryEmbedding,
+                $maxResults,
+                $where
+            );
+
+            // Extract IDs and distances from ChromaDB results
+            $ids = $results['ids'][0] ?? [];
+            $distances = $results['distances'][0] ?? [];
+
+            if (count($ids) === 0) {
+                return new Collection;
+            }
+
+            // Convert ChromaDB IDs (entry_X) to entry IDs
+            $entryIds = array_map(fn (string $id): int => (int) str_replace('entry_', '', $id), $ids);
+
+            // Fetch entries from database
+            /** @var \Illuminate\Database\Eloquent\Builder<Entry> $query */
+            $query = Entry::query();
+            /** @var \Illuminate\Database\Eloquent\Builder<Entry> $queryWithFilters */
+            $queryWithFilters = $query->whereIn('id', $entryIds);
+
+            if (isset($filters['tag'])) {
+                $queryWithFilters->whereJsonContains('tags', $filters['tag']);
+            }
+
+            $entries = $queryWithFilters->get()->keyBy('id');
+
+            // Map results with scores and maintain ChromaDB order
+            $rankedResults = collect();
+            foreach ($entryIds as $index => $entryId) {
+                if (! $entries->has($entryId)) {
+                    continue;
+                }
+
+                $entry = $entries->get($entryId);
+                if (! ($entry instanceof Entry)) {
+                    continue;
+                }
+
+                // Convert distance to similarity (1 - distance for L2, adjust if using cosine)
+                $similarity = 1.0 - ($distances[$index] ?? 0.0);
+                $score = $similarity * ($entry->confidence / 100);
+                $entry->setAttribute('search_score', $score);
+
+                $rankedResults->push($entry);
+            }
+
+            /** @var Collection<int, Entry> */
+            return new Collection($rankedResults->all());
+        } catch (\RuntimeException $e) {
+            // Fallback to SQLite search if ChromaDB fails
+            return $this->sqliteSemanticSearch($queryEmbedding, $filters);
+        }
+    }
+
+    /**
+     * Perform semantic search using SQLite embeddings.
+     *
+     * @param  array<int, float>  $queryEmbedding  Query embedding vector
+     * @param  array<string, mixed>  $filters  Additional filters
+     * @return Collection<int, Entry>
+     */
+    private function sqliteSemanticSearch(array $queryEmbedding, array $filters): Collection
+    {
         // Get all entries with embeddings
         $entries = Entry::whereNotNull('embedding')
             ->when($filters['tag'] ?? null, function (Builder $q, string $tag): void {
