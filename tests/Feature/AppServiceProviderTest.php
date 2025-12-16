@@ -8,12 +8,26 @@ use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
+use App\Services\DatabaseInitializer;
+use App\Services\KnowledgePathService;
 use App\Services\SemanticSearchService;
 use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 
 describe('AppServiceProvider', function () {
+    it('registers KnowledgePathService', function () {
+        $service = app(KnowledgePathService::class);
+
+        expect($service)->toBeInstanceOf(KnowledgePathService::class);
+    });
+
+    it('registers DatabaseInitializer', function () {
+        $service = app(DatabaseInitializer::class);
+
+        expect($service)->toBeInstanceOf(DatabaseInitializer::class);
+    });
+
     it('registers ChromaDBClient', function () {
         $client = app(ChromaDBClientInterface::class);
 

@@ -36,14 +36,6 @@ class AppServiceProvider extends ServiceProvider
 
         config(['view.paths' => [$viewPath]]);
         config(['view.compiled' => $cachePath]);
-
-        // Initialize database (create ~/.knowledge/ and run migrations if needed)
-        // Skip during testing - tests manage their own database
-        // @codeCoverageIgnoreStart
-        if (! $this->app->runningUnitTests()) {
-            $this->app->make(DatabaseInitializer::class)->initialize();
-        }
-        // @codeCoverageIgnoreEnd
     }
 
     /**
