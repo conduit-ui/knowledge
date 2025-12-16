@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Contracts\ChromaDBClientInterface;
+use App\Contracts\EmbeddingServiceInterface;
+use App\Services\ChromaDBClient;
+use App\Services\ChromaDBEmbeddingService;
+use App\Services\ChromaDBIndexService;
+use App\Services\SemanticSearchService;
+use App\Services\StubEmbeddingService;
+
+describe('AppServiceProvider', function () {
+    it('registers ChromaDBClient', function () {
+        $client = app(ChromaDBClientInterface::class);
+
+        expect($client)->toBeInstanceOf(ChromaDBClient::class);
+    });
+
+    it('registers StubEmbeddingService by default', function () {
+        config(['search.embedding_provider' => 'none']);
+
+        // Force rebinding
+        app()->forgetInstance(EmbeddingServiceInterface::class);
+
+        $service = app(EmbeddingServiceInterface::class);
+
+        expect($service)->toBeInstanceOf(StubEmbeddingService::class);
+    });
+
+    it('registers ChromaDBEmbeddingService when provider is chromadb', function () {
+        config(['search.embedding_provider' => 'chromadb']);
+
+        // Force rebinding
+        app()->forgetInstance(EmbeddingServiceInterface::class);
+
+        $service = app(EmbeddingServiceInterface::class);
+
+        expect($service)->toBeInstanceOf(ChromaDBEmbeddingService::class);
+    });
+
+    it('registers ChromaDBIndexService', function () {
+        $service = app(ChromaDBIndexService::class);
+
+        expect($service)->toBeInstanceOf(ChromaDBIndexService::class);
+    });
+
+    it('registers SemanticSearchService without ChromaDB when disabled', function () {
+        config(['search.chromadb.enabled' => false]);
+
+        // Force rebinding
+        app()->forgetInstance(SemanticSearchService::class);
+
+        $service = app(SemanticSearchService::class);
+
+        expect($service)->toBeInstanceOf(SemanticSearchService::class)
+            ->and($service->hasChromaDBSupport())->toBeFalse();
+    });
+
+    it('registers SemanticSearchService with ChromaDB when enabled', function () {
+        config(['search.chromadb.enabled' => true, 'search.semantic_enabled' => true]);
+
+        // Force rebinding
+        app()->forgetInstance(SemanticSearchService::class);
+
+        $service = app(SemanticSearchService::class);
+
+        expect($service)->toBeInstanceOf(SemanticSearchService::class);
+    });
+});

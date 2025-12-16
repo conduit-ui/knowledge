@@ -228,8 +228,126 @@ Active development. Core features implemented:
 - Git context integration
 - Confidence scoring and analytics
 
+### Semantic Search with ChromaDB
+
+Advanced vector-based semantic search for finding knowledge by meaning:
+
+#### Installation
+
+ChromaDB requires Python 3.8+ and a ChromaDB server. Install using:
+
+```bash
+# Install ChromaDB server
+pip install chromadb
+
+# Start ChromaDB server (default: localhost:8000)
+chroma run --path ./chroma_data
+```
+
+For production, you can also run ChromaDB in Docker:
+
+```bash
+docker run -d -p 8000:8000 chromadb/chroma
+```
+
+#### Embedding Server
+
+You'll also need an embedding server. We recommend using a simple Flask server with sentence-transformers:
+
+```bash
+# Install dependencies
+pip install flask sentence-transformers
+
+# Create embedding_server.py
+cat > embedding_server.py << 'EOF'
+from flask import Flask, request, jsonify
+from sentence_transformers import SentenceTransformer
+
+app = Flask(__name__)
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+@app.route('/embed', methods=['POST'])
+def embed():
+    data = request.json
+    text = data.get('text', '')
+    embedding = model.encode(text).tolist()
+    return jsonify({'embedding': embedding})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8001)
+EOF
+
+# Run embedding server
+python embedding_server.py
+```
+
+#### Configuration
+
+Enable ChromaDB in your `.env` file:
+
+```env
+SEMANTIC_SEARCH_ENABLED=true
+EMBEDDING_PROVIDER=chromadb
+CHROMADB_ENABLED=true
+CHROMADB_HOST=localhost
+CHROMADB_PORT=8000
+CHROMADB_EMBEDDING_SERVER=http://localhost:8001
+CHROMADB_EMBEDDING_MODEL=all-MiniLM-L6-v2
+```
+
+#### Usage
+
+Once configured, semantic search automatically works with the existing search commands:
+
+```bash
+# Semantic search will automatically be used
+./know knowledge:search --keyword="database connection issues"
+
+# Results are ranked by semantic similarity and confidence
+# Falls back to keyword search if ChromaDB is unavailable
+```
+
+#### How It Works
+
+1. When you add/update entries, embeddings are generated and stored in both:
+   - ChromaDB vector database (for fast similarity search)
+   - SQLite database (as JSON, for fallback)
+
+2. Search queries are:
+   - Converted to embedding vectors
+   - Compared against indexed entries using cosine similarity
+   - Ranked by: `similarity_score * (confidence / 100)`
+   - Filtered by metadata (category, tags, status, etc.)
+
+3. If ChromaDB is unavailable:
+   - Automatically falls back to SQLite-based semantic search
+   - Or keyword search if no embeddings are available
+
+#### Architecture
+
+**ChromaDBClient** - ChromaDB REST API client
+- Collection management
+- Document indexing (add/update/delete)
+- Vector similarity search
+
+**ChromaDBEmbeddingService** - Text embedding generation
+- Generates embedding vectors using specified model
+- Calculates cosine similarity between vectors
+- Graceful error handling
+
+**ChromaDBIndexService** - Index management
+- Indexes entries on create/update
+- Removes entries on delete
+- Batch indexing support
+- Automatic embedding generation and storage
+
+**SemanticSearchService** - Hybrid search orchestration
+- ChromaDB search (when available)
+- SQLite fallback search
+- Keyword search fallback
+- Metadata filtering (category, tags, module, priority, status)
+
 Coming soon:
-- ChromaDB semantic search
 - Export and publishing
 - Web interface
 

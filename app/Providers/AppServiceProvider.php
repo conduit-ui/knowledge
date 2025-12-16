@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
+use App\Services\ChromaDBClient;
+use App\Services\ChromaDBEmbeddingService;
+use App\Services\ChromaDBIndexService;
 use App\Services\SemanticSearchService;
 use App\Services\StubEmbeddingService;
 use Illuminate\Support\ServiceProvider;
@@ -22,18 +26,45 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Register ChromaDB client
+        $this->app->singleton(ChromaDBClientInterface::class, function () {
+            $host = config('search.chromadb.host', 'localhost');
+            $port = config('search.chromadb.port', 8000);
+            $baseUrl = "http://{$host}:{$port}";
+
+            return new ChromaDBClient($baseUrl);
+        });
+
         // Register embedding service
-        $this->app->singleton(EmbeddingServiceInterface::class, function () {
-            // In the future, this can be changed to instantiate different providers
-            // based on config('search.embedding_provider')
-            return new StubEmbeddingService;
+        $this->app->singleton(EmbeddingServiceInterface::class, function ($app) {
+            $provider = config('search.embedding_provider', 'none');
+
+            return match ($provider) {
+                'chromadb' => new ChromaDBEmbeddingService(
+                    config('search.chromadb.embedding_server', 'http://localhost:8001'),
+                    config('search.chromadb.model', 'all-MiniLM-L6-v2')
+                ),
+                default => new StubEmbeddingService,
+            };
+        });
+
+        // Register ChromaDB index service
+        $this->app->singleton(ChromaDBIndexService::class, function ($app) {
+            return new ChromaDBIndexService(
+                $app->make(ChromaDBClientInterface::class),
+                $app->make(EmbeddingServiceInterface::class)
+            );
         });
 
         // Register semantic search service
         $this->app->singleton(SemanticSearchService::class, function ($app) {
+            $chromaDBEnabled = (bool) config('search.chromadb.enabled', false);
+
             return new SemanticSearchService(
                 $app->make(EmbeddingServiceInterface::class),
-                config('search.semantic_enabled', false)
+                (bool) config('search.semantic_enabled', false),
+                $chromaDBEnabled ? $app->make(ChromaDBClientInterface::class) : null,
+                $chromaDBEnabled
             );
         });
     }

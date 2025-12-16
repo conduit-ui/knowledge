@@ -141,8 +141,13 @@ parameters:
 			path: app/Services/SemanticSearchService.php
 
 		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereIn\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SemanticSearchService.php
+
+		-
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereJsonContains\\(\\)\\.$#"
-			count: 2
+			count: 3
 			path: app/Services/SemanticSearchService.php
 
 		-
