@@ -18,6 +18,30 @@ uses(
 
 /*
 |--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+if (! function_exists('removeDirectory')) {
+    function removeDirectory(string $path): void
+    {
+        if (! is_dir($path)) {
+            return;
+        }
+
+        $files = array_diff(scandir($path) ?: [], ['.', '..']);
+
+        foreach ($files as $file) {
+            $filePath = "$path/$file";
+            is_dir($filePath) ? removeDirectory($filePath) : unlink($filePath);
+        }
+
+        rmdir($path);
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------
 |
