@@ -17,7 +17,7 @@ class KnowledgeGitContextCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'Display current git context information';
+    protected $description = 'Display current git context (repo, branch, commit, author) for knowledge attribution';
 
     public function handle(GitContextService $gitService): int
     {

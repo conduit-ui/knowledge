@@ -17,7 +17,7 @@ class KnowledgeGitAuthorCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'List knowledge entries by a specific author';
+    protected $description = 'List knowledge entries by author - knowledge attribution similar to git blame';
 
     public function handle(): int
     {

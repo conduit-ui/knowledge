@@ -17,7 +17,7 @@ class KnowledgeGitEntriesCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'List knowledge entries from a specific commit';
+    protected $description = 'List knowledge entries from a specific commit - useful for code review and documentation audit';
 
     public function handle(): int
     {
