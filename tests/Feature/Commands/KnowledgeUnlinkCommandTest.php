@@ -70,4 +70,21 @@ describe('knowledge:unlink command', function (): void {
             ->expectsOutputToContain("#{$entry2->id}")
             ->assertSuccessful();
     });
+
+    it('fails when deletion fails', function (): void {
+        $relationship = Relationship::factory()->create();
+
+        // Mock the service to return false
+        $mock = Mockery::mock(\App\Services\RelationshipService::class);
+        $mock->shouldReceive('deleteRelationship')
+            ->with($relationship->id)
+            ->andReturn(false);
+
+        $this->app->instance(\App\Services\RelationshipService::class, $mock);
+
+        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+            ->expectsQuestion('Are you sure you want to delete this relationship?', true)
+            ->expectsOutputToContain('Failed to delete relationship')
+            ->assertFailed();
+    });
 });
