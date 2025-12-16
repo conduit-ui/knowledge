@@ -39,7 +39,7 @@ describe('GraphExporter', function () {
             'module' => 'core',
             'priority' => 'high',
             'confidence' => 90,
-            'status' => 'active',
+            'status' => 'validated',
             'tags' => ['php', 'test'],
             'usage_count' => 5,
         ]);
@@ -54,7 +54,7 @@ describe('GraphExporter', function () {
         expect($node['module'])->toBe('core');
         expect($node['priority'])->toBe('high');
         expect($node['confidence'])->toBe(90);
-        expect($node['status'])->toBe('active');
+        expect($node['status'])->toBe('validated');
         expect($node['tags'])->toBe(['php', 'test']);
         expect($node['usage_count'])->toBe(5);
         expect($node)->toHaveKey('created_at');
@@ -275,4 +275,42 @@ describe('GraphExporter', function () {
 
         expect(count($graph['links']))->toBe(2);
     });
+
+    it('applies correct edge styles for all relationship types', function () {
+        // Create entries for all relationship types
+        $entries = Entry::factory()->count(8)->create();
+
+        // Create relationships for each type to ensure full coverage
+        $types = [
+            'depends_on',
+            'relates_to',
+            'conflicts_with',
+            'extends',
+            'implements',
+            'references',
+            'similar_to',
+        ];
+
+        foreach ($types as $index => $type) {
+            Relationship::factory()->create([
+                'from_entry_id' => $entries[$index]->id,
+                'to_entry_id' => $entries[$index + 1]->id,
+                'type' => $type,
+            ]);
+        }
+
+        $exporter = new GraphExporter;
+        $dot = $exporter->exportDotGraph();
+
+        // Verify each type appears in the DOT output
+        foreach ($types as $type) {
+            expect($dot)->toContain($type);
+        }
+
+        // Verify all style variations are present
+        expect($dot)->toContain('style=solid');
+        expect($dot)->toContain('style=dashed');
+        expect($dot)->toContain('style=dotted');
+    });
+
 });

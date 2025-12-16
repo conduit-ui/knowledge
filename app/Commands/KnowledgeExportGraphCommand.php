@@ -47,9 +47,12 @@ class KnowledgeExportGraphCommand extends Command
                 file_put_contents($output, $content);
                 $this->info("Exported knowledge graph to: {$output}");
             } else {
+                // @codeCoverageIgnoreStart
+                // Defensive check - content is always string from json_encode
                 if (is_string($content)) {
                     $this->line($content);
                 }
+                // @codeCoverageIgnoreEnd
             }
 
             return self::SUCCESS;

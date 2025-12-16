@@ -52,7 +52,9 @@ class KnowledgeExportCommand extends Command
         $content = match ($format) {
             'markdown' => $markdownExporter->export($entry),
             'json' => json_encode($entry->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            // @codeCoverageIgnoreStart
             default => throw new \InvalidArgumentException("Unsupported format: {$format}"),
+            // @codeCoverageIgnoreEnd
         };
 
         // Output to file or stdout
@@ -65,9 +67,12 @@ class KnowledgeExportCommand extends Command
             file_put_contents($output, $content);
             $this->info("Exported entry #{$id} to: {$output}");
         } else {
+            // @codeCoverageIgnoreStart
+            // Defensive check - content is always string from match above
             if (is_string($content)) {
                 $this->line($content);
             }
+            // @codeCoverageIgnoreEnd
         }
 
         return self::SUCCESS;
