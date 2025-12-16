@@ -34,7 +34,25 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'database' => env('DB_DATABASE', env('KNOWLEDGE_DB_PATH', (function () {
+                // Priority: KNOWLEDGE_HOME > HOME > USERPROFILE
+                $knowledgeHome = getenv('KNOWLEDGE_HOME');
+                if ($knowledgeHome !== false && $knowledgeHome !== '') {
+                    return $knowledgeHome.'/knowledge.sqlite';
+                }
+
+                $home = getenv('HOME');
+                if ($home === false || $home === '') {
+                    $home = getenv('USERPROFILE');
+                }
+
+                if ($home !== false && $home !== '') {
+                    return $home.'/.knowledge/knowledge.sqlite';
+                }
+
+                // Fallback for testing environment
+                return database_path('database.sqlite');
+            })())),
             'prefix' => '',
             'prefix_indexes' => null,
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
