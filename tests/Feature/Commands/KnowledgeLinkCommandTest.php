@@ -163,4 +163,15 @@ describe('knowledge:link command', function (): void {
             ->expectsOutputToContain('Second Entry')
             ->assertSuccessful();
     });
+
+    it('fails when trying to link entry to itself', function (): void {
+        $entry = Entry::factory()->create();
+
+        $this->artisan('knowledge:link', [
+            'from' => $entry->id,
+            'to' => $entry->id,
+        ])
+            ->expectsOutputToContain('Cannot create relationship to self')
+            ->assertFailed();
+    });
 });
