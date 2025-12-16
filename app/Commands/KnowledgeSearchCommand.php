@@ -36,33 +36,45 @@ class KnowledgeSearchCommand extends Command
         $status = $this->option('status');
 
         // Require at least one search parameter
-        if (! $query && ! $tag && ! $category && ! $module && ! $priority && ! $status) {
+        if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
             $this->error('Please provide at least one search parameter.');
 
             return self::FAILURE;
         }
 
         $results = Entry::query()
-            ->when($query, function (Builder $q, string $search): void {
-                $q->where(function (Builder $query) use ($search): void {
-                    $query->where('title', 'like', "%{$search}%")
-                        ->orWhere('content', 'like', "%{$search}%");
-                });
+            ->when($query, function (Builder $q, mixed $search): void {
+                if (is_string($search)) {
+                    $q->where(function (Builder $query) use ($search): void {
+                        $query->where('title', 'like', "%{$search}%")
+                            ->orWhere('content', 'like', "%{$search}%");
+                    });
+                }
             })
-            ->when($tag, function (Builder $q, string $tagValue): void {
-                $q->whereJsonContains('tags', $tagValue);
+            ->when($tag, function (Builder $q, mixed $tagValue): void {
+                if (is_string($tagValue)) {
+                    $q->whereJsonContains('tags', $tagValue);
+                }
             })
-            ->when($category, function (Builder $q, string $categoryValue): void {
-                $q->where('category', $categoryValue);
+            ->when($category, function (Builder $q, mixed $categoryValue): void {
+                if (is_string($categoryValue)) {
+                    $q->where('category', $categoryValue);
+                }
             })
-            ->when($module, function (Builder $q, string $moduleValue): void {
-                $q->where('module', $moduleValue);
+            ->when($module, function (Builder $q, mixed $moduleValue): void {
+                if (is_string($moduleValue)) {
+                    $q->where('module', $moduleValue);
+                }
             })
-            ->when($priority, function (Builder $q, string $priorityValue): void {
-                $q->where('priority', $priorityValue);
+            ->when($priority, function (Builder $q, mixed $priorityValue): void {
+                if (is_string($priorityValue)) {
+                    $q->where('priority', $priorityValue);
+                }
             })
-            ->when($status, function (Builder $q, string $statusValue): void {
-                $q->where('status', $statusValue);
+            ->when($status, function (Builder $q, mixed $statusValue): void {
+                if (is_string($statusValue)) {
+                    $q->where('status', $statusValue);
+                }
             })
             ->orderBy('confidence', 'desc')
             ->orderBy('usage_count', 'desc')

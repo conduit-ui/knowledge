@@ -36,20 +36,30 @@ class KnowledgeListCommand extends Command
         $limit = (int) $this->option('limit');
 
         $query = Entry::query()
-            ->when($category, function (Builder $q, string $categoryValue): void {
-                $q->where('category', $categoryValue);
+            ->when($category, function (Builder $q, mixed $categoryValue): void {
+                if (is_string($categoryValue)) {
+                    $q->where('category', $categoryValue);
+                }
             })
-            ->when($priority, function (Builder $q, string $priorityValue): void {
-                $q->where('priority', $priorityValue);
+            ->when($priority, function (Builder $q, mixed $priorityValue): void {
+                if (is_string($priorityValue)) {
+                    $q->where('priority', $priorityValue);
+                }
             })
-            ->when($status, function (Builder $q, string $statusValue): void {
-                $q->where('status', $statusValue);
+            ->when($status, function (Builder $q, mixed $statusValue): void {
+                if (is_string($statusValue)) {
+                    $q->where('status', $statusValue);
+                }
             })
-            ->when($module, function (Builder $q, string $moduleValue): void {
-                $q->where('module', $moduleValue);
+            ->when($module, function (Builder $q, mixed $moduleValue): void {
+                if (is_string($moduleValue)) {
+                    $q->where('module', $moduleValue);
+                }
             })
-            ->when($minConfidence, function (Builder $q, string $minConfidenceValue): void {
-                $q->where('confidence', '>=', (int) $minConfidenceValue);
+            ->when($minConfidence, function (Builder $q, mixed $minConfidenceValue): void {
+                if (is_string($minConfidenceValue) || is_int($minConfidenceValue)) {
+                    $q->where('confidence', '>=', (int) $minConfidenceValue);
+                }
             })
             ->orderBy('confidence', 'desc')
             ->orderBy('usage_count', 'desc');

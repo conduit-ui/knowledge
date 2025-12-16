@@ -1,2 +1,101 @@
 parameters:
-    ignoreErrors: []
+	ignoreErrors:
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/Collection/ListCommand.php
+
+		-
+			message: "#^Access to property \\$category on an unknown class App\\\\Commands\\\\Collection\\\\Entry\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^Access to property \\$id on an unknown class App\\\\Commands\\\\Collection\\\\Entry\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^Access to property \\$pivot on an unknown class App\\\\Commands\\\\Collection\\\\Entry\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^Access to property \\$title on an unknown class App\\\\Commands\\\\Collection\\\\Entry\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^PHPDoc tag @var for variable \\$entry contains unknown class App\\\\Commands\\\\Collection\\\\Entry\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^Return type of call to method Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int,App\\\\Models\\\\Entry\\>\\:\\:map\\(\\) contains unresolvable type\\.$#"
+			count: 1
+			path: app/Commands/Collection/ShowCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:create\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeAddCommand.php
+
+		-
+			message: "#^Call to function is_int\\(\\) with array\\|bool will always evaluate to false\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeListCommand.php
+
+		-
+			message: "#^Cannot call method orderBy\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeListCommand.php
+
+		-
+			message: "#^Cannot call method when\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
+			count: 4
+			path: app/Commands/KnowledgeListCommand.php
+
+		-
+			message: "#^Cannot call method orderBy\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
+			message: "#^Cannot call method when\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
+			count: 5
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereJsonContains\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeShowCommand.php
+
+		-
+			message: "#^Casting to int something that's already int\\.$#"
+			count: 1
+			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\:\\:where\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:exists\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:max\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CollectionService.php
