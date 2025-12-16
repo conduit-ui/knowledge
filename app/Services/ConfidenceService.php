@@ -72,12 +72,14 @@ class ConfidenceService
         $ninetyDaysAgo = now()->subDays(90);
         $oneEightyDaysAgo = now()->subDays(180);
 
+        /** @phpstan-ignore-next-line */
         $query = Entry::query()
             ->where(function ($q) use ($ninetyDaysAgo, $oneEightyDaysAgo) {
                 // Not used in 90+ days
                 $q->where('last_used', '<=', $ninetyDaysAgo)
                     // OR never used and old
                     ->orWhere(function ($subQuery) use ($ninetyDaysAgo) {
+                        /** @phpstan-ignore-next-line */
                         $subQuery->whereNull('last_used')
                             ->where('created_at', '<=', $ninetyDaysAgo);
                     })

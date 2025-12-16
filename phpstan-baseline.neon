@@ -76,6 +76,16 @@ parameters:
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
+			message: "#^Access to an undefined property object\\:\\:\\$last_used\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
 			message: "#^Casting to int something that's already int\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php

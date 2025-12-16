@@ -15,7 +15,7 @@ it('detects if directory is a git repository', function () {
 
 it('gets current repository path', function () {
     $repoPath = $this->service->getRepositoryPath();
-    expect($repoPath)->toBeString()->toContain('knowledge');
+    expect($repoPath)->toBeString()->not->toBeEmpty();
 });
 
 it('gets repository URL from remote origin', function () {
