@@ -73,16 +73,16 @@ class ConfidenceService
         $oneEightyDaysAgo = now()->subDays(180);
 
         $query = Entry::query()
-            ->where(function ($q) use ($ninetyDaysAgo, $oneEightyDaysAgo) {
+            ->where(function (\Illuminate\Database\Eloquent\Builder $q) use ($ninetyDaysAgo, $oneEightyDaysAgo): void {
                 // Not used in 90+ days
                 $q->where('last_used', '<=', $ninetyDaysAgo)
                     // OR never used and old
-                    ->orWhere(function ($subQuery) use ($ninetyDaysAgo) {
+                    ->orWhere(function (\Illuminate\Database\Eloquent\Builder $subQuery) use ($ninetyDaysAgo): void {
                         $subQuery->whereNull('last_used')
                             ->where('created_at', '<=', $ninetyDaysAgo);
                     })
                     // OR high confidence but old and not validated
-                    ->orWhere(function ($subQuery) use ($oneEightyDaysAgo) {
+                    ->orWhere(function (\Illuminate\Database\Eloquent\Builder $subQuery) use ($oneEightyDaysAgo): void {
                         $subQuery->where('confidence', '>=', 70)
                             ->where('created_at', '<=', $oneEightyDaysAgo)
                             ->where('status', '!=', 'validated');

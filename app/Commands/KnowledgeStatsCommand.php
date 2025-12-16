@@ -50,6 +50,7 @@ class KnowledgeStatsCommand extends Command
 
     private function displayOverview(): void
     {
+        /** @var int $total */
         $total = Entry::query()->count();
         $this->line("Total Entries: {$total}");
     }
@@ -58,6 +59,7 @@ class KnowledgeStatsCommand extends Command
     {
         $this->comment('Entries by Status:');
 
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Entry> $statuses */
         $statuses = Entry::query()
             ->selectRaw('status, count(*) as count')
             ->groupBy('status')
@@ -78,6 +80,7 @@ class KnowledgeStatsCommand extends Command
     {
         $this->comment('Entries by Category:');
 
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Entry> $categories */
         $categories = Entry::query()
             ->selectRaw('category, count(*) as count')
             ->whereNotNull('category')
@@ -94,6 +97,7 @@ class KnowledgeStatsCommand extends Command
             $this->line("  {$category->category}: {$category->count}");
         }
 
+        /** @var int $uncategorized */
         $uncategorized = Entry::query()->whereNull('category')->count();
         if ($uncategorized > 0) {
             $this->line("  (uncategorized): {$uncategorized}");
@@ -104,17 +108,21 @@ class KnowledgeStatsCommand extends Command
     {
         $this->comment('Usage Statistics:');
 
+        /** @var int|float $totalUsage */
         $totalUsage = Entry::query()->sum('usage_count');
         $this->line("  Total Usage: {$totalUsage}");
 
+        /** @var float|null $avgUsage */
         $avgUsage = Entry::query()->avg('usage_count');
         $this->line('  Average Usage: '.round($avgUsage ?? 0));
 
+        /** @var Entry|null $mostUsed */
         $mostUsed = Entry::query()->orderBy('usage_count', 'desc')->first();
         if ($mostUsed !== null && $mostUsed->usage_count > 0) {
             $this->line("  Most Used: \"{$mostUsed->title}\" ({$mostUsed->usage_count} times)");
         }
 
+        /** @var Entry|null $recentlyUsed */
         $recentlyUsed = Entry::query()->whereNotNull('last_used')
             ->orderBy('last_used', 'desc')
             ->first();

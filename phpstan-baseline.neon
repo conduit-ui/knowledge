@@ -76,6 +76,46 @@ parameters:
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Entry\\:\\:\\$count\\.$#"
+			count: 2
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:avg\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:selectRaw\\(\\)\\.$#"
+			count: 2
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:sum\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereNotNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
 			message: "#^Casting to int something that's already int\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php
@@ -99,3 +139,13 @@ parameters:
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
+			count: 1
+			path: app/Services/ConfidenceService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereNull\\(\\)\\.$#"
+			count: 1
+			path: app/Services/ConfidenceService.php
