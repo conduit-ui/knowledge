@@ -6,6 +6,8 @@ parameters:
     paths:
         - app
         - config
-        - tests
     ignoreErrors:
-        - '#Unsafe usage of new static#'
+        -
+            message: '#does not specify its types: TFactory#'
+            paths:
+                - app/Models/*
