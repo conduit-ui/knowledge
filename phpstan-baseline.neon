@@ -99,3 +99,43 @@ parameters:
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeIndexCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeIndexCommand.php
+
+		-
+			message: "#^Only booleans are allowed in &&, array\\|bool\\|string\\|null given on the left side\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchStatusCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNotNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchStatusCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNotNull\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SemanticSearchService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereJsonContains\\(\\)\\.$#"
+			count: 2
+			path: app/Services/SemanticSearchService.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:where\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SemanticSearchService.php
