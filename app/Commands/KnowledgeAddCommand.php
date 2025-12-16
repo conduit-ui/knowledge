@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Models\Entry;
+use App\Services\GitContextService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeAddCommand extends Command
@@ -23,7 +24,11 @@ class KnowledgeAddCommand extends Command
                             {--source= : Source URL or reference}
                             {--ticket= : Related ticket number}
                             {--author= : Author name}
-                            {--status=draft : Status (draft, validated, deprecated)}';
+                            {--status=draft : Status (draft, validated, deprecated)}
+                            {--repo= : Repository URL or path}
+                            {--branch= : Git branch name}
+                            {--commit= : Git commit hash}
+                            {--no-git : Skip automatic git context detection}';
 
     /**
      * @var string
@@ -36,7 +41,7 @@ class KnowledgeAddCommand extends Command
 
     private const VALID_STATUSES = ['draft', 'validated', 'deprecated'];
 
-    public function handle(): int
+    public function handle(GitContextService $gitService): int
     {
         $title = $this->argument('title');
         $content = $this->option('content');
@@ -49,6 +54,10 @@ class KnowledgeAddCommand extends Command
         $ticket = $this->option('ticket');
         $author = $this->option('author');
         $status = $this->option('status');
+        $repo = $this->option('repo');
+        $branch = $this->option('branch');
+        $commit = $this->option('commit');
+        $noGit = $this->option('no-git');
 
         // Validate required fields
         if ($content === null || $content === '') {
@@ -94,12 +103,28 @@ class KnowledgeAddCommand extends Command
             'confidence' => (int) $confidence,
             'source' => $source,
             'ticket' => $ticket,
-            'author' => $author,
             'status' => $status,
         ];
 
         if (is_string($tags) && $tags !== '') {
             $data['tags'] = array_map('trim', explode(',', $tags));
+        }
+
+        // Auto-populate git context unless --no-git is specified
+        if ($noGit !== true && $gitService->isGitRepository()) {
+            $gitContext = $gitService->getContext();
+
+            // Only use auto-detected values if not manually provided
+            $data['repo'] = $repo ?? $gitContext['repo'];
+            $data['branch'] = $branch ?? $gitContext['branch'];
+            $data['commit'] = $commit ?? $gitContext['commit'];
+            $data['author'] = $author ?? $gitContext['author'];
+        } else {
+            // Use manually provided values or null
+            $data['repo'] = $repo;
+            $data['branch'] = $branch;
+            $data['commit'] = $commit;
+            $data['author'] = $author;
         }
 
         $entry = Entry::create($data);
