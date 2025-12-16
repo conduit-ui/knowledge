@@ -55,6 +55,12 @@ describe('KnowledgeValidateCommand', function () {
             ->assertFailed();
     });
 
+    it('fails when id is not numeric', function () {
+        $this->artisan('knowledge:validate', ['id' => 'abc'])
+            ->expectsOutputToContain('Entry ID must be a number')
+            ->assertFailed();
+    });
+
     it('can validate already validated entry', function () {
         $entry = Entry::factory()->create([
             'status' => 'validated',

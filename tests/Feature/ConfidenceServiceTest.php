@@ -150,16 +150,21 @@ describe('ConfidenceService', function () {
             'confidence' => 85,
             'status' => 'draft',
             'created_at' => now()->subDays(200),
+            'last_used' => now()->subDays(50), // Used recently
         ]);
 
         Entry::factory()->create([
             'confidence' => 60,
+            'status' => 'draft',
             'created_at' => now()->subDays(200),
+            'last_used' => now()->subDays(50), // Used recently, low confidence
         ]);
 
         Entry::factory()->create([
             'confidence' => 85,
+            'status' => 'draft',
             'created_at' => now()->subDays(50),
+            'last_used' => now()->subDays(20), // Recent entry
         ]);
 
         $staleEntries = $this->service->getStaleEntries();

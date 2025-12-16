@@ -105,4 +105,42 @@ describe('KnowledgeStaleCommand', function () {
             ->expectsOutputToContain("ID: {$entry->id}")
             ->assertSuccessful();
     });
+
+    it('displays category when present', function () {
+        Entry::factory()->create([
+            'title' => 'Categorized Entry',
+            'category' => 'bug',
+            'last_used' => now()->subDays(91),
+        ]);
+
+        $this->artisan('knowledge:stale')
+            ->expectsOutputToContain('Category: bug')
+            ->assertSuccessful();
+    });
+
+    it('displays high confidence entry with validated status', function () {
+        // This entry matches the third condition in getStaleEntries but in a validated state
+        // This tests that the status check works correctly
+        Entry::factory()->create([
+            'title' => 'Validated Old Entry',
+            'confidence' => 75,
+            'status' => 'validated', // This makes it NOT match the third condition
+            'created_at' => now()->subDays(200),
+            'last_used' => now()->subDays(50), // Used recently
+        ]);
+
+        // This entry WILL match the third condition (high confidence, old, not validated)
+        Entry::factory()->create([
+            'title' => 'Unvalidated Old Entry',
+            'confidence' => 75,
+            'status' => 'draft',
+            'created_at' => now()->subDays(200),
+            'last_used' => now()->subDays(50), // Used recently
+        ]);
+
+        $this->artisan('knowledge:stale')
+            ->expectsOutputToContain('Unvalidated Old Entry')
+            ->expectsOutputToContain('High confidence but old and unvalidated')
+            ->assertSuccessful();
+    });
 });

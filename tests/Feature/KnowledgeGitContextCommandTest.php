@@ -12,8 +12,12 @@ it('displays git context information', function () {
 });
 
 it('handles non-git directory gracefully', function () {
-    // This test would need to mock GitContextService or test in a non-git directory
-    // For now, we'll just verify the command exists and runs
+    $mockService = mock(App\Services\GitContextService::class);
+    $mockService->shouldReceive('isGitRepository')->andReturn(false);
+
+    $this->app->instance(App\Services\GitContextService::class, $mockService);
+
     $this->artisan('knowledge:git:context')
+        ->expectsOutputToContain('Not in a git repository')
         ->assertSuccessful();
 });
