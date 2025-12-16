@@ -15,6 +15,25 @@ jobs:
       checks: write
     steps:
       - uses: actions/checkout@v4
+
+      # Debug: Run coverage manually to see detailed output
+      - name: Setup PHP for Debug
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: xdebug
+
+      - name: Debug Coverage
+        run: |
+          composer install --prefer-dist --no-progress
+          echo "=== XDEBUG VERSION ==="
+          php -v
+          php -m | grep -i xdebug
+          echo "=== RUNNING COVERAGE ==="
+          vendor/bin/pest --coverage --min=99 --colors=never 2>&1 | tee coverage-output.txt
+          echo "=== DETAILED COVERAGE REPORT ==="
+          cat coverage-output.txt
+
       - uses: synapse-sentinel/gate@master
         with:
           check: certify
