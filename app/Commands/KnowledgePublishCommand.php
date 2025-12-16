@@ -35,7 +35,7 @@ class KnowledgePublishCommand extends Command
             $this->line("Open {$outputDir}/index.html in your browser to view.");
 
             return self::SUCCESS;
-            // @codeCoverageIgnoreStart
+        // @codeCoverageIgnoreStart
         } catch (\Exception $e) {
             $this->error("Failed to publish site: {$e->getMessage()}");
 
