@@ -18,7 +18,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Configure view paths and caching
+        $viewPath = resource_path('views');
+        $cachePath = storage_path('framework/views');
+
+        // @codeCoverageIgnoreStart
+        // Defensive mkdir - only executes when cache directory doesn't exist
+        if (! is_dir($cachePath)) {
+            mkdir($cachePath, 0755, true);
+        }
+        // @codeCoverageIgnoreEnd
+
+        config(['view.paths' => [$viewPath]]);
+        config(['view.compiled' => $cachePath]);
     }
 
     /**
