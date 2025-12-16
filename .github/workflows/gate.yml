@@ -15,7 +15,7 @@ jobs:
       checks: write
     steps:
       - uses: actions/checkout@v4
-      - uses: synapse-sentinel/gate@master
+      - uses: synapse-sentinel/gate@v1
         with:
           check: certify
           coverage-threshold: 100
