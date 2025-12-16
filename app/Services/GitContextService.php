@@ -181,9 +181,11 @@ class GitContextService
     {
         $process = $this->runGitCommand(['config', 'user.name']);
 
+        // @codeCoverageIgnoreStart
         if (! $process->isSuccessful()) {
-            return null; // @codeCoverageIgnore
+            return null;
         }
+        // @codeCoverageIgnoreEnd
 
         $name = trim($process->getOutput());
 
@@ -233,9 +235,11 @@ class GitContextService
     {
         $cwd = $this->workingDirectory ?? getcwd();
 
+        // @codeCoverageIgnoreStart
         if ($cwd === false) {
-            $cwd = null; // @codeCoverageIgnore
+            $cwd = null;
         }
+        // @codeCoverageIgnoreEnd
 
         $process = new Process(
             ['git', ...$command],

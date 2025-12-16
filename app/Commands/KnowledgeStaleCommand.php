@@ -96,6 +96,8 @@ class KnowledgeStaleCommand extends Command
             return 'High confidence but old and unvalidated - suggest validation';
         }
 
-        return 'Needs review'; // @codeCoverageIgnore
+        // @codeCoverageIgnoreStart
+        return 'Needs review';
+        // @codeCoverageIgnoreEnd
     }
 }
