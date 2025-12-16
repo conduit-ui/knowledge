@@ -105,4 +105,30 @@ describe('KnowledgeStaleCommand', function () {
             ->expectsOutputToContain("ID: {$entry->id}")
             ->assertSuccessful();
     });
+
+    it('displays high confidence old unvalidated reason', function () {
+        Entry::factory()->create([
+            'title' => 'High Conf Old',
+            'confidence' => 85,
+            'status' => 'draft',
+            'created_at' => now()->subDays(200),
+            'last_used' => now()->subDays(50),
+        ]);
+
+        $this->artisan('knowledge:stale')
+            ->expectsOutputToContain('High confidence but old and unvalidated')
+            ->assertSuccessful();
+    });
+
+    it('displays category when present', function () {
+        Entry::factory()->create([
+            'title' => 'With Category',
+            'category' => 'testing',
+            'last_used' => now()->subDays(91),
+        ]);
+
+        $this->artisan('knowledge:stale')
+            ->expectsOutputToContain('Category: testing')
+            ->assertSuccessful();
+    });
 });
