@@ -100,7 +100,7 @@ class SemanticSearchService
             ->values();
 
         /** @var Collection<int, Entry> */
-        return $rankedResults;
+        return new Collection($rankedResults->all());
     }
 
     /**
