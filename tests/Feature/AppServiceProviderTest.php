@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
+use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\SemanticSearchService;
+use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
+use App\Services\StubFtsService;
 
 describe('AppServiceProvider', function () {
     it('registers ChromaDBClient', function () {
@@ -66,5 +69,38 @@ describe('AppServiceProvider', function () {
         $service = app(SemanticSearchService::class);
 
         expect($service)->toBeInstanceOf(SemanticSearchService::class);
+    });
+
+    it('registers SQLiteFtsService by default', function () {
+        config(['search.fts_provider' => 'sqlite']);
+
+        // Force rebinding
+        app()->forgetInstance(FullTextSearchInterface::class);
+
+        $service = app(FullTextSearchInterface::class);
+
+        expect($service)->toBeInstanceOf(SQLiteFtsService::class);
+    });
+
+    it('registers StubFtsService when provider is stub', function () {
+        config(['search.fts_provider' => 'stub']);
+
+        // Force rebinding
+        app()->forgetInstance(FullTextSearchInterface::class);
+
+        $service = app(FullTextSearchInterface::class);
+
+        expect($service)->toBeInstanceOf(StubFtsService::class);
+    });
+
+    it('registers StubFtsService for unknown provider', function () {
+        config(['search.fts_provider' => 'unknown']);
+
+        // Force rebinding
+        app()->forgetInstance(FullTextSearchInterface::class);
+
+        $service = app(FullTextSearchInterface::class);
+
+        expect($service)->toBeInstanceOf(StubFtsService::class);
     });
 });

@@ -14,7 +14,7 @@ parameters:
             paths:
                 - app/Models/*
         -
-            message: '#Call to an undefined static method App\\Models\\(Entry|Collection|Tag)::(query|where|orderBy|selectRaw|whereNotNull)#'
+            message: '#Call to an undefined static method App\\Models\\(Entry|Collection|Tag|Observation)::(query|where|orderBy|selectRaw|whereNotNull|whereIn)#'
             paths:
                 - app/Services/*
                 - app/Commands/*

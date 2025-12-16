@@ -191,6 +191,16 @@ parameters:
 			path: app/Commands/KnowledgeUnlinkCommand.php
 
 		-
+			message: "#^Argument of an invalid type int supplied for foreach, only iterables are supported\\.$#"
+			count: 1
+			path: app/Commands/Session/ShowCommand.php
+
+		-
+			message: "#^Parameter \\#2 \\$syntax of method Carbon\\\\Carbon\\:\\:diffForHumans\\(\\) expects array\\|int\\|null, true given\\.$#"
+			count: 1
+			path: app/Commands/Session/ShowCommand.php
+
+		-
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\:\\:where\\(\\)\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php
@@ -209,6 +219,11 @@ parameters:
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
 			count: 1
 			path: app/Services/CollectionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
+			count: 2
+			path: app/Services/ObservationService.php
 
 		-
 			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$toEntry\\.$#"
@@ -243,9 +258,29 @@ parameters:
 		-
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereIn\\(\\)\\.$#"
 			count: 1
+			path: app/Services/SQLiteFtsService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereIn\\(\\)\\.$#"
+			count: 1
 			path: app/Services/SemanticSearchService.php
 
 		-
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereJsonContains\\(\\)\\.$#"
 			count: 3
 			path: app/Services/SemanticSearchService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Observation\\>\\:\\:where\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SessionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
+			count: 2
+			path: app/Services/SessionService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereNull\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SessionService.php

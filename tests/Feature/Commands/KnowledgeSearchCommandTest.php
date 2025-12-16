@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Enums\ObservationType;
 use App\Models\Entry;
+use App\Models\Observation;
+use App\Models\Session;
 
 it('searches entries by keyword in title', function () {
     Entry::factory()->create(['title' => 'Laravel Timezone Conversion']);
@@ -136,4 +139,155 @@ it('handles case-insensitive search', function () {
 it('requires at least one search parameter', function () {
     $this->artisan('knowledge:search')
         ->assertFailed();
+});
+
+describe('--observations flag', function (): void {
+    it('searches observations instead of entries', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Authentication Bug Fix',
+            'type' => ObservationType::Bugfix,
+            'narrative' => 'Fixed OAuth bug',
+        ]);
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Feature Implementation',
+            'type' => ObservationType::Feature,
+            'narrative' => 'Added new feature',
+        ]);
+
+        // Create an entry that should NOT appear in results
+        Entry::factory()->create(['title' => 'Authentication Entry']);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'authentication',
+            '--observations' => true,
+        ])->assertSuccessful();
+    });
+
+    it('shows no observations message when none found', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Something else',
+            'narrative' => 'Different topic',
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'nonexistent',
+            '--observations' => true,
+        ])->assertSuccessful()
+            ->expectsOutput('No observations found.');
+    });
+
+    it('displays observation type, title, concept, and created date', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Bug Fix',
+            'type' => ObservationType::Bugfix,
+            'concept' => 'Authentication',
+            'narrative' => 'Fixed auth bug',
+        ]);
+
+        $output = $this->artisan('knowledge:search', [
+            'query' => 'bug',
+            '--observations' => true,
+        ]);
+
+        $output->assertSuccessful();
+    });
+
+    it('requires query when using observations flag', function (): void {
+        $this->artisan('knowledge:search', [
+            '--observations' => true,
+        ])->assertFailed();
+    });
+
+    it('searches by observation type', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Feature 1',
+            'type' => ObservationType::Feature,
+            'narrative' => 'Feature narrative',
+        ]);
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Bug 1',
+            'type' => ObservationType::Bugfix,
+            'narrative' => 'Bug narrative',
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'narrative',
+            '--observations' => true,
+        ])->assertSuccessful();
+    });
+
+    it('searches observations by concept', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Auth Fix',
+            'type' => ObservationType::Bugfix,
+            'concept' => 'Authentication',
+            'narrative' => 'Fixed OAuth',
+        ]);
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Cache Update',
+            'type' => ObservationType::Change,
+            'concept' => 'Performance',
+            'narrative' => 'Updated cache',
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'authentication',
+            '--observations' => true,
+        ])->assertSuccessful();
+    });
+
+    it('counts observations correctly', function (): void {
+        $session = Session::factory()->create();
+
+        Observation::factory(3)->create([
+            'session_id' => $session->id,
+            'title' => 'Test Observation',
+            'narrative' => 'Test narrative',
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'test',
+            '--observations' => true,
+        ])->assertSuccessful()
+            ->expectsOutput('Found 3 observations');
+    });
+
+    it('truncates long observation narratives', function (): void {
+        $session = Session::factory()->create();
+
+        $longNarrative = str_repeat('This is a very long narrative. ', 10); // Over 100 chars
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Long Narrative Observation',
+            'narrative' => $longNarrative,
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'narrative',
+            '--observations' => true,
+        ])->assertSuccessful()
+            ->expectsOutputToContain('...');
+    });
 });
