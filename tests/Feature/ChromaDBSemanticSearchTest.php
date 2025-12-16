@@ -536,4 +536,77 @@ describe('ChromaDB Semantic Search', function () {
         // Should fallback to SQLite
         expect($results)->not->toBeEmpty();
     });
+
+    it('returns empty collection when chromaDBSearch is called with null client', function () {
+        // Create service with null client
+        $service = new SemanticSearchService(
+            $this->mockEmbedding,
+            true,
+            null,
+            true
+        );
+
+        // Use reflection to call private chromaDBSearch method
+        $reflection = new ReflectionClass($service);
+        $method = $reflection->getMethod('chromaDBSearch');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($service, 'test query', [0.1, 0.2, 0.3], []);
+
+        expect($result)->toBeEmpty();
+    });
+
+    it('skips entries that are not Entry instances in chromaDBSearch', function () {
+        // Create a custom mock client that returns IDs for non-existent entries
+        $customMockClient = new class implements \App\Contracts\ChromaDBClientInterface
+        {
+            private array $collections = [];
+
+            public function getOrCreateCollection(string $name): array
+            {
+                if (! isset($this->collections[$name])) {
+                    $this->collections[$name] = 'col_'.uniqid();
+                }
+
+                return ['id' => $this->collections[$name], 'name' => $name];
+            }
+
+            public function add(string $collectionId, array $ids, array $embeddings, array $metadatas, ?array $documents = null): void {}
+
+            public function query(string $collectionId, array $queryEmbedding, int $nResults = 10, array $where = []): array
+            {
+                // Return IDs for non-existent entries
+                return [
+                    'ids' => [['entry_999999']],  // Non-existent entry
+                    'distances' => [[0.1]],
+                ];
+            }
+
+            public function delete(string $collectionId, array $ids): void {}
+
+            public function update(string $collectionId, array $ids, array $embeddings, array $metadatas, ?array $documents = null): void {}
+
+            public function isAvailable(): bool
+            {
+                return true;
+            }
+        };
+
+        $service = new SemanticSearchService(
+            $this->mockEmbedding,
+            true,
+            $customMockClient,
+            true
+        );
+
+        // Use reflection to call chromaDBSearch directly to avoid SQLite fallback
+        $reflection = new ReflectionClass($service);
+        $method = $reflection->getMethod('chromaDBSearch');
+        $method->setAccessible(true);
+
+        $results = $method->invoke($service, 'content', [0.1, 0.2, 0.3], []);
+
+        // Should return empty since the entry doesn't exist in database
+        expect($results)->toBeEmpty();
+    });
 });

@@ -151,12 +151,9 @@ class SemanticSearchService
             // Map results with scores and maintain ChromaDB order
             $rankedResults = collect();
             foreach ($entryIds as $index => $entryId) {
-                if (! $entries->has($entryId)) {
-                    continue;
-                }
-
+                /** @var Entry|null $entry */
                 $entry = $entries->get($entryId);
-                if (! ($entry instanceof Entry)) {
+                if ($entry === null) {
                     continue;
                 }
 

@@ -46,7 +46,10 @@ describe('ChromaDBEmbeddingService', function () {
         ]);
 
         $handlerStack = HandlerStack::create($mock);
-        $client = new Client(['handler' => $handlerStack]);
+        $client = new Client([
+            'handler' => $handlerStack,
+            'http_errors' => false,
+        ]);
 
         $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
         $reflection = new ReflectionClass($service);
@@ -129,6 +132,39 @@ describe('ChromaDBEmbeddingService', function () {
 
         $handlerStack = HandlerStack::create($mock);
         $client = new Client(['handler' => $handlerStack]);
+
+        $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
+        $reflection = new ReflectionClass($service);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($service, $client);
+
+        $embedding = $service->generate('test text');
+
+        expect($embedding)->toBeArray()->toBeEmpty();
+    });
+
+    it('returns zero similarity for zero magnitude vectors', function () {
+        $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
+
+        $a = [0.0, 0.0, 0.0];
+        $b = [1.0, 0.0, 0.0];
+
+        $similarity = $service->similarity($a, $b);
+
+        expect($similarity)->toBe(0.0);
+    });
+
+    it('returns empty array when response status is not 200', function () {
+        $mock = new MockHandler([
+            new Response(404, [], json_encode(['error' => 'Not found'])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client([
+            'handler' => $handlerStack,
+            'http_errors' => false,
+        ]);
 
         $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
         $reflection = new ReflectionClass($service);

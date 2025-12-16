@@ -387,4 +387,84 @@ describe('ChromaDBIndexService', function () {
 
         expect(true)->toBeTrue();
     });
+
+    it('skips updateEntry when embedding is empty', function () {
+        // Create a mock embedding service that returns empty array
+        $emptyEmbedding = new class implements \App\Contracts\EmbeddingServiceInterface
+        {
+            public function generate(string $text): array
+            {
+                return [];
+            }
+
+            public function similarity(array $a, array $b): float
+            {
+                return 0.0;
+            }
+        };
+
+        $mockClient = new MockChromaDBClient;
+        $service = new ChromaDBIndexService($mockClient, $emptyEmbedding);
+
+        $entry = Entry::factory()->create([
+            'title' => 'Test Entry',
+            'content' => 'Test content',
+            'embedding' => null,
+        ]);
+
+        // Should return early without updating ChromaDB
+        $service->updateEntry($entry);
+
+        $docs = $mockClient->getDocuments();
+
+        // No documents should be indexed
+        $hasDocuments = false;
+        foreach ($docs as $collectionDocs) {
+            if (! empty($collectionDocs)) {
+                $hasDocuments = true;
+                break;
+            }
+        }
+
+        expect($hasDocuments)->toBeFalse();
+    });
+
+    it('returns early from indexBatch when all embeddings are empty', function () {
+        // Create a mock embedding service that always returns empty
+        $emptyEmbedding = new class implements \App\Contracts\EmbeddingServiceInterface
+        {
+            public function generate(string $text): array
+            {
+                return [];
+            }
+
+            public function similarity(array $a, array $b): float
+            {
+                return 0.0;
+            }
+        };
+
+        $mockClient = new MockChromaDBClient;
+        $service = new ChromaDBIndexService($mockClient, $emptyEmbedding);
+
+        $entries = Entry::factory()->count(3)->create([
+            'embedding' => null,
+        ]);
+
+        // Should return early when all embeddings are empty
+        $service->indexBatch($entries);
+
+        $docs = $mockClient->getDocuments();
+
+        // No documents should be indexed
+        $hasDocuments = false;
+        foreach ($docs as $collectionDocs) {
+            if (! empty($collectionDocs)) {
+                $hasDocuments = true;
+                break;
+            }
+        }
+
+        expect($hasDocuments)->toBeFalse();
+    });
 });
