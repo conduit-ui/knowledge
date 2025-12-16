@@ -4,3 +4,6 @@
 /.vagrant
 .phpunit.result.cache
 /build
+/database/database.sqlite
+.claude/
+.phpactor.json
