@@ -41,6 +41,71 @@ parameters:
 			path: app/Commands/KnowledgeAddCommand.php
 
 		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
+			count: 2
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Only booleans are allowed in &&, array\\<string, App\\\\Models\\\\Entry\\|int\\>\\|null given on the left side\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Only booleans are allowed in &&, array\\<string, App\\\\Models\\\\Entry\\|int\\>\\|null given on the right side\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Parameter \\#2 \\$array of function implode expects array\\|null, array\\|string\\|true given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Parameter \\#3 \\$types of method App\\\\Services\\\\RelationshipService\\:\\:traverseGraph\\(\\) expects array\\<string\\>\\|null, array\\|string\\|true\\|null given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeGraphCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeIndexCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeIndexCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
+			count: 2
+			path: app/Commands/KnowledgeLinkCommand.php
+
+		-
+			message: "#^Only booleans are allowed in an if condition, array\\|bool\\|string\\|null given\\.$#"
+			count: 2
+			path: app/Commands/KnowledgeLinkCommand.php
+
+		-
+			message: "#^Only booleans are allowed in an if condition, mixed given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeLinkCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$json of function json_decode expects string, array\\|string\\|true given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeLinkCommand.php
+
+		-
+			message: "#^Part \\$type \\(array\\|bool\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeLinkCommand.php
+
+		-
 			message: "#^Call to function is_int\\(\\) with array\\|bool will always evaluate to false\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeListCommand.php
@@ -54,6 +119,31 @@ parameters:
 			message: "#^Cannot call method when\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
 			count: 4
 			path: app/Commands/KnowledgeListCommand.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$fromEntry\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeRelatedCommand.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$toEntry\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeRelatedCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeRelatedCommand.php
+
+		-
+			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
+			count: 4
+			path: app/Commands/KnowledgeRelatedCommand.php
+
+		-
+			message: "#^Only booleans are allowed in an if condition, array\\|bool\\|string\\|null given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeRelatedCommand.php
 
 		-
 			message: "#^Cannot call method orderBy\\(\\) on Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Entry\\>\\|null\\.$#"
@@ -71,6 +161,21 @@ parameters:
 			path: app/Commands/KnowledgeSearchCommand.php
 
 		-
+			message: "#^Only booleans are allowed in &&, array\\|bool\\|string\\|null given on the left side\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchStatusCommand.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNotNull\\(\\)\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchStatusCommand.php
+
+		-
 			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeShowCommand.php
@@ -84,6 +189,16 @@ parameters:
 			message: "#^Access to an undefined property object\\:\\:\\$title\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$fromEntry\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeUnlinkCommand.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$toEntry\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeUnlinkCommand.php
 
 		-
 			message: "#^Casting to int something that's already int\\.$#"
@@ -111,29 +226,39 @@ parameters:
 			path: app/Services/CollectionService.php
 
 		-
-			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			message: "#^Access to an undefined property App\\\\Models\\\\Relationship\\:\\:\\$toEntry\\.$#"
 			count: 1
-			path: app/Commands/KnowledgeIndexCommand.php
+			path: app/Services/RelationshipService.php
 
 		-
-			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNull\\(\\)\\.$#"
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:with\\(\\)\\.$#"
 			count: 1
-			path: app/Commands/KnowledgeIndexCommand.php
+			path: app/Services/RelationshipService.php
 
 		-
-			message: "#^Only booleans are allowed in &&, array\\|bool\\|string\\|null given on the left side\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeSearchCommand.php
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:find\\(\\)\\.$#"
+			count: 3
+			path: app/Services/RelationshipService.php
 
 		-
-			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:count\\(\\)\\.$#"
+			message: "#^Call to an undefined static method App\\\\Models\\\\Relationship\\:\\:find\\(\\)\\.$#"
 			count: 1
-			path: app/Commands/KnowledgeSearchStatusCommand.php
+			path: app/Services/RelationshipService.php
 
 		-
-			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNotNull\\(\\)\\.$#"
+			message: "#^Call to an undefined static method App\\\\Models\\\\Relationship\\:\\:updateOrCreate\\(\\)\\.$#"
 			count: 1
-			path: app/Commands/KnowledgeSearchStatusCommand.php
+			path: app/Services/RelationshipService.php
+
+		-
+			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereIn\\(\\)\\.$#"
+			count: 2
+			path: app/Services/RelationshipService.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:where\\(\\)\\.$#"
+			count: 1
+			path: app/Services/SemanticSearchService.php
 
 		-
 			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:whereNotNull\\(\\)\\.$#"
@@ -148,9 +273,4 @@ parameters:
 		-
 			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereJsonContains\\(\\)\\.$#"
 			count: 3
-			path: app/Services/SemanticSearchService.php
-
-		-
-			message: "#^Call to an undefined static method App\\\\Models\\\\Entry\\:\\:where\\(\\)\\.$#"
-			count: 1
 			path: app/Services/SemanticSearchService.php
