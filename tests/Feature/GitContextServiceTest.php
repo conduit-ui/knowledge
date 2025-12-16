@@ -132,6 +132,31 @@ it('handles empty git user name gracefully', function () {
     $process->run();
 });
 
+it('returns author name when git config user.name is set', function () {
+    // Create a temp directory with git config user.name set
+    // This ensures lines 190-192 in getAuthor() are covered in CI
+    $tempDir = sys_get_temp_dir().'/git-with-author-'.uniqid();
+    mkdir($tempDir);
+
+    // Initialize a git repo
+    $process = new \Symfony\Component\Process\Process(['git', 'init'], $tempDir);
+    $process->run();
+
+    // Set local user.name
+    $process = new \Symfony\Component\Process\Process(['git', 'config', '--local', 'user.name', 'Test Author'], $tempDir);
+    $process->run();
+
+    $service = new GitContextService($tempDir);
+
+    // getAuthor should return the configured name (covers lines 190-192)
+    $author = $service->getAuthor();
+
+    expect($author)->toBe('Test Author');
+
+    // Cleanup
+    removeDirectory($tempDir);
+});
+
 it('handles getcwd failure in runGitCommand', function () {
     // Test with a path that getcwd() would conceptually fail on
     // This is difficult to test directly, but we ensure the code path exists
