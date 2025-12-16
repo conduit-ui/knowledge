@@ -4,11 +4,14 @@ namespace App\Providers;
 
 use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
+use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\SemanticSearchService;
+use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
+use App\Services\StubFtsService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -78,6 +81,16 @@ class AppServiceProvider extends ServiceProvider
                 $chromaDBEnabled ? $app->make(ChromaDBClientInterface::class) : null,
                 $chromaDBEnabled
             );
+        });
+
+        // Register full-text search service
+        $this->app->singleton(FullTextSearchInterface::class, function () {
+            $provider = config('search.fts_provider', 'sqlite');
+
+            return match ($provider) {
+                'sqlite' => new SQLiteFtsService,
+                default => new StubFtsService,
+            };
         });
     }
 }

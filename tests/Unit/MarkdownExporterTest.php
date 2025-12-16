@@ -12,7 +12,7 @@ describe('MarkdownExporter', function () {
             'content' => 'Test content',
             'priority' => 'high',
             'confidence' => 90,
-            'status' => 'active',
+            'status' => 'validated',
         ]);
 
         $exporter = new MarkdownExporter;
@@ -22,7 +22,7 @@ describe('MarkdownExporter', function () {
         expect($markdown)->toContain('title: "Test Entry"');
         expect($markdown)->toContain('priority: "high"');
         expect($markdown)->toContain('confidence: 90');
-        expect($markdown)->toContain('status: "active"');
+        expect($markdown)->toContain('status: "validated"');
         expect($markdown)->toContain('# Test Entry');
         expect($markdown)->toContain('Test content');
     });

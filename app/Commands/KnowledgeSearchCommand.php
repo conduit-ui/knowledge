@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Contracts\FullTextSearchInterface;
 use App\Models\Entry;
 use App\Services\SemanticSearchService;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,14 +22,15 @@ class KnowledgeSearchCommand extends Command
                             {--module= : Filter by module}
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}
-                            {--semantic : Use semantic search if available}';
+                            {--semantic : Use semantic search if available}
+                            {--observations : Search observations instead of entries}';
 
     /**
      * @var string
      */
     protected $description = 'Search knowledge entries by keyword, tag, or category';
 
-    public function handle(SemanticSearchService $searchService): int
+    public function handle(SemanticSearchService $searchService, FullTextSearchInterface $ftsService): int
     {
         $query = $this->argument('query');
         $tag = $this->option('tag');
@@ -37,8 +39,20 @@ class KnowledgeSearchCommand extends Command
         $priority = $this->option('priority');
         $status = $this->option('status');
         $useSemantic = $this->option('semantic');
+        $searchObservations = $this->option('observations');
 
-        // Require at least one search parameter
+        // When searching observations, query is required
+        if ($searchObservations === true) {
+            if (! is_string($query) || $query === '') {
+                $this->error('Please provide a search query when using --observations.');
+
+                return self::FAILURE;
+            }
+
+            return $this->searchObservations($ftsService, $query);
+        }
+
+        // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
             $this->error('Please provide at least one search parameter.');
 
@@ -123,6 +137,43 @@ class KnowledgeSearchCommand extends Command
                 : $entry->content;
 
             $this->line($contentPreview);
+            $this->newLine();
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Search observations using FTS service.
+     */
+    private function searchObservations(FullTextSearchInterface $ftsService, string $query): int
+    {
+        $results = $ftsService->searchObservations($query);
+
+        if ($results->isEmpty()) {
+            $this->line('No observations found.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Found {$results->count()} ".str('observation')->plural($results->count()));
+        $this->newLine();
+
+        foreach ($results as $observation) {
+            $this->line("<fg=cyan>[{$observation->id}]</> <fg=green>{$observation->title}</>");
+            $this->line('Type: '.$observation->type->value);
+
+            if ($observation->concept !== null) {
+                $this->line("Concept: {$observation->concept}");
+            }
+
+            $this->line('Created: '.$observation->created_at->format('Y-m-d H:i:s'));
+
+            $narrativePreview = strlen($observation->narrative) > 100
+                ? substr($observation->narrative, 0, 100).'...'
+                : $observation->narrative;
+
+            $this->line($narrativePreview);
             $this->newLine();
         }
 

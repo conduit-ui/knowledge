@@ -187,7 +187,7 @@ class KnowledgeGraphCommand extends Command
                         }
                     }
                 }
-            // @codeCoverageIgnoreEnd
+                // @codeCoverageIgnoreEnd
             } else {
                 $this->renderNode($childId, $nodes, $edges, $childPrefix, $isLastChild, $rendered);
             }
