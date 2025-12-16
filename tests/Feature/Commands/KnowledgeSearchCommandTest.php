@@ -272,4 +272,22 @@ describe('--observations flag', function (): void {
         ])->assertSuccessful()
             ->expectsOutput('Found 3 observations');
     });
+
+    it('truncates long observation narratives', function (): void {
+        $session = Session::factory()->create();
+
+        $longNarrative = str_repeat('This is a very long narrative. ', 10); // Over 100 chars
+
+        Observation::factory()->create([
+            'session_id' => $session->id,
+            'title' => 'Long Narrative Observation',
+            'narrative' => $longNarrative,
+        ]);
+
+        $this->artisan('knowledge:search', [
+            'query' => 'narrative',
+            '--observations' => true,
+        ])->assertSuccessful()
+            ->expectsOutputToContain('...');
+    });
 });

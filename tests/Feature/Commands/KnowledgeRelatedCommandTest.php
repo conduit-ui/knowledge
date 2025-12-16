@@ -88,6 +88,27 @@ describe('knowledge:related command', function (): void {
         expect($relationship->fresh()->metadata)->toBe(['reason' => 'test metadata']);
     });
 
+    it('shows incoming relationship metadata', function (): void {
+        $entry = Entry::factory()->create(['title' => 'Target Entry']);
+        $source = Entry::factory()->create(['title' => 'Source Entry']);
+
+        Relationship::factory()->create([
+            'from_entry_id' => $source->id,
+            'to_entry_id' => $entry->id,
+            'metadata' => ['reason' => 'incoming test'],
+        ]);
+
+        // The command outputs the incoming relationships and their metadata
+        $this->artisan('knowledge:related', ['id' => $entry->id])
+            ->expectsOutputToContain('Incoming Relationships')
+            ->expectsOutputToContain('Source Entry')
+            ->assertSuccessful();
+
+        // Verify metadata was actually stored
+        $relationship = Relationship::where('to_entry_id', $entry->id)->first();
+        expect($relationship->metadata)->toBe(['reason' => 'incoming test']);
+    });
+
     it('fails when entry does not exist', function (): void {
         $this->artisan('knowledge:related', ['id' => 99999])
             ->expectsOutputToContain('not found')

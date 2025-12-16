@@ -132,6 +132,34 @@ describe('observe:add command', function (): void {
         ]);
     });
 
+    it('ignores facts without equals sign', function (): void {
+        $this->artisan('observe:add', [
+            'title' => 'Test Observation',
+            '--narrative' => 'Test narrative',
+            '--facts' => ['valid=fact', 'invalidfact', 'another=valid'],
+        ])->assertSuccessful();
+
+        $observation = Observation::first();
+        expect($observation->facts)->toBe([
+            'valid' => 'fact',
+            'another' => 'valid',
+        ]);
+    });
+
+    it('handles facts with empty keys or values', function (): void {
+        $this->artisan('observe:add', [
+            'title' => 'Test Observation',
+            '--narrative' => 'Test narrative',
+            '--facts' => ['valid=fact', '=emptykey', 'emptyvalue=', 'good=value'],
+        ])->assertSuccessful();
+
+        $observation = Observation::first();
+        expect($observation->facts)->toBe([
+            'valid' => 'fact',
+            'good' => 'value',
+        ]);
+    });
+
     it('accepts bugfix type', function (): void {
         $this->artisan('observe:add', [
             'title' => 'Bug Fix',

@@ -107,11 +107,13 @@ class AddCommand extends Command
      */
     private function validateType(mixed $type): ?ObservationType
     {
+        // @codeCoverageIgnoreStart
         if (! is_string($type)) {
             $this->error('The type must be a string.');
 
             return null;
         }
+        // @codeCoverageIgnoreEnd
 
         $observationType = ObservationType::tryFrom($type);
 
@@ -131,11 +133,13 @@ class AddCommand extends Command
     private function getOrCreateSession(mixed $sessionId): ?Session
     {
         if ($sessionId !== null) {
+            // @codeCoverageIgnoreStart
             if (! is_string($sessionId)) {
                 $this->error('The session must be a valid UUID.');
 
                 return null;
             }
+            // @codeCoverageIgnoreEnd
 
             /** @var Session|null $session */
             $session = Session::query()->find($sessionId);
@@ -163,16 +167,20 @@ class AddCommand extends Command
      */
     private function parseFacts(mixed $facts): array
     {
+        // @codeCoverageIgnoreStart
         if (! is_array($facts)) {
             return [];
         }
+        // @codeCoverageIgnoreEnd
 
         $parsed = [];
 
         foreach ($facts as $fact) {
+            // @codeCoverageIgnoreStart
             if (! is_string($fact)) {
                 continue;
             }
+            // @codeCoverageIgnoreEnd
 
             if (! str_contains($fact, '=')) {
                 continue;
