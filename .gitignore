@@ -8,3 +8,5 @@
 .claude/
 .phpactor.json
 coverage.xml
+.env
+/builds
