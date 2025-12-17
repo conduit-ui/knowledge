@@ -50,11 +50,20 @@ class ChromaDBEmbeddingService implements EmbeddingServiceInterface
 
             $data = json_decode((string) $response->getBody(), true);
 
-            if (! is_array($data) || ! isset($data['embedding']) || ! is_array($data['embedding'])) {
+            if (! is_array($data)) {
                 return [];
             }
 
-            return array_map(fn ($val): float => (float) $val, $data['embedding']);
+            // Handle both singular 'embedding' and plural 'embeddings' response formats
+            if (isset($data['embeddings']) && is_array($data['embeddings']) && isset($data['embeddings'][0])) {
+                return array_map(fn ($val): float => (float) $val, $data['embeddings'][0]);
+            }
+
+            if (isset($data['embedding']) && is_array($data['embedding'])) {
+                return array_map(fn ($val): float => (float) $val, $data['embedding']);
+            }
+
+            return [];
         } catch (GuzzleException $e) {
             // Gracefully handle embedding generation failures
             return [];
