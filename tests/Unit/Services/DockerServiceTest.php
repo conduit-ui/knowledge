@@ -14,13 +14,11 @@ describe('DockerService', function () {
         });
 
         it('returns macos on Darwin', function () {
-            // Since we're running on macOS in tests
-            if (PHP_OS_FAMILY === 'Darwin') {
-                $service = new DockerService;
-                expect($service->getHostOs())->toBe('macos');
-            } else {
-                $this->markTestSkipped('Not running on macOS');
+            if (PHP_OS_FAMILY !== 'Darwin') {
+                skip('Not running on macOS');
             }
+            $service = new DockerService;
+            expect($service->getHostOs())->toBe('macos');
         });
     });
 

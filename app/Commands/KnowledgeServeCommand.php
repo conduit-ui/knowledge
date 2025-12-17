@@ -26,6 +26,13 @@ class KnowledgeServeCommand extends Command
 
         $action = $this->argument('action');
 
+        // @codeCoverageIgnoreStart
+        // Type narrowing for PHPStan - Laravel's command system ensures string
+        if (! is_string($action)) {
+            return $this->invalidAction('');
+        }
+        // @codeCoverageIgnoreEnd
+
         return match ($action) {
             'install' => $this->install(),
             'start' => $this->start(),
@@ -118,7 +125,7 @@ class KnowledgeServeCommand extends Command
 
         // Step 7: Wait for services
         $servicesReady = false;
-        $isTesting = getenv('KNOWLEDGE_TESTING') !== false || app()->environment('testing');
+        $isTesting = getenv('KNOWLEDGE_TESTING') !== false || app()->environment('testing') === true;
         $maxRetries = $isTesting ? 1 : 30;
         $sleepSeconds = $isTesting ? 0 : 2;
 
@@ -163,7 +170,7 @@ class KnowledgeServeCommand extends Command
             return self::FAILURE;
         }
 
-        if ($this->option('foreground')) {
+        if ($this->option('foreground') === true) {
             $this->info('Starting services in foreground (Ctrl+C to stop)...');
             $result = $this->docker->compose($configPath, ['up']);
 
