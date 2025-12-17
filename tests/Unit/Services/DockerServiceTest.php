@@ -15,7 +15,7 @@ describe('DockerService', function () {
 
         it('returns macos on Darwin', function () {
             if (PHP_OS_FAMILY !== 'Darwin') {
-                skip('Not running on macOS');
+                $this->markTestSkipped('Not running on macOS');
             }
             $service = new DockerService;
             expect($service->getHostOs())->toBe('macos');
