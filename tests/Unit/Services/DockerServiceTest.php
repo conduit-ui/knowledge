@@ -23,11 +23,22 @@ describe('DockerService', function () {
     });
 
     describe('getInstallUrl', function () {
-        it('returns correct URL for macOS', function () {
+        it('returns valid Docker install URL based on OS', function () {
             $service = new DockerService;
-            if (PHP_OS_FAMILY === 'Darwin') {
-                expect($service->getInstallUrl())->toBe('https://docs.docker.com/desktop/install/mac-install/');
-            }
+            $url = $service->getInstallUrl();
+
+            // All valid install URLs should start with Docker docs
+            expect($url)->toStartWith('https://docs.docker.com/');
+
+            // Verify correct URL for current OS
+            $expectedUrls = [
+                'Darwin' => 'https://docs.docker.com/desktop/install/mac-install/',
+                'Linux' => 'https://docs.docker.com/engine/install/',
+                'Windows' => 'https://docs.docker.com/desktop/install/windows-install/',
+            ];
+
+            $expected = $expectedUrls[PHP_OS_FAMILY] ?? 'https://docs.docker.com/get-docker/';
+            expect($url)->toBe($expected);
         });
     });
 
