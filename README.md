@@ -232,53 +232,40 @@ Active development. Core features implemented:
 
 Advanced vector-based semantic search for finding knowledge by meaning:
 
-#### Installation
+#### Quick Start (Docker)
 
-ChromaDB requires Python 3.8+ and a ChromaDB server. Install using:
+Start both ChromaDB and the embedding server with a single command:
+
+```bash
+# Start services
+make up
+
+# Check status
+make status
+
+# View logs
+make logs
+
+# Stop services
+make down
+```
+
+This starts:
+- **ChromaDB** on `http://localhost:8000` - Vector database for semantic search
+- **Embedding Server** on `http://localhost:8001` - Sentence-transformers (all-MiniLM-L6-v2)
+
+#### Manual Installation (Alternative)
+
+If you prefer not to use Docker:
 
 ```bash
 # Install ChromaDB server
 pip install chromadb
-
-# Start ChromaDB server (default: localhost:8000)
 chroma run --path ./chroma_data
-```
 
-For production, you can also run ChromaDB in Docker:
-
-```bash
-docker run -d -p 8000:8000 chromadb/chroma
-```
-
-#### Embedding Server
-
-You'll also need an embedding server. We recommend using a simple Flask server with sentence-transformers:
-
-```bash
-# Install dependencies
-pip install flask sentence-transformers
-
-# Create embedding_server.py
-cat > embedding_server.py << 'EOF'
-from flask import Flask, request, jsonify
-from sentence_transformers import SentenceTransformer
-
-app = Flask(__name__)
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-@app.route('/embed', methods=['POST'])
-def embed():
-    data = request.json
-    text = data.get('text', '')
-    embedding = model.encode(text).tolist()
-    return jsonify({'embedding': embedding})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8001)
-EOF
-
-# Run embedding server
-python embedding_server.py
+# In another terminal, start embedding server
+pip install flask sentence-transformers gunicorn
+python docker/embedding-server/server.py
 ```
 
 #### Configuration

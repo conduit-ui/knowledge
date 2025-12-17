@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Contracts\ChromaDBClientInterface;
+use App\Contracts\DockerServiceInterface;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\DatabaseInitializer;
+use App\Services\DockerService;
 use App\Services\KnowledgePathService;
 use App\Services\SemanticSearchService;
 use App\Services\SQLiteFtsService;
@@ -47,6 +49,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(KnowledgePathService::class, function () {
             return new KnowledgePathService;
         });
+
+        // Register Docker service
+        // @codeCoverageIgnoreStart
+        $this->app->singleton(DockerServiceInterface::class, function () {
+            return new DockerService;
+        });
+        // @codeCoverageIgnoreEnd
 
         // Register database initializer
         $this->app->singleton(DatabaseInitializer::class, function ($app) {

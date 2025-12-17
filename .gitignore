@@ -10,3 +10,5 @@
 coverage.xml
 .env
 /builds
+storage/framework/views/*.php
+__pycache__/

@@ -63,27 +63,34 @@ describe('SQLiteFtsService', function (): void {
         it('searches across multiple observations', function (): void {
             $session = Session::factory()->create();
 
+            // Explicitly set all searchable fields to control what matches
             Observation::factory()->forSession($session)->create([
                 'title' => 'Testing authentication flow',
-                'narrative' => 'Auth tests',
+                'subtitle' => null,
+                'narrative' => 'Auth checks',
+                'concept' => 'auth',
                 'type' => ObservationType::Feature,
             ]);
 
             Observation::factory()->forSession($session)->create([
                 'title' => 'Testing database queries',
-                'narrative' => 'Query tests',
+                'subtitle' => null,
+                'narrative' => 'Query checks',
+                'concept' => 'database',
                 'type' => ObservationType::Decision,
             ]);
 
             Observation::factory()->forSession($session)->create([
                 'title' => 'User authentication setup',
+                'subtitle' => null,
                 'narrative' => 'Setup auth',
+                'concept' => 'auth',
                 'type' => ObservationType::Bugfix,
             ]);
 
-            // "authentication" appears in 2 observations (first and third)
-            // "Testing" appears in 2 observations (first and second)
-            $results = $this->service->searchObservations('Testing');
+            // "Testing" appears only in the first two observations' titles
+            // The third observation should NOT match because we explicitly set all fields
+            $results = $this->service->searchObservations('Testing', ['session_id' => $session->id]);
 
             expect($results)->toHaveCount(2);
         });
