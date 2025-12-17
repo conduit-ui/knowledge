@@ -82,7 +82,7 @@ class DockerService implements DockerServiceInterface
             $result = @file_get_contents($url, false, $context);
 
             return $result !== false;
-        // @codeCoverageIgnoreStart
+            // @codeCoverageIgnoreStart
         } catch (\Throwable) {
             return false;
         }

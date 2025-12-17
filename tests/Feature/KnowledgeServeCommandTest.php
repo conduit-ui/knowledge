@@ -218,7 +218,7 @@ describe('KnowledgeServeCommand', function () {
             $originalCompose = fn () => ['success' => true, 'output' => 'OK', 'exitCode' => 0];
 
             $this->app->bind(DockerServiceInterface::class, function () use ($mock, &$callCount) {
-                return new class ($mock, $callCount) implements DockerServiceInterface
+                return new class($mock, $callCount) implements DockerServiceInterface
                 {
                     private int $callCount = 0;
 

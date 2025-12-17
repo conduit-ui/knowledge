@@ -372,7 +372,24 @@ class KnowledgeServeCommand extends Command
             $destFile = $configPath.'/'.$dest;
 
             if (file_exists($sourceFile)) {
-                copy($sourceFile, $destFile);
+                // Special handling for docker-compose.yml to fix path
+                if ($source === 'docker-compose.yml') {
+                    $content = file_get_contents($sourceFile);
+                    if ($content === false) {
+                        // @codeCoverageIgnoreStart
+                        return false;
+                        // @codeCoverageIgnoreEnd
+                    }
+                    // Rewrite the context path for installed location
+                    $content = str_replace(
+                        'context: ./docker/embedding-server',
+                        'context: ./embedding-server',
+                        $content
+                    );
+                    file_put_contents($destFile, $content);
+                } else {
+                    copy($sourceFile, $destFile);
+                }
             } else {
                 // @codeCoverageIgnoreStart
                 return false;
