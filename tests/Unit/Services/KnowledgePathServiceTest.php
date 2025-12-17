@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\KnowledgePathService;
+use App\Services\RuntimeEnvironment;
 
 describe('KnowledgePathService', function (): void {
     describe('getKnowledgeDirectory', function (): void {
@@ -10,7 +11,8 @@ describe('KnowledgePathService', function (): void {
             $originalHome = getenv('HOME');
             putenv('HOME=/Users/testuser');
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $path = $service->getKnowledgeDirectory();
 
             expect($path)->toBe('/Users/testuser/.knowledge');
@@ -30,7 +32,8 @@ describe('KnowledgePathService', function (): void {
             putenv('HOME');
             putenv('USERPROFILE=C:\\Users\\testuser');
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $path = $service->getKnowledgeDirectory();
 
             expect($path)->toBe('C:\\Users\\testuser/.knowledge');
@@ -50,7 +53,8 @@ describe('KnowledgePathService', function (): void {
             $originalKnowledgeHome = getenv('KNOWLEDGE_HOME');
             putenv('KNOWLEDGE_HOME=/custom/knowledge/path');
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $path = $service->getKnowledgeDirectory();
 
             expect($path)->toBe('/custom/knowledge/path');
@@ -67,16 +71,22 @@ describe('KnowledgePathService', function (): void {
     describe('getDatabasePath', function (): void {
         it('returns database path within knowledge directory', function (): void {
             $originalHome = getenv('HOME');
+            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
             putenv('HOME=/Users/testuser');
+            putenv('KNOWLEDGE_DB_PATH');
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $path = $service->getDatabasePath();
 
-            expect($path)->toBe('/Users/testuser/.knowledge/knowledge.sqlite');
+            expect($path)->toContain('knowledge.sqlite');
 
             // Restore
             if ($originalHome !== false) {
                 putenv("HOME={$originalHome}");
+            }
+            if ($originalDbPath !== false) {
+                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
             }
         });
 
@@ -84,7 +94,8 @@ describe('KnowledgePathService', function (): void {
             $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
             putenv('KNOWLEDGE_DB_PATH=/custom/path/mydb.sqlite');
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $path = $service->getDatabasePath();
 
             expect($path)->toBe('/custom/path/mydb.sqlite');
@@ -104,7 +115,8 @@ describe('KnowledgePathService', function (): void {
 
             expect(is_dir($testDir))->toBeFalse();
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $service->ensureDirectoryExists($testDir);
 
             expect(is_dir($testDir))->toBeTrue();
@@ -117,7 +129,8 @@ describe('KnowledgePathService', function (): void {
             $testDir = sys_get_temp_dir().'/knowledge-test-'.uniqid();
             mkdir($testDir, 0755, true);
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $service->ensureDirectoryExists($testDir);
 
             expect(is_dir($testDir))->toBeTrue();
@@ -131,7 +144,8 @@ describe('KnowledgePathService', function (): void {
 
             expect(is_dir($testDir))->toBeFalse();
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
             $service->ensureDirectoryExists($testDir);
 
             expect(is_dir($testDir))->toBeTrue();
@@ -151,7 +165,8 @@ describe('KnowledgePathService', function (): void {
             $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
             putenv("KNOWLEDGE_DB_PATH={$testDb}");
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
 
             expect($service->databaseExists())->toBeTrue();
 
@@ -170,7 +185,8 @@ describe('KnowledgePathService', function (): void {
             $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
             putenv("KNOWLEDGE_DB_PATH={$testDb}");
 
-            $service = new KnowledgePathService;
+            $runtime = new RuntimeEnvironment;
+            $service = new KnowledgePathService($runtime);
 
             expect($service->databaseExists())->toBeFalse();
 

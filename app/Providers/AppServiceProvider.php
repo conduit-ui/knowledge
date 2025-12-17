@@ -12,6 +12,7 @@ use App\Services\ChromaDBIndexService;
 use App\Services\DatabaseInitializer;
 use App\Services\DockerService;
 use App\Services\KnowledgePathService;
+use App\Services\RuntimeEnvironment;
 use App\Services\SemanticSearchService;
 use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
@@ -27,7 +28,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Configure view paths and caching
         $viewPath = resource_path('views');
-        $cachePath = storage_path('framework/views');
+
+        // Use RuntimeEnvironment for cache path resolution
+        $runtime = $this->app->make(RuntimeEnvironment::class);
+        $cachePath = $runtime->cachePath('views');
 
         // @codeCoverageIgnoreStart
         // Defensive mkdir - only executes when cache directory doesn't exist
@@ -45,9 +49,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Register runtime environment (must be first)
+        $this->app->singleton(RuntimeEnvironment::class, function () {
+            return new RuntimeEnvironment;
+        });
+
         // Register knowledge path service
-        $this->app->singleton(KnowledgePathService::class, function () {
-            return new KnowledgePathService;
+        $this->app->singleton(KnowledgePathService::class, function ($app) {
+            return new KnowledgePathService($app->make(RuntimeEnvironment::class));
         });
 
         // Register Docker service

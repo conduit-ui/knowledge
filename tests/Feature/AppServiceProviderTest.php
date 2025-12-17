@@ -10,12 +10,19 @@ use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\DatabaseInitializer;
 use App\Services\KnowledgePathService;
+use App\Services\RuntimeEnvironment;
 use App\Services\SemanticSearchService;
 use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 
 describe('AppServiceProvider', function () {
+    it('registers RuntimeEnvironment', function () {
+        $service = app(RuntimeEnvironment::class);
+
+        expect($service)->toBeInstanceOf(RuntimeEnvironment::class);
+    });
+
     it('registers KnowledgePathService', function () {
         $service = app(KnowledgePathService::class);
 
