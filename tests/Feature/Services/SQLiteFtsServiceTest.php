@@ -83,7 +83,8 @@ describe('SQLiteFtsService', function (): void {
 
             // "authentication" appears in 2 observations (first and third)
             // "Testing" appears in 2 observations (first and second)
-            $results = $this->service->searchObservations('Testing');
+            // Filter by session_id to avoid picking up observations from other tests
+            $results = $this->service->searchObservations('Testing', ['session_id' => $session->id]);
 
             expect($results)->toHaveCount(2);
         });
