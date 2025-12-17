@@ -23,7 +23,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-test-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -54,7 +54,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-node-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -90,7 +90,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-link-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -121,7 +121,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-cyto-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'cytoscape',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -162,7 +162,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-dot-'.time().'.dot';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'dot',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -185,7 +185,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-export.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -204,7 +204,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-dir-'.time().'/graph.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--output' => $outputFile,
         ])->assertSuccessful();
 
@@ -219,7 +219,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-norel-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -236,7 +236,7 @@ describe('knowledge:export:graph command', function () {
     it('handles empty graph', function () {
         $outputFile = sys_get_temp_dir().'/graph-empty-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -255,7 +255,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-meta-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -298,7 +298,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-complex-'.time().'.json';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'json',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -323,7 +323,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-escape-'.time().'.dot';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'dot',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -341,7 +341,7 @@ describe('knowledge:export:graph command', function () {
 
         $outputFile = sys_get_temp_dir().'/graph-colors-'.time().'.dot';
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'dot',
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -357,7 +357,7 @@ describe('knowledge:export:graph command', function () {
     it('fails with unsupported format', function () {
         Entry::factory()->create();
 
-        $this->artisan('knowledge:export:graph', [
+        $this->artisan('export:graph', [
             '--format' => 'invalid',
         ])->assertFailed();
     });

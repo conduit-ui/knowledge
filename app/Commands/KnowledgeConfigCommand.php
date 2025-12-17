@@ -9,7 +9,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeConfigCommand extends Command
 {
-    protected $signature = 'knowledge:config
+    protected $signature = 'config
                             {action=list : Action to perform (list, get, set)}
                             {key? : Configuration key (e.g., chromadb.enabled)}
                             {value? : Configuration value}';

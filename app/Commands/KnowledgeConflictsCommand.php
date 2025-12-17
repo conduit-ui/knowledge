@@ -13,7 +13,7 @@ class KnowledgeConflictsCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:conflicts
+    protected $signature = 'conflicts
                             {--category= : Filter by category}
                             {--module= : Filter by module}';
 

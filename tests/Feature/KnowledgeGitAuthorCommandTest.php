@@ -24,14 +24,14 @@ it('displays entries by a specific author', function () {
         'author' => 'Jane Smith',
     ]);
 
-    $this->artisan('knowledge:git:author', ['name' => 'John Doe'])
+    $this->artisan('git:author', ['name' => 'John Doe'])
         ->expectsOutputToContain('Entry 1')
         ->expectsOutputToContain('Entry 2')
         ->assertSuccessful();
 });
 
 it('shows message when no entries found for author', function () {
-    $this->artisan('knowledge:git:author', ['name' => 'Unknown Author'])
+    $this->artisan('git:author', ['name' => 'Unknown Author'])
         ->expectsOutputToContain('No entries found')
         ->assertSuccessful();
 });
@@ -45,7 +45,7 @@ it('displays entry details for author', function () {
         'commit' => 'abc123',
     ]);
 
-    $this->artisan('knowledge:git:author', ['name' => 'John Doe'])
+    $this->artisan('git:author', ['name' => 'John Doe'])
         ->expectsOutputToContain('Test Entry')
         ->expectsOutputToContain('testing')
         ->assertSuccessful();

@@ -12,7 +12,7 @@ describe('KnowledgeArchiveCommand', function (): void {
                 'confidence' => 80,
             ]);
 
-            $this->artisan('knowledge:archive', ['id' => $entry->id])
+            $this->artisan('archive', ['id' => $entry->id])
                 ->expectsOutputToContain("Entry #{$entry->id} has been archived")
                 ->expectsOutputToContain('Status: draft -> deprecated')
                 ->expectsOutputToContain('--restore')
@@ -26,7 +26,7 @@ describe('KnowledgeArchiveCommand', function (): void {
         it('warns when entry is already archived', function (): void {
             $entry = Entry::factory()->create(['status' => 'deprecated']);
 
-            $this->artisan('knowledge:archive', ['id' => $entry->id])
+            $this->artisan('archive', ['id' => $entry->id])
                 ->expectsOutputToContain("Entry #{$entry->id} is already archived")
                 ->assertSuccessful();
         });
@@ -39,7 +39,7 @@ describe('KnowledgeArchiveCommand', function (): void {
                 'confidence' => 0,
             ]);
 
-            $this->artisan('knowledge:archive', [
+            $this->artisan('archive', [
                 'id' => $entry->id,
                 '--restore' => true,
             ])
@@ -56,7 +56,7 @@ describe('KnowledgeArchiveCommand', function (): void {
         it('warns when entry is not archived', function (): void {
             $entry = Entry::factory()->create(['status' => 'validated']);
 
-            $this->artisan('knowledge:archive', [
+            $this->artisan('archive', [
                 'id' => $entry->id,
                 '--restore' => true,
             ])
@@ -67,13 +67,13 @@ describe('KnowledgeArchiveCommand', function (): void {
 
     describe('validation', function (): void {
         it('fails with non-numeric id', function (): void {
-            $this->artisan('knowledge:archive', ['id' => 'abc'])
+            $this->artisan('archive', ['id' => 'abc'])
                 ->expectsOutputToContain('Entry ID must be a number')
                 ->assertFailed();
         });
 
         it('fails when entry not found', function (): void {
-            $this->artisan('knowledge:archive', ['id' => 99999])
+            $this->artisan('archive', ['id' => 99999])
                 ->expectsOutputToContain('Entry not found')
                 ->assertFailed();
         });
@@ -82,7 +82,7 @@ describe('KnowledgeArchiveCommand', function (): void {
     describe('command signature', function (): void {
         it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeArchiveCommand::class);
-            expect($command->getName())->toBe('knowledge:archive');
+            expect($command->getName())->toBe('archive');
         });
 
         it('has restore option', function (): void {

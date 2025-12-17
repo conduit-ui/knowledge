@@ -20,7 +20,7 @@ describe('KnowledgeStaleCommand', function () {
             'created_at' => now()->subDays(60),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('Old Entry')
             ->expectsOutputToContain('Usage count:')
             ->assertSuccessful();
@@ -39,7 +39,7 @@ describe('KnowledgeStaleCommand', function () {
             'created_at' => now()->subDays(50),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('Never Used')
             ->expectsOutputToContain('Never used')
             ->assertSuccessful();
@@ -53,7 +53,7 @@ describe('KnowledgeStaleCommand', function () {
             'created_at' => now()->subDays(200),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('High Confidence Old')
             ->expectsOutputToContain('Confidence: 85%')
             ->assertSuccessful();
@@ -64,7 +64,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(91),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('re-validation')
             ->assertSuccessful();
     });
@@ -74,7 +74,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(50),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('No stale entries found')
             ->assertSuccessful();
     });
@@ -90,7 +90,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(100),
         ]);
 
-        $output = $this->artisan('knowledge:stale')->run();
+        $output = $this->artisan('stale')->run();
 
         // The very old entry should appear before the somewhat old entry
         expect($output)->toBe(0);
@@ -101,7 +101,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(91),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain("ID: {$entry->id}")
             ->assertSuccessful();
     });
@@ -113,7 +113,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(91),
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('Category: bug')
             ->assertSuccessful();
     });
@@ -138,7 +138,7 @@ describe('KnowledgeStaleCommand', function () {
             'last_used' => now()->subDays(50), // Used recently
         ]);
 
-        $this->artisan('knowledge:stale')
+        $this->artisan('stale')
             ->expectsOutputToContain('Unvalidated Old Entry')
             ->expectsOutputToContain('High confidence but old and unvalidated')
             ->assertSuccessful();

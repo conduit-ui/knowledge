@@ -9,7 +9,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class CreateCommand extends Command
 {
-    protected $signature = 'knowledge:collection:create
+    protected $signature = 'collection:create
                             {name : The name of the collection}
                             {--description= : Optional description for the collection}';
 

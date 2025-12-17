@@ -20,7 +20,7 @@ describe('knowledge:collection:list command', function (): void {
             $entry2->id => ['sort_order' => 1],
         ]);
 
-        $this->artisan('knowledge:collection:list')
+        $this->artisan('collection:list')
             ->expectsOutputToContain('Alpha Collection')
             ->expectsOutputToContain('Beta Collection')
             ->expectsOutputToContain('Gamma Collection')
@@ -33,13 +33,13 @@ describe('knowledge:collection:list command', function (): void {
             'description' => 'A test description',
         ]);
 
-        $this->artisan('knowledge:collection:list')
+        $this->artisan('collection:list')
             ->expectsOutputToContain('A test description')
             ->assertExitCode(0);
     });
 
     it('shows message when no collections exist', function (): void {
-        $this->artisan('knowledge:collection:list')
+        $this->artisan('collection:list')
             ->expectsOutput('No collections found.')
             ->assertExitCode(0);
     });
@@ -49,14 +49,14 @@ describe('knowledge:collection:list command', function (): void {
         Collection::factory()->create(['name' => 'Alpha']);
         Collection::factory()->create(['name' => 'Middle']);
 
-        $this->artisan('knowledge:collection:list')
+        $this->artisan('collection:list')
             ->expectsOutputToContain('Alpha')
             ->expectsOutputToContain('Middle')
             ->expectsOutputToContain('Zebra')
             ->assertExitCode(0);
 
         // Verify order in table
-        $output = $this->artisan('knowledge:collection:list')->run();
+        $output = $this->artisan('collection:list')->run();
         $outputText = $this->app->make('Illuminate\Contracts\Console\Kernel')->output();
     });
 });

@@ -12,7 +12,7 @@ describe('KnowledgeValidateCommand', function () {
             'validation_date' => null,
         ]);
 
-        $this->artisan('knowledge:validate', ['id' => $entry->id])
+        $this->artisan('validate', ['id' => $entry->id])
             ->expectsOutputToContain('validated successfully')
             ->assertSuccessful();
 
@@ -29,7 +29,7 @@ describe('KnowledgeValidateCommand', function () {
             'created_at' => now(),
         ]);
 
-        $this->artisan('knowledge:validate', ['id' => $entry->id])
+        $this->artisan('validate', ['id' => $entry->id])
             ->assertSuccessful();
 
         $fresh = $entry->fresh();
@@ -44,19 +44,19 @@ describe('KnowledgeValidateCommand', function () {
             'created_at' => now(),
         ]);
 
-        $this->artisan('knowledge:validate', ['id' => $entry->id])
+        $this->artisan('validate', ['id' => $entry->id])
             ->expectsOutputToContain('Confidence: 80% -> 96%')
             ->assertSuccessful();
     });
 
     it('fails when entry not found', function () {
-        $this->artisan('knowledge:validate', ['id' => 999])
+        $this->artisan('validate', ['id' => 999])
             ->expectsOutputToContain('Entry not found')
             ->assertFailed();
     });
 
     it('fails when id is not numeric', function () {
-        $this->artisan('knowledge:validate', ['id' => 'abc'])
+        $this->artisan('validate', ['id' => 'abc'])
             ->expectsOutputToContain('Entry ID must be a number')
             ->assertFailed();
     });
@@ -70,7 +70,7 @@ describe('KnowledgeValidateCommand', function () {
 
         $oldValidationDate = $entry->validation_date;
 
-        $this->artisan('knowledge:validate', ['id' => $entry->id])
+        $this->artisan('validate', ['id' => $entry->id])
             ->assertSuccessful();
 
         $fresh = $entry->fresh();

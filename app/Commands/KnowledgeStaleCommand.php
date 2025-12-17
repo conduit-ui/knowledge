@@ -13,7 +13,7 @@ class KnowledgeStaleCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:stale';
+    protected $signature = 'stale';
 
     /**
      * @var string

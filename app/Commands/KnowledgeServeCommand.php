@@ -9,7 +9,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeServeCommand extends Command
 {
-    protected $signature = 'knowledge:serve
+    protected $signature = 'serve
                             {action=start : Action to perform (install, start, stop, status, restart)}
                             {--f|foreground : Run in foreground with logs}';
 

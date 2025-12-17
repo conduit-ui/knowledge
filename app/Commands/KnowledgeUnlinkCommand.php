@@ -13,7 +13,7 @@ use LaravelZero\Framework\Commands\Command;
  */
 class KnowledgeUnlinkCommand extends Command
 {
-    protected $signature = 'knowledge:unlink {id : The relationship ID to delete}';
+    protected $signature = 'unlink {id : The relationship ID to delete}';
 
     protected $description = 'Delete a relationship between knowledge entries';
 

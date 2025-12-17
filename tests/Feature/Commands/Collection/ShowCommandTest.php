@@ -22,7 +22,7 @@ describe('knowledge:collection:show command', function (): void {
             $entry3->id => ['sort_order' => 2],
         ]);
 
-        $this->artisan('knowledge:collection:show', ['name' => 'My Collection'])
+        $this->artisan('collection:show', ['name' => 'My Collection'])
             ->expectsOutputToContain('My Collection')
             ->expectsOutputToContain('Test description')
             ->expectsOutputToContain('First Entry')
@@ -37,7 +37,7 @@ describe('knowledge:collection:show command', function (): void {
             'description' => null,
         ]);
 
-        $this->artisan('knowledge:collection:show', ['name' => 'No Description'])
+        $this->artisan('collection:show', ['name' => 'No Description'])
             ->expectsOutputToContain('No Description')
             ->assertExitCode(0);
     });
@@ -55,7 +55,7 @@ describe('knowledge:collection:show command', function (): void {
             $entry2->id => ['sort_order' => 1],
         ]);
 
-        $this->artisan('knowledge:collection:show', ['name' => 'Sorted Collection'])
+        $this->artisan('collection:show', ['name' => 'Sorted Collection'])
             ->expectsOutputToContain('Entry A')
             ->expectsOutputToContain('Entry B')
             ->expectsOutputToContain('Entry C')
@@ -65,14 +65,14 @@ describe('knowledge:collection:show command', function (): void {
     it('shows message when collection is empty', function (): void {
         $collection = Collection::factory()->create(['name' => 'Empty Collection']);
 
-        $this->artisan('knowledge:collection:show', ['name' => 'Empty Collection'])
+        $this->artisan('collection:show', ['name' => 'Empty Collection'])
             ->expectsOutputToContain('Empty Collection')
             ->expectsOutputToContain('No entries in this collection')
             ->assertExitCode(0);
     });
 
     it('shows error when collection not found', function (): void {
-        $this->artisan('knowledge:collection:show', ['name' => 'Nonexistent'])
+        $this->artisan('collection:show', ['name' => 'Nonexistent'])
             ->expectsOutput('Error: Collection "Nonexistent" not found.')
             ->assertExitCode(1);
     });
@@ -83,7 +83,7 @@ describe('knowledge:collection:show command', function (): void {
 
         $collection->entries()->attach($entry, ['sort_order' => 5]);
 
-        $this->artisan('knowledge:collection:show', ['name' => 'Test Collection'])
+        $this->artisan('collection:show', ['name' => 'Test Collection'])
             ->expectsOutputToContain((string) $entry->id)
             ->assertExitCode(0);
     });

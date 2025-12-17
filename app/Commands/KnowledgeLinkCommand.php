@@ -14,7 +14,7 @@ use LaravelZero\Framework\Commands\Command;
  */
 class KnowledgeLinkCommand extends Command
 {
-    protected $signature = 'knowledge:link
+    protected $signature = 'link
                             {from : The ID of the source entry}
                             {to : The ID of the target entry}
                             {--type=relates_to : The relationship type}

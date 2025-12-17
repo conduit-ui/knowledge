@@ -22,7 +22,7 @@ describe('knowledge:related command', function (): void {
             'type' => Relationship::TYPE_REFERENCES,
         ]);
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('Main Entry')
             ->expectsOutputToContain('Outgoing Relationships')
             ->expectsOutputToContain('Incoming Relationships')
@@ -36,7 +36,7 @@ describe('knowledge:related command', function (): void {
     it('shows message when entry has no relationships', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('Outgoing Relationships')
             ->expectsOutputToContain('Incoming Relationships')
             ->assertSuccessful();
@@ -62,7 +62,7 @@ describe('knowledge:related command', function (): void {
             'type' => Relationship::TYPE_RELATES_TO,
         ]);
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('depends_on')
             ->expectsOutputToContain('relates_to')
             ->expectsOutputToContain('Dependency')
@@ -80,7 +80,7 @@ describe('knowledge:related command', function (): void {
             'metadata' => ['reason' => 'test metadata'],
         ]);
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('Metadata')
             ->assertSuccessful();
 
@@ -99,7 +99,7 @@ describe('knowledge:related command', function (): void {
         ]);
 
         // The command outputs the incoming relationships and their metadata
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('Incoming Relationships')
             ->expectsOutputToContain('Source Entry')
             ->assertSuccessful();
@@ -110,7 +110,7 @@ describe('knowledge:related command', function (): void {
     });
 
     it('fails when entry does not exist', function (): void {
-        $this->artisan('knowledge:related', ['id' => 99999])
+        $this->artisan('related', ['id' => 99999])
             ->expectsOutputToContain('not found')
             ->assertFailed();
     });
@@ -124,7 +124,7 @@ describe('knowledge:related command', function (): void {
         Relationship::factory()->create(['from_entry_id' => $entry1->id, 'to_entry_id' => $entry2->id]);
         Relationship::factory()->create(['from_entry_id' => $entry2->id, 'to_entry_id' => $entry3->id]);
 
-        $this->artisan('knowledge:related', ['id' => $entry1->id, '--suggest' => true])
+        $this->artisan('related', ['id' => $entry1->id, '--suggest' => true])
             ->expectsOutputToContain('Suggested Related Entries')
             ->expectsOutputToContain('Entry Three')
             ->assertSuccessful();
@@ -133,7 +133,7 @@ describe('knowledge:related command', function (): void {
     it('shows no suggestions message when none available', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:related', ['id' => $entry->id, '--suggest' => true])
+        $this->artisan('related', ['id' => $entry->id, '--suggest' => true])
             ->expectsOutputToContain('Suggested Related Entries')
             ->expectsOutputToContain('No suggestions available')
             ->assertSuccessful();
@@ -148,7 +148,7 @@ describe('knowledge:related command', function (): void {
             'to_entry_id' => $other->id,
         ]);
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain("#{$relationship->id}")
             ->assertSuccessful();
     });
@@ -167,7 +167,7 @@ describe('knowledge:related command', function (): void {
             'to_entry_id' => $entry->id,
         ]);
 
-        $this->artisan('knowledge:related', ['id' => $entry->id])
+        $this->artisan('related', ['id' => $entry->id])
             ->expectsOutputToContain('→') // Outgoing
             ->expectsOutputToContain('←') // Incoming
             ->assertSuccessful();

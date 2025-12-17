@@ -12,7 +12,7 @@ class KnowledgeShowCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:show
+    protected $signature = 'show
                             {id : The ID of the knowledge entry to display}';
 
     /**

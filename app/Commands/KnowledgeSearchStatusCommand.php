@@ -13,7 +13,7 @@ class KnowledgeSearchStatusCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:search:status';
+    protected $signature = 'search:status';
 
     /**
      * @var string

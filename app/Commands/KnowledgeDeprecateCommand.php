@@ -14,7 +14,7 @@ class KnowledgeDeprecateCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:deprecate
+    protected $signature = 'deprecate
                             {id : The ID of the entry to deprecate}
                             {--replacement= : The ID of the replacement entry}';
 

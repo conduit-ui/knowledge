@@ -13,7 +13,7 @@ class KnowledgeStatsCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:stats';
+    protected $signature = 'stats';
 
     /**
      * @var string

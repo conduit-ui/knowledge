@@ -10,7 +10,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class AddCommand extends Command
 {
-    protected $signature = 'knowledge:collection:add
+    protected $signature = 'collection:add
                             {collection : The name of the collection}
                             {entry_id : The ID of the entry to add}
                             {--order= : Optional sort order position}';

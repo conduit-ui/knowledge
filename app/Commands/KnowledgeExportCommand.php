@@ -13,7 +13,7 @@ class KnowledgeExportCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:export
+    protected $signature = 'export
                             {id : The ID of the knowledge entry to export}
                             {--format=markdown : Export format (markdown, json)}
                             {--output= : Output file path (default: stdout)}';

@@ -10,7 +10,7 @@ describe('knowledge:collection:add command', function (): void {
         $collection = Collection::factory()->create(['name' => 'My Collection']);
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'My Collection',
             'entry_id' => $entry->id,
         ])
@@ -25,7 +25,7 @@ describe('knowledge:collection:add command', function (): void {
         $collection = Collection::factory()->create(['name' => 'Test Collection']);
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'Test Collection',
             'entry_id' => $entry->id,
             '--order' => 5,
@@ -39,7 +39,7 @@ describe('knowledge:collection:add command', function (): void {
     it('shows error when collection not found', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'Nonexistent',
             'entry_id' => $entry->id,
         ])
@@ -50,7 +50,7 @@ describe('knowledge:collection:add command', function (): void {
     it('shows error when entry not found', function (): void {
         $collection = Collection::factory()->create(['name' => 'My Collection']);
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'My Collection',
             'entry_id' => 99999,
         ])
@@ -63,7 +63,7 @@ describe('knowledge:collection:add command', function (): void {
         $entry = Entry::factory()->create();
         $collection->entries()->attach($entry, ['sort_order' => 0]);
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'My Collection',
             'entry_id' => $entry->id,
         ])
@@ -77,17 +77,17 @@ describe('knowledge:collection:add command', function (): void {
         $entry2 = Entry::factory()->create();
         $entry3 = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'Test Collection',
             'entry_id' => $entry1->id,
         ])->assertExitCode(0);
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'Test Collection',
             'entry_id' => $entry2->id,
         ])->assertExitCode(0);
 
-        $this->artisan('knowledge:collection:add', [
+        $this->artisan('collection:add', [
             'collection' => 'Test Collection',
             'entry_id' => $entry3->id,
         ])->assertExitCode(0);

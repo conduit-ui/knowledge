@@ -7,7 +7,7 @@ use App\Models\Entry;
 it('lists all entries', function () {
     Entry::factory()->count(3)->create();
 
-    $this->artisan('knowledge:list')
+    $this->artisan('entries')
         ->assertSuccessful();
 });
 
@@ -16,7 +16,7 @@ it('filters by category', function () {
     Entry::factory()->create(['category' => 'testing', 'title' => 'Testing Entry']);
     Entry::factory()->create(['category' => 'architecture', 'title' => 'Another Architecture']);
 
-    $this->artisan('knowledge:list', ['--category' => 'architecture'])
+    $this->artisan('entries', ['--category' => 'architecture'])
         ->assertSuccessful();
 });
 
@@ -25,7 +25,7 @@ it('filters by priority', function () {
     Entry::factory()->create(['priority' => 'high']);
     Entry::factory()->create(['priority' => 'low']);
 
-    $this->artisan('knowledge:list', ['--priority' => 'critical'])
+    $this->artisan('entries', ['--priority' => 'critical'])
         ->assertSuccessful();
 });
 
@@ -34,7 +34,7 @@ it('filters by status', function () {
     Entry::factory()->draft()->create();
     Entry::factory()->draft()->create();
 
-    $this->artisan('knowledge:list', ['--status' => 'validated'])
+    $this->artisan('entries', ['--status' => 'validated'])
         ->assertSuccessful();
 });
 
@@ -43,21 +43,21 @@ it('filters by module', function () {
     Entry::factory()->create(['module' => 'Auth']);
     Entry::factory()->create(['module' => 'Blood']);
 
-    $this->artisan('knowledge:list', ['--module' => 'Blood'])
+    $this->artisan('entries', ['--module' => 'Blood'])
         ->assertSuccessful();
 });
 
 it('limits results', function () {
     Entry::factory()->count(20)->create();
 
-    $this->artisan('knowledge:list', ['--limit' => 5])
+    $this->artisan('entries', ['--limit' => 5])
         ->assertSuccessful();
 });
 
 it('shows default limit of 20', function () {
     Entry::factory()->count(30)->create();
 
-    $this->artisan('knowledge:list')
+    $this->artisan('entries')
         ->assertSuccessful();
 });
 
@@ -78,14 +78,14 @@ it('combines multiple filters', function () {
         'status' => 'validated',
     ]);
 
-    $this->artisan('knowledge:list', [
+    $this->artisan('entries', [
         '--category' => 'architecture',
         '--priority' => 'high',
     ])->assertSuccessful();
 });
 
 it('shows message when no entries exist', function () {
-    $this->artisan('knowledge:list')
+    $this->artisan('entries')
         ->assertSuccessful()
         ->expectsOutput('No entries found.');
 });
@@ -107,14 +107,14 @@ it('orders by confidence and usage count', function () {
         'usage_count' => 3,
     ]);
 
-    $this->artisan('knowledge:list')
+    $this->artisan('entries')
         ->assertSuccessful();
 });
 
 it('shows entry count', function () {
     Entry::factory()->count(5)->create();
 
-    $this->artisan('knowledge:list')
+    $this->artisan('entries')
         ->assertSuccessful()
         ->expectsOutputToContain('5 entries');
 });
@@ -124,14 +124,14 @@ it('accepts min-confidence filter', function () {
     Entry::factory()->create(['confidence' => 50]);
     Entry::factory()->create(['confidence' => 80]);
 
-    $this->artisan('knowledge:list', ['--min-confidence' => 75])
+    $this->artisan('entries', ['--min-confidence' => 75])
         ->assertSuccessful();
 });
 
 it('shows pagination info when results are limited', function () {
     Entry::factory()->count(25)->create();
 
-    $this->artisan('knowledge:list', ['--limit' => 10])
+    $this->artisan('entries', ['--limit' => 10])
         ->assertSuccessful()
         ->expectsOutputToContain('Showing 10 of 25');
 });

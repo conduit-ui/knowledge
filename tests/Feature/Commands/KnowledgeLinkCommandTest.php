@@ -10,7 +10,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create(['title' => 'Entry One']);
         $entry2 = Entry::factory()->create(['title' => 'Entry Two']);
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
         ])
@@ -29,7 +29,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create();
         $entry2 = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
             '--type' => Relationship::TYPE_DEPENDS_ON,
@@ -45,7 +45,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create(['title' => 'Entry One']);
         $entry2 = Entry::factory()->create(['title' => 'Entry Two']);
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
             '--bidirectional' => true,
@@ -67,7 +67,7 @@ describe('knowledge:link command', function (): void {
         $entry2 = Entry::factory()->create();
         $metadata = json_encode(['reason' => 'testing']);
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
             '--metadata' => $metadata,
@@ -85,7 +85,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create();
         $entry2 = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
             '--type' => 'invalid_type',
@@ -98,7 +98,7 @@ describe('knowledge:link command', function (): void {
     it('fails when from entry does not exist', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => 99999,
             'to' => $entry->id,
         ])
@@ -109,7 +109,7 @@ describe('knowledge:link command', function (): void {
     it('fails when to entry does not exist', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry->id,
             'to' => 99999,
         ])
@@ -121,7 +121,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create();
         $entry2 = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
             '--metadata' => 'invalid json',
@@ -142,7 +142,7 @@ describe('knowledge:link command', function (): void {
         ]);
 
         // Try to create reverse dependency: 2 depends on 1
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry2->id,
             'to' => $entry1->id,
             '--type' => Relationship::TYPE_DEPENDS_ON,
@@ -155,7 +155,7 @@ describe('knowledge:link command', function (): void {
         $entry1 = Entry::factory()->create(['title' => 'First Entry']);
         $entry2 = Entry::factory()->create(['title' => 'Second Entry']);
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry1->id,
             'to' => $entry2->id,
         ])
@@ -167,7 +167,7 @@ describe('knowledge:link command', function (): void {
     it('fails when trying to link entry to itself', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:link', [
+        $this->artisan('link', [
             'from' => $entry->id,
             'to' => $entry->id,
         ])

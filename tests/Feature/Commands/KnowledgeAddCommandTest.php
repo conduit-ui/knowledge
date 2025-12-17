@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Models\Entry;
 
 it('adds a knowledge entry with all options', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry Title',
         '--content' => 'This is the detailed explanation',
         '--category' => 'architecture',
@@ -27,7 +27,7 @@ it('adds a knowledge entry with all options', function () {
 });
 
 it('adds a knowledge entry with minimal options', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Minimal Entry',
         '--content' => 'Content here',
     ])->assertSuccessful();
@@ -42,7 +42,7 @@ it('adds a knowledge entry with minimal options', function () {
 });
 
 it('validates confidence must be between 0 and 100', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--confidence' => 150,
@@ -52,7 +52,7 @@ it('validates confidence must be between 0 and 100', function () {
 });
 
 it('validates confidence cannot be negative', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--confidence' => -10,
@@ -62,7 +62,7 @@ it('validates confidence cannot be negative', function () {
 });
 
 it('validates priority must be valid enum value', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--priority' => 'invalid',
@@ -72,7 +72,7 @@ it('validates priority must be valid enum value', function () {
 });
 
 it('validates category must be valid enum value', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--category' => 'invalid-category',
@@ -82,7 +82,7 @@ it('validates category must be valid enum value', function () {
 });
 
 it('validates status must be valid enum value', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--status' => 'invalid-status',
@@ -93,14 +93,14 @@ it('validates status must be valid enum value', function () {
 
 it('requires title argument', function () {
     expect(function () {
-        $this->artisan('knowledge:add');
+        $this->artisan('add');
     })->toThrow(\RuntimeException::class, 'Not enough arguments');
 
     expect(Entry::count())->toBe(0);
 });
 
 it('requires content option', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
     ])->assertFailed();
 
@@ -108,7 +108,7 @@ it('requires content option', function () {
 });
 
 it('accepts comma-separated tags', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--tags' => 'tag1,tag2,tag3',
@@ -119,7 +119,7 @@ it('accepts comma-separated tags', function () {
 });
 
 it('accepts single tag', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--tags' => 'single-tag',
@@ -130,7 +130,7 @@ it('accepts single tag', function () {
 });
 
 it('accepts module option', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--module' => 'Blood',
@@ -141,7 +141,7 @@ it('accepts module option', function () {
 });
 
 it('accepts source, ticket, and author options', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--source' => 'https://example.com',
@@ -156,7 +156,7 @@ it('accepts source, ticket, and author options', function () {
 });
 
 it('accepts status option', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--status' => 'validated',

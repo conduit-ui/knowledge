@@ -21,7 +21,7 @@ describe('KnowledgeIndexCommand', function () {
         });
 
         it('shows not enabled warning', function () {
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('ChromaDB is not enabled')
                 ->expectsOutputToContain('knowledge:config set chromadb.enabled true')
                 ->assertSuccessful();
@@ -30,7 +30,7 @@ describe('KnowledgeIndexCommand', function () {
         it('shows dry-run for new entries', function () {
             Entry::factory()->count(3)->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Would index 3 new entries')
                 ->assertSuccessful();
         });
@@ -38,13 +38,13 @@ describe('KnowledgeIndexCommand', function () {
         it('shows dry-run for reindexing with force', function () {
             Entry::factory()->count(5)->create(['embedding' => 'existing']);
 
-            $this->artisan('knowledge:index', ['--force' => true])
+            $this->artisan('index', ['--force' => true])
                 ->expectsOutputToContain('Would reindex all 5 entries')
                 ->assertSuccessful();
         });
 
         it('shows no entries message when empty', function () {
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Would index 0 new entries')
                 ->expectsOutputToContain('No entries to index')
                 ->assertSuccessful();
@@ -53,7 +53,7 @@ describe('KnowledgeIndexCommand', function () {
         it('shows configuration steps', function () {
             Entry::factory()->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Once configured, this command will:')
                 ->expectsOutputToContain('Generate embeddings for entry content')
                 ->expectsOutputToContain('Store embeddings in ChromaDB')
@@ -82,7 +82,7 @@ describe('KnowledgeIndexCommand', function () {
         });
 
         it('shows embedding service warning', function () {
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Embedding service is not responding')
                 ->expectsOutputToContain('knowledge:serve start')
                 ->assertSuccessful();
@@ -100,7 +100,7 @@ describe('KnowledgeIndexCommand', function () {
         it('indexes new entries', function () {
             Entry::factory()->count(3)->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Indexing 3 entries to ChromaDB')
                 ->expectsOutputToContain('Indexed 3 entries successfully')
                 ->assertSuccessful();
@@ -109,7 +109,7 @@ describe('KnowledgeIndexCommand', function () {
         it('shows already indexed message when no new entries', function () {
             Entry::factory()->count(2)->create(['embedding' => 'existing']);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('All entries are already indexed')
                 ->assertSuccessful();
         });
@@ -117,7 +117,7 @@ describe('KnowledgeIndexCommand', function () {
         it('reindexes all entries with force flag', function () {
             Entry::factory()->count(3)->create(['embedding' => 'existing']);
 
-            $this->artisan('knowledge:index', ['--force' => true])
+            $this->artisan('index', ['--force' => true])
                 ->expectsOutputToContain('Indexing 3 entries to ChromaDB')
                 ->expectsOutputToContain('Indexed 3 entries successfully')
                 ->assertSuccessful();
@@ -126,7 +126,7 @@ describe('KnowledgeIndexCommand', function () {
         it('respects batch size option', function () {
             Entry::factory()->count(5)->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index', ['--batch' => 2])
+            $this->artisan('index', ['--batch' => 2])
                 ->expectsOutputToContain('Indexed 5 entries successfully')
                 ->assertSuccessful();
         });
@@ -134,7 +134,7 @@ describe('KnowledgeIndexCommand', function () {
         it('handles singular entry correctly', function () {
             Entry::factory()->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Indexing 1 entry to ChromaDB')
                 ->expectsOutputToContain('Indexed 1 entry successfully')
                 ->assertSuccessful();
@@ -158,7 +158,7 @@ describe('KnowledgeIndexCommand', function () {
 
             Entry::factory()->count(2)->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Indexed 2 entries successfully')
                 ->assertSuccessful();
         });
@@ -174,7 +174,7 @@ describe('KnowledgeIndexCommand', function () {
 
             Entry::factory()->count(2)->create(['embedding' => null]);
 
-            $this->artisan('knowledge:index')
+            $this->artisan('index')
                 ->expectsOutputToContain('Failed to index 2 entries')
                 ->assertFailed();
         });
@@ -184,7 +184,7 @@ describe('KnowledgeIndexCommand', function () {
 describe('command signature', function () {
     it('has the correct signature', function () {
         $command = $this->app->make(\App\Commands\KnowledgeIndexCommand::class);
-        expect($command->getName())->toBe('knowledge:index');
+        expect($command->getName())->toBe('index');
     });
 
     it('has force option', function () {

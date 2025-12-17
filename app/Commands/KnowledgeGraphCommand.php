@@ -13,7 +13,7 @@ use LaravelZero\Framework\Commands\Command;
  */
 class KnowledgeGraphCommand extends Command
 {
-    protected $signature = 'knowledge:graph
+    protected $signature = 'graph
                             {id : The entry ID to start from}
                             {--depth=2 : Maximum traversal depth}
                             {--type=* : Filter by relationship types}';

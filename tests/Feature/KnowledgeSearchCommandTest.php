@@ -24,40 +24,40 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('requires at least one parameter', function () {
-        $this->artisan('knowledge:search')
+        $this->artisan('search')
             ->expectsOutput('Please provide at least one search parameter.')
             ->assertFailed();
     });
 
     it('finds entries by keyword', function () {
-        $this->artisan('knowledge:search', ['query' => 'Laravel'])
+        $this->artisan('search', ['query' => 'Laravel'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
             ->expectsOutputToContain('Laravel Testing');
     });
 
     it('filters by tag', function () {
-        $this->artisan('knowledge:search', ['--tag' => 'php'])
+        $this->artisan('search', ['--tag' => 'php'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
             ->expectsOutputToContain('PHP Standards');
     });
 
     it('filters by category', function () {
-        $this->artisan('knowledge:search', ['--category' => 'tutorial'])
+        $this->artisan('search', ['--category' => 'tutorial'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
             ->expectsOutputToContain('Laravel Testing');
     });
 
     it('shows no results message', function () {
-        $this->artisan('knowledge:search', ['query' => 'nonexistent'])
+        $this->artisan('search', ['query' => 'nonexistent'])
             ->assertSuccessful()
             ->expectsOutput('No entries found.');
     });
 
     it('supports semantic flag', function () {
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'Laravel',
             '--semantic' => true,
         ])
@@ -67,7 +67,7 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('combines query and filters', function () {
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'Laravel',
             '--category' => 'tutorial',
         ])
@@ -77,7 +77,7 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('shows entry details', function () {
-        $this->artisan('knowledge:search', ['query' => 'Laravel'])
+        $this->artisan('search', ['query' => 'Laravel'])
             ->assertSuccessful()
             ->expectsOutputToContain('Laravel Testing')
             ->expectsOutputToContain('Category: tutorial');
@@ -90,7 +90,7 @@ describe('KnowledgeSearchCommand', function () {
             'confidence' => 100,
         ]);
 
-        $this->artisan('knowledge:search', ['query' => 'Long'])
+        $this->artisan('search', ['query' => 'Long'])
             ->assertSuccessful()
             ->expectsOutputToContain('...');
     });

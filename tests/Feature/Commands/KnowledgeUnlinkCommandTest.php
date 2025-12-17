@@ -14,7 +14,7 @@ describe('knowledge:unlink command', function (): void {
             'to_entry_id' => $entry2->id,
         ]);
 
-        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+        $this->artisan('unlink', ['id' => $relationship->id])
             ->expectsQuestion('Are you sure you want to delete this relationship?', true)
             ->expectsOutputToContain('deleted successfully')
             ->assertSuccessful();
@@ -31,7 +31,7 @@ describe('knowledge:unlink command', function (): void {
             'type' => Relationship::TYPE_DEPENDS_ON,
         ]);
 
-        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+        $this->artisan('unlink', ['id' => $relationship->id])
             ->expectsQuestion('Are you sure you want to delete this relationship?', true)
             ->expectsOutputToContain('depends_on')
             ->expectsOutputToContain('Source Entry')
@@ -42,7 +42,7 @@ describe('knowledge:unlink command', function (): void {
     it('cancels deletion when user declines', function (): void {
         $relationship = Relationship::factory()->create();
 
-        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+        $this->artisan('unlink', ['id' => $relationship->id])
             ->expectsQuestion('Are you sure you want to delete this relationship?', false)
             ->expectsOutputToContain('cancelled')
             ->assertSuccessful();
@@ -51,7 +51,7 @@ describe('knowledge:unlink command', function (): void {
     });
 
     it('fails when relationship does not exist', function (): void {
-        $this->artisan('knowledge:unlink', ['id' => 99999])
+        $this->artisan('unlink', ['id' => 99999])
             ->expectsOutputToContain('not found')
             ->assertFailed();
     });
@@ -64,7 +64,7 @@ describe('knowledge:unlink command', function (): void {
             'to_entry_id' => $entry2->id,
         ]);
 
-        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+        $this->artisan('unlink', ['id' => $relationship->id])
             ->expectsQuestion('Are you sure you want to delete this relationship?', true)
             ->expectsOutputToContain("#{$entry1->id}")
             ->expectsOutputToContain("#{$entry2->id}")
@@ -82,7 +82,7 @@ describe('knowledge:unlink command', function (): void {
 
         $this->app->instance(\App\Services\RelationshipService::class, $mock);
 
-        $this->artisan('knowledge:unlink', ['id' => $relationship->id])
+        $this->artisan('unlink', ['id' => $relationship->id])
             ->expectsQuestion('Are you sure you want to delete this relationship?', true)
             ->expectsOutputToContain('Failed to delete relationship')
             ->assertFailed();

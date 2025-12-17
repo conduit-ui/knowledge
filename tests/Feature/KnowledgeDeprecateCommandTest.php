@@ -10,7 +10,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
         it('deprecates an entry', function (): void {
             $entry = Entry::factory()->create(['status' => 'draft', 'confidence' => 80]);
 
-            $this->artisan('knowledge:deprecate', ['id' => $entry->id])
+            $this->artisan('deprecate', ['id' => $entry->id])
                 ->expectsOutputToContain("Entry #{$entry->id} has been deprecated")
                 ->expectsOutputToContain('Status: draft -> deprecated')
                 ->expectsOutputToContain('Confidence: 0%')
@@ -25,7 +25,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
             $entry = Entry::factory()->create(['status' => 'draft']);
             $replacement = Entry::factory()->create(['title' => 'Better Pattern']);
 
-            $this->artisan('knowledge:deprecate', [
+            $this->artisan('deprecate', [
                 'id' => $entry->id,
                 '--replacement' => $replacement->id,
             ])
@@ -45,7 +45,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
         it('warns when entry is already deprecated', function (): void {
             $entry = Entry::factory()->create(['status' => 'deprecated']);
 
-            $this->artisan('knowledge:deprecate', ['id' => $entry->id])
+            $this->artisan('deprecate', ['id' => $entry->id])
                 ->expectsOutputToContain("Entry #{$entry->id} is already deprecated")
                 ->assertSuccessful();
         });
@@ -53,13 +53,13 @@ describe('KnowledgeDeprecateCommand', function (): void {
 
     describe('validation', function (): void {
         it('fails with non-numeric id', function (): void {
-            $this->artisan('knowledge:deprecate', ['id' => 'abc'])
+            $this->artisan('deprecate', ['id' => 'abc'])
                 ->expectsOutputToContain('Entry ID must be a number')
                 ->assertFailed();
         });
 
         it('fails when entry not found', function (): void {
-            $this->artisan('knowledge:deprecate', ['id' => 99999])
+            $this->artisan('deprecate', ['id' => 99999])
                 ->expectsOutputToContain('Entry not found')
                 ->assertFailed();
         });
@@ -67,7 +67,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
         it('fails with non-numeric replacement id', function (): void {
             $entry = Entry::factory()->create(['status' => 'draft']);
 
-            $this->artisan('knowledge:deprecate', [
+            $this->artisan('deprecate', [
                 'id' => $entry->id,
                 '--replacement' => 'abc',
             ])
@@ -78,7 +78,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
         it('fails when replacement entry not found', function (): void {
             $entry = Entry::factory()->create(['status' => 'draft']);
 
-            $this->artisan('knowledge:deprecate', [
+            $this->artisan('deprecate', [
                 'id' => $entry->id,
                 '--replacement' => 99999,
             ])
@@ -89,7 +89,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
         it('fails when entry tries to replace itself', function (): void {
             $entry = Entry::factory()->create(['status' => 'draft']);
 
-            $this->artisan('knowledge:deprecate', [
+            $this->artisan('deprecate', [
                 'id' => $entry->id,
                 '--replacement' => $entry->id,
             ])
@@ -101,7 +101,7 @@ describe('KnowledgeDeprecateCommand', function (): void {
     describe('command signature', function (): void {
         it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeDeprecateCommand::class);
-            expect($command->getName())->toBe('knowledge:deprecate');
+            expect($command->getName())->toBe('deprecate');
         });
 
         it('has replacement option', function (): void {

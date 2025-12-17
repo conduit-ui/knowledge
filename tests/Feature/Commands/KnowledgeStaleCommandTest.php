@@ -11,7 +11,7 @@ it('shows message when no stale entries exist', function () {
         'status' => 'validated',
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutput('No stale entries found. Your knowledge base is up to date!');
 });
@@ -26,7 +26,7 @@ it('lists stale entries not used in 90 days', function () {
         'usage_count' => 5,
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain('Found 1 stale entries needing review')
         ->expectsOutputToContain("ID: {$staleEntry->id}")
@@ -49,7 +49,7 @@ it('lists entries never used and created 90+ days ago', function () {
         'status' => 'draft',
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain("ID: {$entry->id}")
         ->expectsOutputToContain('Never used');
@@ -64,7 +64,7 @@ it('lists high confidence old unvalidated entries', function () {
         'last_used' => now()->subDays(50),
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain("ID: {$entry->id}")
         ->expectsOutputToContain('High confidence but old and unvalidated - suggest validation');
@@ -79,7 +79,7 @@ it('displays entry without category', function () {
         'status' => 'draft',
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain("ID: {$entry->id}")
         ->expectsOutputToContain('Title: No Category Entry');
@@ -114,7 +114,7 @@ it('shows validation command suggestion', function () {
         'last_used' => now()->subDays(95),
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain('Suggestion: Review these entries and run "knowledge:validate <id>" to mark them as current.')
         ->expectsOutputToContain('Consider updating or deprecating entries that are no longer relevant.');
@@ -131,7 +131,7 @@ it('displays multiple stale entries', function () {
         'last_used' => now()->subDays(100),
     ]);
 
-    $this->artisan('knowledge:stale')
+    $this->artisan('stale')
         ->assertSuccessful()
         ->expectsOutputToContain('Found 2 stale entries needing review')
         ->expectsOutputToContain("ID: {$entry1->id}")

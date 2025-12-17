@@ -10,7 +10,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class RemoveCommand extends Command
 {
-    protected $signature = 'knowledge:collection:remove
+    protected $signature = 'collection:remove
                             {collection : The name of the collection}
                             {entry_id : The ID of the entry to remove}';
 

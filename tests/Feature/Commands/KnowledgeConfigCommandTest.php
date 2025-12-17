@@ -56,7 +56,7 @@ describe('knowledge:config list', function () {
         ];
         file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
 
-        $this->artisan('knowledge:config')
+        $this->artisan('config')
             ->expectsOutputToContain('chromadb.enabled: true')
             ->expectsOutputToContain('chromadb.url: http://localhost:8000')
             ->expectsOutputToContain('embeddings.url: http://localhost:8001')
@@ -64,7 +64,7 @@ describe('knowledge:config list', function () {
     });
 
     it('shows default values when config file does not exist', function () {
-        $this->artisan('knowledge:config')
+        $this->artisan('config')
             ->expectsOutputToContain('chromadb.enabled: false')
             ->expectsOutputToContain('chromadb.url: http://localhost:8000')
             ->expectsOutputToContain('embeddings.url: http://localhost:8001')
@@ -72,7 +72,7 @@ describe('knowledge:config list', function () {
     });
 
     it('lists config with list action explicitly', function () {
-        $this->artisan('knowledge:config', ['action' => 'list'])
+        $this->artisan('config', ['action' => 'list'])
             ->expectsOutputToContain('chromadb.enabled')
             ->assertSuccessful();
     });
@@ -89,7 +89,7 @@ describe('knowledge:config get', function () {
         ];
         file_put_contents($configPath, json_encode($config));
 
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'get',
             'key' => 'chromadb.enabled',
         ])
@@ -106,7 +106,7 @@ describe('knowledge:config get', function () {
         ];
         file_put_contents($configPath, json_encode($config));
 
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'get',
             'key' => 'chromadb.url',
         ])
@@ -115,7 +115,7 @@ describe('knowledge:config get', function () {
     });
 
     it('gets default value when key does not exist', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'get',
             'key' => 'chromadb.enabled',
         ])
@@ -124,7 +124,7 @@ describe('knowledge:config get', function () {
     });
 
     it('fails when key is not provided for get action', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'get',
         ])
             ->expectsOutputToContain('Key is required for get action')
@@ -132,7 +132,7 @@ describe('knowledge:config get', function () {
     });
 
     it('fails when key is invalid', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'get',
             'key' => 'invalid.key',
         ])
@@ -143,7 +143,7 @@ describe('knowledge:config get', function () {
 
 describe('knowledge:config set', function () {
     it('sets a boolean config value to true', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
             'value' => 'true',
@@ -160,7 +160,7 @@ describe('knowledge:config set', function () {
     });
 
     it('sets a boolean config value to false', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
             'value' => 'false',
@@ -173,7 +173,7 @@ describe('knowledge:config set', function () {
     });
 
     it('sets a string config value', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.url',
             'value' => 'http://custom:9000',
@@ -186,7 +186,7 @@ describe('knowledge:config set', function () {
     });
 
     it('sets embeddings url', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
             'value' => 'http://embeddings:8001',
@@ -210,7 +210,7 @@ describe('knowledge:config set', function () {
         file_put_contents($configPath, json_encode($config));
 
         // Set new value
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
             'value' => 'http://new:8001',
@@ -235,7 +235,7 @@ describe('knowledge:config set', function () {
         file_put_contents($configPath, json_encode($config));
 
         // Update value
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
             'value' => 'true',
@@ -248,7 +248,7 @@ describe('knowledge:config set', function () {
     });
 
     it('fails when key is not provided for set action', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
         ])
             ->expectsOutputToContain('Key and value are required for set action')
@@ -256,7 +256,7 @@ describe('knowledge:config set', function () {
     });
 
     it('fails when value is not provided for set action', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
         ])
@@ -265,7 +265,7 @@ describe('knowledge:config set', function () {
     });
 
     it('fails when key is invalid', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'invalid.key',
             'value' => 'value',
@@ -278,7 +278,7 @@ describe('knowledge:config set', function () {
         // Remove test directory
         removeDirectory($this->testConfigDir);
 
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
             'value' => 'true',
@@ -292,7 +292,7 @@ describe('knowledge:config set', function () {
 
 describe('knowledge:config invalid action', function () {
     it('fails with invalid action', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'invalid',
         ])
             ->expectsOutputToContain('Invalid action')
@@ -307,7 +307,7 @@ describe('knowledge:config edge cases', function () {
         file_put_contents($configPath, 'not valid json {{{');
 
         // Should use defaults when JSON is invalid
-        $this->artisan('knowledge:config')
+        $this->artisan('config')
             ->expectsOutputToContain('chromadb.enabled: false')
             ->assertSuccessful();
     });
@@ -317,7 +317,7 @@ describe('knowledge:config edge cases', function () {
         file_put_contents($configPath, '"just a string"');
 
         // Should use defaults when JSON is not an array
-        $this->artisan('knowledge:config')
+        $this->artisan('config')
             ->expectsOutputToContain('chromadb.enabled: false')
             ->assertSuccessful();
     });
@@ -327,7 +327,7 @@ describe('knowledge:config edge cases', function () {
         $configPath = $this->testConfigDir.'/config.json';
         file_put_contents($configPath, '{}');
 
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
             'value' => 'http://test:8001',
@@ -341,7 +341,7 @@ describe('knowledge:config edge cases', function () {
 
 describe('knowledge:config validation', function () {
     it('validates boolean values for chromadb.enabled', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.enabled',
             'value' => 'invalid',
@@ -351,7 +351,7 @@ describe('knowledge:config validation', function () {
     });
 
     it('validates url format for chromadb.url', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.url',
             'value' => 'not-a-url',
@@ -361,7 +361,7 @@ describe('knowledge:config validation', function () {
     });
 
     it('validates url format for embeddings.url', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
             'value' => 'invalid-url',
@@ -371,7 +371,7 @@ describe('knowledge:config validation', function () {
     });
 
     it('accepts valid http url', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.url',
             'value' => 'http://localhost:8000',
@@ -380,7 +380,7 @@ describe('knowledge:config validation', function () {
     });
 
     it('accepts valid https url', function () {
-        $this->artisan('knowledge:config', [
+        $this->artisan('config', [
             'action' => 'set',
             'key' => 'chromadb.url',
             'value' => 'https://chromadb.example.com',
