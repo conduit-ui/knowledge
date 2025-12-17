@@ -103,9 +103,15 @@ describe('relationships table', function (): void {
     });
 
     it('has unique constraint on from_entry_id, to_entry_id, and type', function (): void {
-        $indexes = collect(Schema::getIndexes('relationships'))->pluck('name')->toArray();
+        $indexes = Schema::getIndexes('relationships');
+        $hasUniqueConstraint = collect($indexes)->contains(function ($index) {
+            return $index['unique'] === true
+                && in_array('from_entry_id', $index['columns'], true)
+                && in_array('to_entry_id', $index['columns'], true)
+                && in_array('type', $index['columns'], true);
+        });
 
-        expect($indexes)->toContain('relationships_from_entry_id_to_entry_id_type_unique');
+        expect($hasUniqueConstraint)->toBeTrue();
     });
 
     it('has foreign key constraints', function (): void {

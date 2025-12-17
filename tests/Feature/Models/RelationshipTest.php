@@ -47,6 +47,7 @@ describe('Relationship model', function (): void {
         expect($types)->toContain(Relationship::TYPE_IMPLEMENTS);
         expect($types)->toContain(Relationship::TYPE_REFERENCES);
         expect($types)->toContain(Relationship::TYPE_SIMILAR_TO);
-        expect($types)->toHaveCount(7);
+        expect($types)->toContain(Relationship::TYPE_REPLACED_BY);
+        expect($types)->toHaveCount(8);
     });
 });

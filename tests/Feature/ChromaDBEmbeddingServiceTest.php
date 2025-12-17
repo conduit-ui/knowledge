@@ -176,4 +176,46 @@ describe('ChromaDBEmbeddingService', function () {
 
         expect($embedding)->toBeArray()->toBeEmpty();
     });
+
+    it('returns empty array when json decode returns non-array', function () {
+        $mock = new MockHandler([
+            new Response(200, [], '"just a string"'),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
+        $reflection = new ReflectionClass($service);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($service, $client);
+
+        $embedding = $service->generate('test text');
+
+        expect($embedding)->toBeArray()->toBeEmpty();
+    });
+
+    it('handles embeddings plural response format', function () {
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([
+                'embeddings' => [[0.1, 0.2, 0.3, 0.4, 0.5]],
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $service = new ChromaDBEmbeddingService('http://localhost:8001', 'all-MiniLM-L6-v2');
+        $reflection = new ReflectionClass($service);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($service, $client);
+
+        $embedding = $service->generate('test text');
+
+        expect($embedding)->toBeArray()
+            ->and($embedding)->toHaveCount(5)
+            ->and($embedding[0])->toBe(0.1);
+    });
 });

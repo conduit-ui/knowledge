@@ -57,6 +57,8 @@ class Relationship extends Model
 
     public const TYPE_SIMILAR_TO = 'similar_to';
 
+    public const TYPE_REPLACED_BY = 'replaced_by';
+
     /**
      * @return array<string>
      */
@@ -70,6 +72,7 @@ class Relationship extends Model
             self::TYPE_IMPLEMENTS,
             self::TYPE_REFERENCES,
             self::TYPE_SIMILAR_TO,
+            self::TYPE_REPLACED_BY,
         ];
     }
 
