@@ -6,6 +6,10 @@ namespace App\Services;
 
 class KnowledgePathService
 {
+    public function __construct(
+        private RuntimeEnvironment $runtime
+    ) {}
+
     /**
      * Get the knowledge directory path.
      *
@@ -16,6 +20,14 @@ class KnowledgePathService
      */
     public function getKnowledgeDirectory(): string
     {
+        // @codeCoverageIgnoreStart
+        // In PHAR mode, return the base path directly
+        if ($this->runtime->isPhar()) {
+            return $this->runtime->basePath();
+        }
+        // @codeCoverageIgnoreEnd
+
+        // In dev mode, maintain existing behavior for backward compatibility
         $knowledgeHome = getenv('KNOWLEDGE_HOME');
         if ($knowledgeHome !== false && $knowledgeHome !== '') {
             return $knowledgeHome;
@@ -46,12 +58,7 @@ class KnowledgePathService
      */
     public function getDatabasePath(): string
     {
-        $dbPath = getenv('KNOWLEDGE_DB_PATH');
-        if ($dbPath !== false && $dbPath !== '') {
-            return $dbPath;
-        }
-
-        return $this->getKnowledgeDirectory().'/knowledge.sqlite';
+        return $this->runtime->databasePath();
     }
 
     /**
@@ -59,9 +66,7 @@ class KnowledgePathService
      */
     public function ensureDirectoryExists(string $path): void
     {
-        if (! is_dir($path)) {
-            mkdir($path, 0755, true);
-        }
+        $this->runtime->ensureDirectoryExists($path);
     }
 
     /**
