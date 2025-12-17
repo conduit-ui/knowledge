@@ -410,6 +410,8 @@ class KnowledgeServeCommand extends Command
 
         $this->line('<fg=cyan>Installation Instructions:</>');
 
+        // @codeCoverageIgnoreStart
+        // OS-specific instructions - only one branch executes per platform
         switch ($os) {
             case 'macos':
                 $this->line('  1. Download Docker Desktop for Mac');
@@ -429,6 +431,7 @@ class KnowledgeServeCommand extends Command
             default:
                 $this->line('  Follow the official Docker installation guide');
         }
+        // @codeCoverageIgnoreEnd
 
         $this->newLine();
         $this->line("<fg=cyan>Download:</> {$url}");
