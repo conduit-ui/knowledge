@@ -20,7 +20,7 @@ describe('KnowledgePruneCommand', function (): void {
                 'created_at' => now()->subDays(30),
             ]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '1y', '--dry-run' => true])
+            $this->artisan('prune', ['--older-than' => '1y', '--dry-run' => true])
                 ->expectsOutputToContain('Found 1 entry')
                 ->expectsOutputToContain('Old Entry')
                 ->expectsOutputToContain('Dry run')
@@ -33,7 +33,7 @@ describe('KnowledgePruneCommand', function (): void {
         it('shows no entries when none match', function (): void {
             Entry::factory()->create(['created_at' => now()]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '1y'])
+            $this->artisan('prune', ['--older-than' => '1y'])
                 ->expectsOutputToContain('No entries found')
                 ->assertSuccessful();
         });
@@ -44,7 +44,7 @@ describe('KnowledgePruneCommand', function (): void {
                 'created_at' => now()->subYears(2),
             ]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '1y', '--dry-run' => true])
+            $this->artisan('prune', ['--older-than' => '1y', '--dry-run' => true])
                 ->expectsOutputToContain('Found 7 entries')
                 ->expectsOutputToContain('... and 2 more')
                 ->assertSuccessful();
@@ -65,7 +65,7 @@ describe('KnowledgePruneCommand', function (): void {
                 'created_at' => now()->subYears(2),
             ]);
 
-            $this->artisan('knowledge:prune', [
+            $this->artisan('prune', [
                 '--older-than' => '1y',
                 '--deprecated-only' => true,
                 '--dry-run' => true,
@@ -80,7 +80,7 @@ describe('KnowledgePruneCommand', function (): void {
         it('deletes entries with force option', function (): void {
             Entry::factory()->create(['created_at' => now()->subYears(2)]);
 
-            $this->artisan('knowledge:prune', [
+            $this->artisan('prune', [
                 '--older-than' => '1y',
                 '--force' => true,
             ])
@@ -100,7 +100,7 @@ describe('KnowledgePruneCommand', function (): void {
                 'type' => 'relates_to',
             ]);
 
-            $this->artisan('knowledge:prune', [
+            $this->artisan('prune', [
                 '--older-than' => '1y',
                 '--force' => true,
             ])->assertSuccessful();
@@ -111,7 +111,7 @@ describe('KnowledgePruneCommand', function (): void {
         it('asks for confirmation without force', function (): void {
             Entry::factory()->create(['created_at' => now()->subYears(2)]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '1y'])
+            $this->artisan('prune', ['--older-than' => '1y'])
                 ->expectsConfirmation('Are you sure you want to permanently delete these entries?', 'no')
                 ->expectsOutputToContain('Operation cancelled')
                 ->assertSuccessful();
@@ -124,7 +124,7 @@ describe('KnowledgePruneCommand', function (): void {
         it('parses days', function (): void {
             Entry::factory()->create(['created_at' => now()->subDays(60)]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '30d', '--dry-run' => true])
+            $this->artisan('prune', ['--older-than' => '30d', '--dry-run' => true])
                 ->expectsOutputToContain('Found 1 entry')
                 ->assertSuccessful();
         });
@@ -132,7 +132,7 @@ describe('KnowledgePruneCommand', function (): void {
         it('parses months', function (): void {
             Entry::factory()->create(['created_at' => now()->subMonths(8)]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '6m', '--dry-run' => true])
+            $this->artisan('prune', ['--older-than' => '6m', '--dry-run' => true])
                 ->expectsOutputToContain('Found 1 entry')
                 ->assertSuccessful();
         });
@@ -140,13 +140,13 @@ describe('KnowledgePruneCommand', function (): void {
         it('parses years', function (): void {
             Entry::factory()->create(['created_at' => now()->subYears(3)]);
 
-            $this->artisan('knowledge:prune', ['--older-than' => '2y', '--dry-run' => true])
+            $this->artisan('prune', ['--older-than' => '2y', '--dry-run' => true])
                 ->expectsOutputToContain('Found 1 entry')
                 ->assertSuccessful();
         });
 
         it('fails with invalid threshold format', function (): void {
-            $this->artisan('knowledge:prune', ['--older-than' => 'invalid'])
+            $this->artisan('prune', ['--older-than' => 'invalid'])
                 ->expectsOutputToContain('Invalid threshold format')
                 ->assertFailed();
         });
@@ -155,7 +155,7 @@ describe('KnowledgePruneCommand', function (): void {
     describe('command signature', function (): void {
         it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgePruneCommand::class);
-            expect($command->getName())->toBe('knowledge:prune');
+            expect($command->getName())->toBe('prune');
         });
 
         it('has older-than option with default', function (): void {

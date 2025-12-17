@@ -13,7 +13,7 @@ use LaravelZero\Framework\Commands\Command;
  */
 class KnowledgeRelatedCommand extends Command
 {
-    protected $signature = 'knowledge:related
+    protected $signature = 'related
                             {id : The entry ID}
                             {--suggest : Show suggested related entries}';
 

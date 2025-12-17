@@ -12,7 +12,7 @@ it('validates an entry and boosts confidence', function () {
         'validation_date' => null,
     ]);
 
-    $this->artisan('knowledge:validate', ['id' => $entry->id])
+    $this->artisan('validate', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutputToContain("Entry #{$entry->id} validated successfully!")
         ->expectsOutputToContain('Title: Test Entry')
@@ -27,13 +27,13 @@ it('validates an entry and boosts confidence', function () {
 });
 
 it('shows error when entry not found', function () {
-    $this->artisan('knowledge:validate', ['id' => 9999])
+    $this->artisan('validate', ['id' => 9999])
         ->assertFailed()
         ->expectsOutput('Entry not found with ID: 9999');
 });
 
 it('validates id must be numeric', function () {
-    $this->artisan('knowledge:validate', ['id' => 'abc'])
+    $this->artisan('validate', ['id' => 'abc'])
         ->assertFailed()
         ->expectsOutput('Entry ID must be a number.');
 });
@@ -46,7 +46,7 @@ it('validates entry that is already validated', function () {
         'validation_date' => now()->subDays(10),
     ]);
 
-    $this->artisan('knowledge:validate', ['id' => $entry->id])
+    $this->artisan('validate', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutputToContain('Status: validated -> validated');
 });
@@ -57,7 +57,7 @@ it('displays validation date after validation', function () {
         'status' => 'draft',
     ]);
 
-    $this->artisan('knowledge:validate', ['id' => $entry->id])
+    $this->artisan('validate', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutputToContain('Validation Date:');
 
@@ -72,7 +72,7 @@ it('validates entry with high confidence', function () {
         'status' => 'draft',
     ]);
 
-    $this->artisan('knowledge:validate', ['id' => $entry->id])
+    $this->artisan('validate', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutputToContain('Confidence: 95% -> 100%'); // Capped at 100
 
@@ -86,7 +86,7 @@ it('validates entry with low confidence', function () {
         'status' => 'draft',
     ]);
 
-    $this->artisan('knowledge:validate', ['id' => $entry->id])
+    $this->artisan('validate', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutputToContain('Confidence: 50% -> 60%');
 

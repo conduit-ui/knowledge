@@ -9,7 +9,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class ListCommand extends Command
 {
-    protected $signature = 'knowledge:collection:list';
+    protected $signature = 'collection:list';
 
     protected $description = 'List all knowledge collections';
 

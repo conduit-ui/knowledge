@@ -16,7 +16,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-all-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--format' => 'markdown',
             '--output' => $outputDir,
         ])->assertSuccessful();
@@ -35,7 +35,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-json-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--format' => 'json',
             '--output' => $outputDir,
         ])->assertSuccessful();
@@ -58,7 +58,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/new-dir-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->assertSuccessful();
 
@@ -77,7 +77,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-slugs-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->assertSuccessful();
 
@@ -102,7 +102,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-collection-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--collection' => 'Test Collection',
             '--output' => $outputDir,
         ])->assertSuccessful();
@@ -131,7 +131,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-category-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--category' => 'testing',
             '--output' => $outputDir,
         ])->assertSuccessful();
@@ -150,7 +150,7 @@ describe('knowledge:export:all command', function () {
     it('fails when collection does not exist', function () {
         Entry::factory()->create();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--collection' => 'Nonexistent Collection',
             '--output' => sys_get_temp_dir().'/test',
         ])->assertFailed();
@@ -159,7 +159,7 @@ describe('knowledge:export:all command', function () {
     it('handles empty result set gracefully', function () {
         $outputDir = sys_get_temp_dir().'/export-empty-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->assertSuccessful();
 
@@ -172,7 +172,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-progress-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->expectsOutput('Export completed successfully!')
             ->assertSuccessful();
@@ -193,7 +193,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-special-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->assertSuccessful();
 
@@ -219,7 +219,7 @@ describe('knowledge:export:all command', function () {
 
         $outputDir = sys_get_temp_dir().'/export-long-'.time();
 
-        $this->artisan('knowledge:export:all', [
+        $this->artisan('export:all', [
             '--output' => $outputDir,
         ])->assertSuccessful();
 

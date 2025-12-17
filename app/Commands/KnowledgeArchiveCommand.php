@@ -12,7 +12,7 @@ class KnowledgeArchiveCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:archive
+    protected $signature = 'archive
                             {id : The ID of the entry to archive}
                             {--restore : Restore an archived entry}';
 

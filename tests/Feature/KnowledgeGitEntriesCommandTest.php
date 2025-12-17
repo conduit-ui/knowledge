@@ -24,14 +24,14 @@ it('displays entries for a specific commit', function () {
         'commit' => 'def456',
     ]);
 
-    $this->artisan('knowledge:git:entries', ['commit' => 'abc123'])
+    $this->artisan('git:entries', ['commit' => 'abc123'])
         ->expectsOutputToContain('Entry 1')
         ->expectsOutputToContain('Entry 2')
         ->assertSuccessful();
 });
 
 it('shows message when no entries found for commit', function () {
-    $this->artisan('knowledge:git:entries', ['commit' => 'nonexistent'])
+    $this->artisan('git:entries', ['commit' => 'nonexistent'])
         ->expectsOutputToContain('No entries found')
         ->assertSuccessful();
 });
@@ -44,7 +44,7 @@ it('displays entry details', function () {
         'category' => 'testing',
     ]);
 
-    $this->artisan('knowledge:git:entries', ['commit' => 'abc123'])
+    $this->artisan('git:entries', ['commit' => 'abc123'])
         ->expectsOutputToContain('Test Entry')
         ->expectsOutputToContain('testing')
         ->assertSuccessful();

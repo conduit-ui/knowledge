@@ -15,7 +15,7 @@ class KnowledgeIndexCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:index
+    protected $signature = 'index
                             {--force : Force reindexing of all entries}
                             {--batch=100 : Batch size for indexing}';
 

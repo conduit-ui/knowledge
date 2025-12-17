@@ -14,7 +14,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-site-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -44,7 +44,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-html-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -78,7 +78,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-entry-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -118,7 +118,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-categories-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -151,7 +151,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-tags-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -174,7 +174,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-new-dir-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -191,7 +191,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-search-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -212,7 +212,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-responsive-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -232,7 +232,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-nav-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 
@@ -261,7 +261,7 @@ describe('knowledge:publish command', function () {
 
         $outputDir = sys_get_temp_dir().'/publish-simple-'.time();
 
-        $this->artisan('knowledge:publish', [
+        $this->artisan('publish', [
             '--site' => $outputDir,
         ])->assertSuccessful();
 

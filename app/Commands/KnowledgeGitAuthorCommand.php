@@ -12,7 +12,7 @@ class KnowledgeGitAuthorCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:git:author {name : Author name}';
+    protected $signature = 'git:author {name : Author name}';
 
     /**
      * @var string

@@ -26,7 +26,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'usage_count' => 3,
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -55,7 +55,7 @@ describe('KnowledgeMergeCommand', function (): void {
             $primary = Entry::factory()->create();
             $secondary = Entry::factory()->create();
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])->assertSuccessful();
@@ -80,7 +80,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'type' => 'relates_to',
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -108,7 +108,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'type' => 'depends_on',
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -135,7 +135,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'type' => 'relates_to',
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -161,7 +161,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'type' => 'relates_to',
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -195,7 +195,7 @@ describe('KnowledgeMergeCommand', function (): void {
                 'type' => 'relates_to',
             ]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
             ])
@@ -216,7 +216,7 @@ describe('KnowledgeMergeCommand', function (): void {
             $primary = Entry::factory()->create(['confidence' => 80]);
             $secondary = Entry::factory()->create(['confidence' => 90]);
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => $secondary->id,
                 '--keep-both' => true,
@@ -238,7 +238,7 @@ describe('KnowledgeMergeCommand', function (): void {
 
     describe('validation', function (): void {
         it('fails with non-numeric primary id', function (): void {
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => 'abc',
                 'secondary' => '1',
             ])
@@ -247,7 +247,7 @@ describe('KnowledgeMergeCommand', function (): void {
         });
 
         it('fails with non-numeric secondary id', function (): void {
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => '1',
                 'secondary' => 'abc',
             ])
@@ -258,7 +258,7 @@ describe('KnowledgeMergeCommand', function (): void {
         it('fails when merging entry with itself', function (): void {
             $entry = Entry::factory()->create();
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $entry->id,
                 'secondary' => $entry->id,
             ])
@@ -269,7 +269,7 @@ describe('KnowledgeMergeCommand', function (): void {
         it('fails when primary entry not found', function (): void {
             $secondary = Entry::factory()->create();
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => 99999,
                 'secondary' => $secondary->id,
             ])
@@ -280,7 +280,7 @@ describe('KnowledgeMergeCommand', function (): void {
         it('fails when secondary entry not found', function (): void {
             $primary = Entry::factory()->create();
 
-            $this->artisan('knowledge:merge', [
+            $this->artisan('merge', [
                 'primary' => $primary->id,
                 'secondary' => 99999,
             ])
@@ -292,7 +292,7 @@ describe('KnowledgeMergeCommand', function (): void {
     describe('command signature', function (): void {
         it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeMergeCommand::class);
-            expect($command->getName())->toBe('knowledge:merge');
+            expect($command->getName())->toBe('merge');
         });
 
         it('has keep-both option', function (): void {

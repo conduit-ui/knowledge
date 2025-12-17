@@ -55,7 +55,7 @@ describe('KnowledgeServeCommand', function () {
         it('is registered with correct signature', function () {
             setupTestConfig($this->configPath);
             $command = $this->app->make(KnowledgeServeCommand::class);
-            expect($command->getName())->toBe('knowledge:serve');
+            expect($command->getName())->toBe('serve');
         });
 
         it('has correct description', function () {
@@ -78,13 +78,13 @@ describe('KnowledgeServeCommand', function () {
 
     describe('invalid action', function () {
         it('shows error for invalid action', function () {
-            $this->artisan('knowledge:serve', ['action' => 'invalid'])
+            $this->artisan('serve', ['action' => 'invalid'])
                 ->assertFailed()
                 ->expectsOutputToContain('Invalid action: invalid');
         });
 
         it('shows valid actions list', function () {
-            $this->artisan('knowledge:serve', ['action' => 'unknown'])
+            $this->artisan('serve', ['action' => 'unknown'])
                 ->assertFailed()
                 ->expectsOutputToContain('Valid actions: install, start, stop, status, restart');
         });
@@ -94,7 +94,7 @@ describe('KnowledgeServeCommand', function () {
         it('checks Docker installation', function () {
             $this->mockDocker->installed = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Docker is not installed');
         });
@@ -103,7 +103,7 @@ describe('KnowledgeServeCommand', function () {
             $this->mockDocker->installed = false;
             $this->mockDocker->hostOs = 'macos';
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Download Docker Desktop for Mac')
                 ->expectsOutputToContain('docs.docker.com/desktop/install/mac-install');
@@ -113,7 +113,7 @@ describe('KnowledgeServeCommand', function () {
             $this->mockDocker->installed = false;
             $this->mockDocker->hostOs = 'linux';
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('sudo usermod -aG docker')
                 ->expectsOutputToContain('docs.docker.com/engine/install');
@@ -123,7 +123,7 @@ describe('KnowledgeServeCommand', function () {
             $this->mockDocker->installed = false;
             $this->mockDocker->hostOs = 'windows';
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Docker Desktop for Windows')
                 ->expectsOutputToContain('docs.docker.com/desktop/install/windows-install');
@@ -133,7 +133,7 @@ describe('KnowledgeServeCommand', function () {
             $this->mockDocker->installed = false;
             $this->mockDocker->hostOs = 'unknown';
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Follow the official Docker installation guide');
         });
@@ -141,7 +141,7 @@ describe('KnowledgeServeCommand', function () {
         it('checks Docker is running', function () {
             $this->mockDocker->running = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Docker is installed but not running');
         });
@@ -149,33 +149,33 @@ describe('KnowledgeServeCommand', function () {
         it('fails when build fails', function () {
             $this->mockDocker->composeSuccess = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Failed to build Docker images');
         });
 
         it('shows success message on completion', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Installation complete');
         });
 
         it('shows endpoints after install', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('http://localhost:8000')
                 ->expectsOutputToContain('http://localhost:8001');
         });
 
         it('shows auto-start info', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Auto-start on reboot')
                 ->expectsOutputToContain('Start Docker Desktop when you sign in');
         });
 
         it('shows data persistence info', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Data persistence')
                 ->expectsOutputToContain('Docker volume')
@@ -183,7 +183,7 @@ describe('KnowledgeServeCommand', function () {
         });
 
         it('calls docker compose build', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful();
 
             $buildCall = collect($this->mockDocker->composeCalls)
@@ -193,7 +193,7 @@ describe('KnowledgeServeCommand', function () {
         });
 
         it('calls docker compose up', function () {
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful();
 
             $upCall = collect($this->mockDocker->composeCalls)
@@ -206,7 +206,7 @@ describe('KnowledgeServeCommand', function () {
         it('warns when services not ready', function () {
             $this->mockDocker->endpointsHealthy = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('may still be initializing');
         });
@@ -272,7 +272,7 @@ describe('KnowledgeServeCommand', function () {
                 };
             });
 
-            $this->artisan('knowledge:serve', ['action' => 'install'])
+            $this->artisan('serve', ['action' => 'install'])
                 ->assertFailed()
                 ->expectsOutputToContain('Failed to start services');
         });
@@ -288,13 +288,13 @@ describe('KnowledgeServeCommand', function () {
         it('fails if not installed', function () {
             @unlink($this->configPath.'/docker-compose.yml');
 
-            $this->artisan('knowledge:serve', ['action' => 'start'])
+            $this->artisan('serve', ['action' => 'start'])
                 ->assertFailed()
                 ->expectsOutputToContain('Services not installed');
         });
 
         it('starts services in detached mode', function () {
-            $this->artisan('knowledge:serve', ['action' => 'start'])
+            $this->artisan('serve', ['action' => 'start'])
                 ->assertSuccessful();
 
             $upCall = collect($this->mockDocker->composeCalls)
@@ -305,7 +305,7 @@ describe('KnowledgeServeCommand', function () {
         });
 
         it('shows endpoints after start', function () {
-            $this->artisan('knowledge:serve', ['action' => 'start'])
+            $this->artisan('serve', ['action' => 'start'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('http://localhost:8000');
         });
@@ -313,12 +313,12 @@ describe('KnowledgeServeCommand', function () {
         it('handles start failure', function () {
             $this->mockDocker->composeSuccess = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'start'])
+            $this->artisan('serve', ['action' => 'start'])
                 ->assertFailed();
         });
 
         it('supports foreground mode', function () {
-            $this->artisan('knowledge:serve', ['action' => 'start', '--foreground' => true])
+            $this->artisan('serve', ['action' => 'start', '--foreground' => true])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Starting services in foreground');
 
@@ -332,7 +332,7 @@ describe('KnowledgeServeCommand', function () {
         it('handles foreground mode failure', function () {
             $this->mockDocker->composeSuccess = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'start', '--foreground' => true])
+            $this->artisan('serve', ['action' => 'start', '--foreground' => true])
                 ->assertFailed();
         });
     });
@@ -346,13 +346,13 @@ describe('KnowledgeServeCommand', function () {
         it('succeeds even if not configured', function () {
             @unlink($this->configPath.'/docker-compose.yml');
 
-            $this->artisan('knowledge:serve', ['action' => 'stop'])
+            $this->artisan('serve', ['action' => 'stop'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('No services configured');
         });
 
         it('calls docker compose down', function () {
-            $this->artisan('knowledge:serve', ['action' => 'stop'])
+            $this->artisan('serve', ['action' => 'stop'])
                 ->assertSuccessful();
 
             $downCall = collect($this->mockDocker->composeCalls)
@@ -362,7 +362,7 @@ describe('KnowledgeServeCommand', function () {
         });
 
         it('shows data preserved message', function () {
-            $this->artisan('knowledge:serve', ['action' => 'stop'])
+            $this->artisan('serve', ['action' => 'stop'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Data preserved');
         });
@@ -370,7 +370,7 @@ describe('KnowledgeServeCommand', function () {
 
     describe('status action', function () {
         it('shows not installed when no config', function () {
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Not installed')
                 ->expectsOutputToContain('knowledge:serve install');
@@ -381,7 +381,7 @@ describe('KnowledgeServeCommand', function () {
             file_put_contents($this->configPath.'/docker-compose.yml', 'version: "3"');
             $this->mockDocker->installed = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Not installed');
         });
@@ -390,7 +390,7 @@ describe('KnowledgeServeCommand', function () {
             mkdir($this->configPath.'/embedding-server', 0755, true);
             file_put_contents($this->configPath.'/docker-compose.yml', 'version: "3"');
 
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('v24.0.0');
         });
@@ -400,7 +400,7 @@ describe('KnowledgeServeCommand', function () {
             file_put_contents($this->configPath.'/docker-compose.yml', 'version: "3"');
             $this->mockDocker->running = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('Not running');
         });
@@ -409,7 +409,7 @@ describe('KnowledgeServeCommand', function () {
             mkdir($this->configPath.'/embedding-server', 0755, true);
             file_put_contents($this->configPath.'/docker-compose.yml', 'version: "3"');
 
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('ChromaDB:')
                 ->expectsOutputToContain('Embeddings:');
@@ -420,7 +420,7 @@ describe('KnowledgeServeCommand', function () {
             file_put_contents($this->configPath.'/docker-compose.yml', 'version: "3"');
             $this->mockDocker->endpointsHealthy = false;
 
-            $this->artisan('knowledge:serve', ['action' => 'status'])
+            $this->artisan('serve', ['action' => 'status'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('knowledge:serve start');
         });
@@ -435,13 +435,13 @@ describe('KnowledgeServeCommand', function () {
         it('fails if not installed', function () {
             @unlink($this->configPath.'/docker-compose.yml');
 
-            $this->artisan('knowledge:serve', ['action' => 'restart'])
+            $this->artisan('serve', ['action' => 'restart'])
                 ->assertFailed()
                 ->expectsOutputToContain('Services not installed');
         });
 
         it('calls docker compose restart', function () {
-            $this->artisan('knowledge:serve', ['action' => 'restart'])
+            $this->artisan('serve', ['action' => 'restart'])
                 ->assertSuccessful();
 
             $restartCall = collect($this->mockDocker->composeCalls)
@@ -451,7 +451,7 @@ describe('KnowledgeServeCommand', function () {
         });
 
         it('shows endpoints after restart', function () {
-            $this->artisan('knowledge:serve', ['action' => 'restart'])
+            $this->artisan('serve', ['action' => 'restart'])
                 ->assertSuccessful()
                 ->expectsOutputToContain('http://localhost:8000');
         });

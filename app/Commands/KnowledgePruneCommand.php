@@ -14,7 +14,7 @@ class KnowledgePruneCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:prune
+    protected $signature = 'prune
                             {--older-than=1y : Age threshold (e.g., 30d, 6m, 1y)}
                             {--deprecated-only : Only prune deprecated entries}
                             {--dry-run : Show what would be deleted without deleting}

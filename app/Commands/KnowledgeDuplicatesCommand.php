@@ -13,7 +13,7 @@ class KnowledgeDuplicatesCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:duplicates
+    protected $signature = 'duplicates
                             {--threshold=70 : Similarity threshold percentage (0-100)}
                             {--limit=10 : Maximum duplicate groups to show}';
 

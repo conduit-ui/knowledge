@@ -15,7 +15,7 @@ class KnowledgeSearchCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:search
+    protected $signature = 'search
                             {query? : Search term to find in title or content}
                             {--tag= : Filter by tag}
                             {--category= : Filter by category}

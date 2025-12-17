@@ -13,7 +13,7 @@ class KnowledgeValidateCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:validate {id : The ID of the entry to validate}';
+    protected $signature = 'validate {id : The ID of the entry to validate}';
 
     /**
      * @var string

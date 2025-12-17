@@ -12,7 +12,7 @@ class KnowledgePublishCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:publish
+    protected $signature = 'publish
                             {--site=./public : Output directory for static site}';
 
     /**

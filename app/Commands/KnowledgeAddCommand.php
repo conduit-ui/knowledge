@@ -13,7 +13,7 @@ class KnowledgeAddCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:add
+    protected $signature = 'add
                             {title : The title of the knowledge entry}
                             {--content= : The content of the knowledge entry}
                             {--category= : Category (debugging, architecture, testing, deployment, security)}

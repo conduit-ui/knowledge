@@ -12,7 +12,7 @@ class KnowledgeExportGraphCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:export:graph
+    protected $signature = 'export:graph
                             {--format=json : Export format (json, cytoscape, dot)}
                             {--output= : Output file path (default: stdout)}';
 

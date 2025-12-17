@@ -11,7 +11,7 @@ describe('knowledge:collection:remove command', function (): void {
         $entry = Entry::factory()->create();
         $collection->entries()->attach($entry, ['sort_order' => 0]);
 
-        $this->artisan('knowledge:collection:remove', [
+        $this->artisan('collection:remove', [
             'collection' => 'My Collection',
             'entry_id' => $entry->id,
         ])
@@ -24,7 +24,7 @@ describe('knowledge:collection:remove command', function (): void {
     it('shows error when collection not found', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:remove', [
+        $this->artisan('collection:remove', [
             'collection' => 'Nonexistent',
             'entry_id' => $entry->id,
         ])
@@ -35,7 +35,7 @@ describe('knowledge:collection:remove command', function (): void {
     it('shows error when entry not found', function (): void {
         $collection = Collection::factory()->create(['name' => 'My Collection']);
 
-        $this->artisan('knowledge:collection:remove', [
+        $this->artisan('collection:remove', [
             'collection' => 'My Collection',
             'entry_id' => 99999,
         ])
@@ -47,7 +47,7 @@ describe('knowledge:collection:remove command', function (): void {
         $collection = Collection::factory()->create(['name' => 'My Collection']);
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:collection:remove', [
+        $this->artisan('collection:remove', [
             'collection' => 'My Collection',
             'entry_id' => $entry->id,
         ])

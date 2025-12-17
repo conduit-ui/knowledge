@@ -12,7 +12,7 @@ class KnowledgeGitEntriesCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:git:entries {commit : Git commit hash}';
+    protected $signature = 'git:entries {commit : Git commit hash}';
 
     /**
      * @var string

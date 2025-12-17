@@ -21,7 +21,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-markdown-'.time().'.md';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--format' => 'markdown',
             '--output' => $outputFile,
@@ -51,7 +51,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-json-'.time().'.json';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--format' => 'json',
             '--output' => $outputFile,
@@ -74,7 +74,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-export.md';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--format' => 'markdown',
             '--output' => $outputFile,
@@ -96,7 +96,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-dir-'.time().'/export.md';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--output' => $outputFile,
         ])->assertSuccessful();
@@ -108,14 +108,14 @@ describe('knowledge:export command', function () {
     });
 
     it('fails when entry does not exist', function () {
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => 99999,
             '--format' => 'markdown',
         ])->assertFailed();
     });
 
     it('fails with invalid ID', function () {
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => 'invalid',
             '--format' => 'markdown',
         ])->assertFailed();
@@ -139,7 +139,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-metadata-'.time().'.md';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--format' => 'markdown',
             '--output' => $outputFile,
@@ -169,7 +169,7 @@ describe('knowledge:export command', function () {
 
         $outputFile = sys_get_temp_dir().'/test-escape-'.time().'.md';
 
-        $this->artisan('knowledge:export', [
+        $this->artisan('export', [
             'id' => $entry->id,
             '--format' => 'markdown',
             '--output' => $outputFile,

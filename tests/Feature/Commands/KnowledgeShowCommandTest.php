@@ -19,7 +19,7 @@ it('shows full details of an entry', function () {
         'status' => 'validated',
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutput("ID: {$entry->id}")
         ->expectsOutput("Title: {$entry->title}")
@@ -47,7 +47,7 @@ it('shows entry with minimal fields', function () {
         'author' => null,
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutput("ID: {$entry->id}")
         ->expectsOutput("Title: {$entry->title}")
@@ -60,7 +60,7 @@ it('shows usage statistics', function () {
         'usage_count' => 5,
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutput('Usage Count: 6'); // Incremented after viewing
 });
@@ -70,7 +70,7 @@ it('increments usage count when viewing', function () {
 
     expect($entry->usage_count)->toBe(0);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful();
 
     $entry->refresh();
@@ -79,13 +79,13 @@ it('increments usage count when viewing', function () {
 });
 
 it('shows error when entry not found', function () {
-    $this->artisan('knowledge:show', ['id' => 9999])
+    $this->artisan('show', ['id' => 9999])
         ->assertFailed()
         ->expectsOutput('Entry not found.');
 });
 
 it('validates id must be numeric', function () {
-    $this->artisan('knowledge:show', ['id' => 'abc'])
+    $this->artisan('show', ['id' => 'abc'])
         ->assertFailed();
 });
 
@@ -94,7 +94,7 @@ it('shows timestamps', function () {
         'title' => 'Test Entry',
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful();
 });
 
@@ -104,7 +104,7 @@ it('shows files if present', function () {
         'files' => ['app/Models/User.php', 'config/app.php'],
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutput('Files: app/Models/User.php, config/app.php');
 });
@@ -117,7 +117,7 @@ it('shows repo details if present', function () {
         'commit' => 'abc123',
     ]);
 
-    $this->artisan('knowledge:show', ['id' => $entry->id])
+    $this->artisan('show', ['id' => $entry->id])
         ->assertSuccessful()
         ->expectsOutput('Repo: conduit-ui/knowledge')
         ->expectsOutput('Branch: main')

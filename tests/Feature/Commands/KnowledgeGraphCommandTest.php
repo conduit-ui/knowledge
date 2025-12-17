@@ -15,7 +15,7 @@ describe('knowledge:graph command', function (): void {
             'to_entry_id' => $entry2->id,
         ]);
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id])
+        $this->artisan('graph', ['id' => $entry1->id])
             ->expectsOutputToContain('Relationship Graph for: Root')
             ->expectsOutputToContain('Graph Statistics')
             ->expectsOutputToContain('Nodes: 2')
@@ -31,12 +31,12 @@ describe('knowledge:graph command', function (): void {
         Relationship::factory()->create(['from_entry_id' => $entry1->id, 'to_entry_id' => $entry2->id]);
         Relationship::factory()->create(['from_entry_id' => $entry2->id, 'to_entry_id' => $entry3->id]);
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id, '--depth' => 1])
+        $this->artisan('graph', ['id' => $entry1->id, '--depth' => 1])
             ->expectsOutputToContain('Nodes: 2')
             ->expectsOutputToContain('Level 1')
             ->assertSuccessful();
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id, '--depth' => 2])
+        $this->artisan('graph', ['id' => $entry1->id, '--depth' => 2])
             ->expectsOutputToContain('Nodes: 3')
             ->expectsOutputToContain('Level 2')
             ->assertSuccessful();
@@ -58,7 +58,7 @@ describe('knowledge:graph command', function (): void {
             'type' => Relationship::TYPE_RELATES_TO,
         ]);
 
-        $this->artisan('knowledge:graph', [
+        $this->artisan('graph', [
             'id' => $entry1->id,
             '--type' => [Relationship::TYPE_DEPENDS_ON],
         ])
@@ -78,7 +78,7 @@ describe('knowledge:graph command', function (): void {
             'type' => Relationship::TYPE_EXTENDS,
         ]);
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id])
+        $this->artisan('graph', ['id' => $entry1->id])
             ->expectsOutputToContain('Relationship Details')
             ->expectsOutputToContain('extends')
             ->expectsOutputToContain('Entry One')
@@ -89,14 +89,14 @@ describe('knowledge:graph command', function (): void {
     it('handles entries with no relationships', function (): void {
         $entry = Entry::factory()->create(['title' => 'Lonely Entry']);
 
-        $this->artisan('knowledge:graph', ['id' => $entry->id])
+        $this->artisan('graph', ['id' => $entry->id])
             ->expectsOutputToContain('Lonely Entry')
             ->expectsOutputToContain('No relationships found')
             ->assertSuccessful();
     });
 
     it('fails when entry does not exist', function (): void {
-        $this->artisan('knowledge:graph', ['id' => 99999])
+        $this->artisan('graph', ['id' => 99999])
             ->expectsOutputToContain('not found')
             ->assertFailed();
     });
@@ -104,11 +104,11 @@ describe('knowledge:graph command', function (): void {
     it('validates depth parameter', function (): void {
         $entry = Entry::factory()->create();
 
-        $this->artisan('knowledge:graph', ['id' => $entry->id, '--depth' => -1])
+        $this->artisan('graph', ['id' => $entry->id, '--depth' => -1])
             ->expectsOutputToContain('Depth must be between 0 and 10')
             ->assertFailed();
 
-        $this->artisan('knowledge:graph', ['id' => $entry->id, '--depth' => 11])
+        $this->artisan('graph', ['id' => $entry->id, '--depth' => 11])
             ->expectsOutputToContain('Depth must be between 0 and 10')
             ->assertFailed();
     });
@@ -121,7 +121,7 @@ describe('knowledge:graph command', function (): void {
         Relationship::factory()->create(['from_entry_id' => $entry1->id, 'to_entry_id' => $entry2->id]);
         Relationship::factory()->create(['from_entry_id' => $entry1->id, 'to_entry_id' => $entry3->id]);
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id])
+        $this->artisan('graph', ['id' => $entry1->id])
             ->expectsOutputToContain('Edges: 2')
             ->assertSuccessful();
     });
@@ -142,7 +142,7 @@ describe('knowledge:graph command', function (): void {
             'type' => Relationship::TYPE_DEPENDS_ON,
         ]);
 
-        $this->artisan('knowledge:graph', ['id' => $entry1->id])
+        $this->artisan('graph', ['id' => $entry1->id])
             ->expectsOutputToContain('depends_on (2)')
             ->assertSuccessful();
     });
@@ -157,7 +157,7 @@ describe('knowledge:graph command', function (): void {
         Relationship::factory()->create(['from_entry_id' => $root->id, 'to_entry_id' => $level1b->id]);
         Relationship::factory()->create(['from_entry_id' => $level1a->id, 'to_entry_id' => $level2->id]);
 
-        $this->artisan('knowledge:graph', ['id' => $root->id, '--depth' => 2])
+        $this->artisan('graph', ['id' => $root->id, '--depth' => 2])
             ->expectsOutputToContain('Nodes: 4')
             ->expectsOutputToContain('Edges: 3')
             ->expectsOutputToContain('Level 1A')
@@ -188,7 +188,7 @@ describe('knowledge:graph command', function (): void {
             'type' => Relationship::TYPE_RELATES_TO,
         ]);
 
-        $this->artisan('knowledge:graph', [
+        $this->artisan('graph', [
             'id' => $entry1->id,
             '--type' => [Relationship::TYPE_DEPENDS_ON, Relationship::TYPE_EXTENDS],
         ])
@@ -206,7 +206,7 @@ describe('knowledge:graph command', function (): void {
         Relationship::factory()->create(['from_entry_id' => $level1->id, 'to_entry_id' => $level2a->id]);
         Relationship::factory()->create(['from_entry_id' => $level1->id, 'to_entry_id' => $level2b->id]);
 
-        $this->artisan('knowledge:graph', ['id' => $level0->id, '--depth' => 3])
+        $this->artisan('graph', ['id' => $level0->id, '--depth' => 3])
             ->expectsOutputToContain('Root')
             ->expectsOutputToContain('Level 1')
             ->expectsOutputToContain('Level 2A')

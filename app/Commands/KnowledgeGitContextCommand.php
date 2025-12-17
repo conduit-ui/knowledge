@@ -12,7 +12,7 @@ class KnowledgeGitContextCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:git:context';
+    protected $signature = 'git:context';
 
     /**
      * @var string

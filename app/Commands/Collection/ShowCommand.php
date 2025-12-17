@@ -9,7 +9,7 @@ use LaravelZero\Framework\Commands\Command;
 
 class ShowCommand extends Command
 {
-    protected $signature = 'knowledge:collection:show
+    protected $signature = 'collection:show
                             {name : The name of the collection}';
 
     protected $description = 'Show details of a collection and its entries';

@@ -12,7 +12,7 @@ it('searches entries by keyword in title', function () {
     Entry::factory()->create(['title' => 'React Component Testing']);
     Entry::factory()->create(['title' => 'Database Timezone Handling']);
 
-    $this->artisan('knowledge:search', ['query' => 'timezone'])
+    $this->artisan('search', ['query' => 'timezone'])
         ->assertSuccessful();
 
     // We can't assert exact output in Laravel Zero easily, but we can verify the command runs
@@ -28,7 +28,7 @@ it('searches entries by keyword in content', function () {
         'content' => 'This is about React components',
     ]);
 
-    $this->artisan('knowledge:search', ['query' => 'timezone'])
+    $this->artisan('search', ['query' => 'timezone'])
         ->assertSuccessful();
 });
 
@@ -46,7 +46,7 @@ it('searches entries by tag', function () {
         'tags' => ['blood.scheduling', 'laravel'],
     ]);
 
-    $this->artisan('knowledge:search', ['--tag' => 'blood.notifications'])
+    $this->artisan('search', ['--tag' => 'blood.notifications'])
         ->assertSuccessful();
 });
 
@@ -55,7 +55,7 @@ it('searches entries by category', function () {
     Entry::factory()->create(['category' => 'testing', 'title' => 'Testing Entry']);
     Entry::factory()->create(['category' => 'architecture', 'title' => 'Another Architecture']);
 
-    $this->artisan('knowledge:search', ['--category' => 'architecture'])
+    $this->artisan('search', ['--category' => 'architecture'])
         ->assertSuccessful();
 });
 
@@ -76,7 +76,7 @@ it('searches entries by category and module', function () {
         'title' => 'Blood Testing',
     ]);
 
-    $this->artisan('knowledge:search', [
+    $this->artisan('search', [
         '--category' => 'architecture',
         '--module' => 'Blood',
     ])->assertSuccessful();
@@ -87,7 +87,7 @@ it('searches entries by priority', function () {
     Entry::factory()->create(['priority' => 'high', 'title' => 'High Entry']);
     Entry::factory()->create(['priority' => 'low', 'title' => 'Low Entry']);
 
-    $this->artisan('knowledge:search', ['--priority' => 'critical'])
+    $this->artisan('search', ['--priority' => 'critical'])
         ->assertSuccessful();
 });
 
@@ -95,14 +95,14 @@ it('searches entries by status', function () {
     Entry::factory()->validated()->create(['title' => 'Validated Entry']);
     Entry::factory()->draft()->create(['title' => 'Draft Entry']);
 
-    $this->artisan('knowledge:search', ['--status' => 'validated'])
+    $this->artisan('search', ['--status' => 'validated'])
         ->assertSuccessful();
 });
 
 it('shows message when no results found', function () {
     Entry::factory()->create(['title' => 'Something else']);
 
-    $this->artisan('knowledge:search', ['query' => 'nonexistent'])
+    $this->artisan('search', ['query' => 'nonexistent'])
         ->assertSuccessful()
         ->expectsOutput('No entries found.');
 });
@@ -122,7 +122,7 @@ it('searches with multiple filters', function () {
         'priority' => 'medium',
     ]);
 
-    $this->artisan('knowledge:search', [
+    $this->artisan('search', [
         '--category' => 'testing',
         '--module' => 'Blood',
         '--priority' => 'high',
@@ -132,12 +132,12 @@ it('searches with multiple filters', function () {
 it('handles case-insensitive search', function () {
     Entry::factory()->create(['title' => 'Laravel Best Practices']);
 
-    $this->artisan('knowledge:search', ['query' => 'LARAVEL'])
+    $this->artisan('search', ['query' => 'LARAVEL'])
         ->assertSuccessful();
 });
 
 it('requires at least one search parameter', function () {
-    $this->artisan('knowledge:search')
+    $this->artisan('search')
         ->assertFailed();
 });
 
@@ -162,7 +162,7 @@ describe('--observations flag', function (): void {
         // Create an entry that should NOT appear in results
         Entry::factory()->create(['title' => 'Authentication Entry']);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'authentication',
             '--observations' => true,
         ])->assertSuccessful();
@@ -177,7 +177,7 @@ describe('--observations flag', function (): void {
             'narrative' => 'Different topic',
         ]);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'nonexistent',
             '--observations' => true,
         ])->assertSuccessful()
@@ -195,7 +195,7 @@ describe('--observations flag', function (): void {
             'narrative' => 'Fixed auth bug',
         ]);
 
-        $output = $this->artisan('knowledge:search', [
+        $output = $this->artisan('search', [
             'query' => 'bug',
             '--observations' => true,
         ]);
@@ -204,7 +204,7 @@ describe('--observations flag', function (): void {
     });
 
     it('requires query when using observations flag', function (): void {
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             '--observations' => true,
         ])->assertFailed();
     });
@@ -226,7 +226,7 @@ describe('--observations flag', function (): void {
             'narrative' => 'Bug narrative',
         ]);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'narrative',
             '--observations' => true,
         ])->assertSuccessful();
@@ -251,7 +251,7 @@ describe('--observations flag', function (): void {
             'narrative' => 'Updated cache',
         ]);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'authentication',
             '--observations' => true,
         ])->assertSuccessful();
@@ -266,7 +266,7 @@ describe('--observations flag', function (): void {
             'narrative' => 'Test narrative',
         ]);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'test',
             '--observations' => true,
         ])->assertSuccessful()
@@ -284,7 +284,7 @@ describe('--observations flag', function (): void {
             'narrative' => $longNarrative,
         ]);
 
-        $this->artisan('knowledge:search', [
+        $this->artisan('search', [
             'query' => 'narrative',
             '--observations' => true,
         ])->assertSuccessful()

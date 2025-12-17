@@ -8,7 +8,7 @@ describe('KnowledgeStatsCommand', function () {
     it('displays total entries count', function () {
         Entry::factory()->count(5)->create();
 
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('Total Entries: 5')
             ->assertSuccessful();
     });
@@ -18,7 +18,7 @@ describe('KnowledgeStatsCommand', function () {
         Entry::factory()->count(2)->create(['status' => 'validated']);
         Entry::factory()->count(1)->create(['status' => 'deprecated']);
 
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('draft: 3')
             ->expectsOutputToContain('validated: 2')
             ->expectsOutputToContain('deprecated: 1')
@@ -30,7 +30,7 @@ describe('KnowledgeStatsCommand', function () {
         Entry::factory()->count(3)->create(['category' => 'architecture']);
         Entry::factory()->count(1)->create(['category' => null]);
 
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('debugging: 2')
             ->expectsOutputToContain('architecture: 3')
             ->assertSuccessful();
@@ -52,7 +52,7 @@ describe('KnowledgeStatsCommand', function () {
             'last_used' => null,
         ]);
 
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('Total Usage: 15')
             ->expectsOutputToContain('Average Usage: 5')
             ->assertSuccessful();
@@ -67,13 +67,13 @@ describe('KnowledgeStatsCommand', function () {
             'last_used' => now()->subDays(50),
         ]);
 
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('Stale Entries (90+ days): 2')
             ->assertSuccessful();
     });
 
     it('handles empty database gracefully', function () {
-        $this->artisan('knowledge:stats')
+        $this->artisan('stats')
             ->expectsOutputToContain('Total Entries: 0')
             ->assertSuccessful();
     });

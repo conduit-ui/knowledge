@@ -8,19 +8,19 @@ use Tests\Support\MockEmbeddingService;
 
 describe('KnowledgeSearchStatusCommand', function () {
     it('shows keyword search enabled', function () {
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Keyword Search: Enabled');
     });
 
     it('shows semantic search not configured', function () {
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Semantic Search: Not Configured');
     });
 
     it('shows embedding provider', function () {
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Provider: none');
     });
@@ -28,7 +28,7 @@ describe('KnowledgeSearchStatusCommand', function () {
     it('shows database statistics', function () {
         Entry::factory()->count(10)->create();
 
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Total entries: 10')
             ->expectsOutputToContain('Entries with embeddings: 0')
@@ -39,7 +39,7 @@ describe('KnowledgeSearchStatusCommand', function () {
         Entry::factory()->count(10)->create();
         Entry::factory()->count(5)->create(['embedding' => json_encode([1.0, 2.0])]);
 
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Total entries: 15')
             ->expectsOutputToContain('Entries with embeddings: 5')
@@ -47,14 +47,14 @@ describe('KnowledgeSearchStatusCommand', function () {
     });
 
     it('shows usage instructions', function () {
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Keyword search:  ./know knowledge:search "your query"')
             ->expectsOutputToContain('Index entries:   ./know knowledge:index');
     });
 
     it('shows semantic search not available', function () {
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Semantic search: Not available');
     });
@@ -65,7 +65,7 @@ describe('KnowledgeSearchStatusCommand', function () {
 
         $this->app->bind(EmbeddingServiceInterface::class, MockEmbeddingService::class);
 
-        $this->artisan('knowledge:search:status')
+        $this->artisan('search:status')
             ->assertSuccessful()
             ->expectsOutputToContain('Semantic Search: Enabled')
             ->expectsOutputToContain('Provider: mock')

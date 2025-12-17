@@ -17,7 +17,7 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'type' => 'conflicts_with',
             ]);
 
-            $this->artisan('knowledge:conflicts')
+            $this->artisan('conflicts')
                 ->expectsOutputToContain('Found 1 explicit conflict')
                 ->expectsOutputToContain('Always use eager loading')
                 ->expectsOutputToContain('conflicts with')
@@ -28,7 +28,7 @@ describe('KnowledgeConflictsCommand', function (): void {
             Entry::factory()->create();
             Entry::factory()->create();
 
-            $this->artisan('knowledge:conflicts')
+            $this->artisan('conflicts')
                 ->expectsOutputToContain('No conflicts found')
                 ->assertSuccessful();
         });
@@ -54,7 +54,7 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'status' => 'draft',
             ]);
 
-            $this->artisan('knowledge:conflicts')
+            $this->artisan('conflicts')
                 ->expectsOutputToContain('potential conflict')
                 ->expectsOutputToContain('conflicting priorities')
                 ->assertSuccessful();
@@ -79,7 +79,7 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'status' => 'draft',
             ]);
 
-            $this->artisan('knowledge:conflicts')
+            $this->artisan('conflicts')
                 ->expectsOutputToContain('No conflicts found')
                 ->assertSuccessful();
         });
@@ -103,7 +103,7 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'status' => 'draft',
             ]);
 
-            $this->artisan('knowledge:conflicts')
+            $this->artisan('conflicts')
                 ->expectsOutputToContain('potential conflict')
                 ->assertSuccessful();
         });
@@ -129,7 +129,7 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'type' => 'conflicts_with',
             ]);
 
-            $this->artisan('knowledge:conflicts', ['--category' => 'security'])
+            $this->artisan('conflicts', ['--category' => 'security'])
                 ->expectsOutputToContain('Found 1 explicit conflict')
                 ->assertSuccessful();
         });
@@ -144,11 +144,11 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'type' => 'conflicts_with',
             ]);
 
-            $this->artisan('knowledge:conflicts', ['--module' => 'auth'])
+            $this->artisan('conflicts', ['--module' => 'auth'])
                 ->expectsOutputToContain('Found 1 explicit conflict')
                 ->assertSuccessful();
 
-            $this->artisan('knowledge:conflicts', ['--module' => 'api'])
+            $this->artisan('conflicts', ['--module' => 'api'])
                 ->expectsOutputToContain('No conflicts found')
                 ->assertSuccessful();
         });
@@ -165,9 +165,9 @@ describe('KnowledgeConflictsCommand', function (): void {
                 'type' => 'conflicts_with',
             ]);
 
-            $this->artisan('knowledge:conflicts')
-                ->expectsOutputToContain('knowledge:deprecate')
-                ->expectsOutputToContain('knowledge:merge')
+            $this->artisan('conflicts')
+                ->expectsOutputToContain('deprecate')
+                ->expectsOutputToContain('merge')
                 ->assertSuccessful();
         });
     });
@@ -175,7 +175,7 @@ describe('KnowledgeConflictsCommand', function (): void {
     describe('command signature', function (): void {
         it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeConflictsCommand::class);
-            expect($command->getName())->toBe('knowledge:conflicts');
+            expect($command->getName())->toBe('conflicts');
         });
 
         it('has category option', function (): void {

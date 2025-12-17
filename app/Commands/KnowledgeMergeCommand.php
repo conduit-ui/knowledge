@@ -14,7 +14,7 @@ class KnowledgeMergeCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:merge
+    protected $signature = 'merge
                             {primary : The ID of the primary entry (will be kept)}
                             {secondary : The ID of the secondary entry (will be deprecated)}
                             {--keep-both : Keep both entries but link them}';

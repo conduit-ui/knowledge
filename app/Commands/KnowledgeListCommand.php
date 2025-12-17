@@ -13,7 +13,7 @@ class KnowledgeListCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:list
+    protected $signature = 'entries
                             {--category= : Filter by category}
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}

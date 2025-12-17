@@ -9,7 +9,7 @@ beforeEach(function () {
 });
 
 it('creates a knowledge entry with required fields', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Test content',
     ])->assertSuccessful();
@@ -21,7 +21,7 @@ it('creates a knowledge entry with required fields', function () {
 });
 
 it('auto-populates git fields when in a git repository', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Git Auto Entry',
         '--content' => 'Content with git context',
     ])->assertSuccessful();
@@ -33,7 +33,7 @@ it('auto-populates git fields when in a git repository', function () {
 });
 
 it('skips git detection with --no-git flag', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'No Git Entry',
         '--content' => 'Content without git',
         '--no-git' => true,
@@ -47,7 +47,7 @@ it('skips git detection with --no-git flag', function () {
 });
 
 it('allows manual git field overrides', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Manual Git Entry',
         '--content' => 'Content with manual git',
         '--repo' => 'custom/repo',
@@ -63,7 +63,7 @@ it('allows manual git field overrides', function () {
 });
 
 it('validates required content field', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'No Content Entry',
     ])->assertFailed();
 
@@ -71,7 +71,7 @@ it('validates required content field', function () {
 });
 
 it('validates confidence range', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Invalid Confidence',
         '--content' => 'Test',
         '--confidence' => 150,
@@ -81,7 +81,7 @@ it('validates confidence range', function () {
 });
 
 it('creates entry with tags', function () {
-    $this->artisan('knowledge:add', [
+    $this->artisan('add', [
         'title' => 'Tagged Entry',
         '--content' => 'Content',
         '--tags' => 'php,laravel,testing',

@@ -14,7 +14,7 @@ class KnowledgeExportAllCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'knowledge:export:all
+    protected $signature = 'export:all
                             {--format=markdown : Export format (markdown, json)}
                             {--output=./docs : Output directory path}
                             {--collection= : Export only entries from a specific collection}
