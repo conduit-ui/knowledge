@@ -58,9 +58,12 @@ class DockerService implements DockerServiceInterface
         $process->setTimeout(600); // 10 minutes for builds
 
         $output = '';
+        // @codeCoverageIgnoreStart
+        // Callback execution depends on Docker process output availability
         $process->run(function ($type, $buffer) use (&$output): void {
             $output .= $buffer;
         });
+        // @codeCoverageIgnoreEnd
 
         return [
             'success' => $process->isSuccessful(),
