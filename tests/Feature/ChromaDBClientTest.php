@@ -364,4 +364,89 @@ describe('ChromaDBClient', function () {
 
         expect($chromaClient->isAvailable())->toBeFalse();
     });
+
+    it('creates collection via POST when GET returns no id', function () {
+        $mock = new MockHandler([
+            // GET returns 200 but without id - falls through to POST
+            new Response(200, [], json_encode(['name' => 'test_collection'])),
+            // POST creates collection successfully
+            new Response(200, [], json_encode(['id' => 'new_col_456', 'name' => 'test_collection'])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $collection = $chromaClient->getOrCreateCollection('test_collection');
+
+        expect($collection)->toBeArray()
+            ->and($collection['id'])->toBe('new_col_456')
+            ->and($collection['name'])->toBe('test_collection');
+    });
+
+    it('gets collection count successfully', function () {
+        $mock = new MockHandler([
+            new Response(200, [], json_encode(42)),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $count = $chromaClient->getCollectionCount('col_123');
+
+        expect($count)->toBe(42);
+    });
+
+    it('returns zero when count returns non-integer', function () {
+        $mock = new MockHandler([
+            new Response(200, [], json_encode(['invalid' => 'response'])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $count = $chromaClient->getCollectionCount('col_123');
+
+        expect($count)->toBe(0);
+    });
+
+    it('returns zero when count request fails', function () {
+        $mock = new MockHandler([
+            new \GuzzleHttp\Exception\RequestException(
+                'Server error',
+                new Request('GET', '/api/v2/collections/col_123/count'),
+                new Response(500)
+            ),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $count = $chromaClient->getCollectionCount('col_123');
+
+        expect($count)->toBe(0);
+    });
 });
