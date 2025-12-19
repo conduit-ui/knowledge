@@ -303,6 +303,9 @@ describe('ChromaDBClient', function () {
 
     it('throws exception when collection response has no id', function () {
         $mock = new MockHandler([
+            // GET collection returns 200 but without id (falls through to POST)
+            new Response(200, [], json_encode(['name' => 'test_collection'])),
+            // POST create returns response without id
             new Response(200, [], json_encode(['name' => 'test_collection'])),
         ]);
 
