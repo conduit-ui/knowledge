@@ -15,20 +15,37 @@ class ChromaDBClient implements ChromaDBClientInterface
 
     private string $baseUrl;
 
+    private string $tenant;
+
+    private string $database;
+
     /**
      * @var array<string, string>
      */
     private array $collections = [];
 
-    public function __construct(string $baseUrl = 'http://localhost:8000')
-    {
+    public function __construct(
+        string $baseUrl = 'http://localhost:8000',
+        string $tenant = 'default_tenant',
+        string $database = 'default_database'
+    ) {
         $this->baseUrl = rtrim($baseUrl, '/');
+        $this->tenant = $tenant;
+        $this->database = $database;
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
-            'timeout' => 10,
+            'timeout' => 30,
             'connect_timeout' => 5,
             'http_errors' => false,
         ]);
+    }
+
+    /**
+     * Get the v2 API base path for collections.
+     */
+    private function getCollectionsPath(): string
+    {
+        return "/api/v2/tenants/{$this->tenant}/databases/{$this->database}/collections";
     }
 
     /**
@@ -41,17 +58,28 @@ class ChromaDBClient implements ChromaDBClientInterface
         }
 
         try {
-            $response = $this->client->post('/api/v1/collections', [
+            // First try to get existing collection
+            $response = $this->client->get($this->getCollectionsPath()."/{$name}");
+
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode((string) $response->getBody(), true);
+                if (is_array($data) && isset($data['id'])) {
+                    $this->collections[$name] = (string) $data['id'];
+                    return $data;
+                }
+            }
+
+            // Create new collection if not found
+            $response = $this->client->post($this->getCollectionsPath(), [
                 'json' => [
                     'name' => $name,
-                    'get_or_create' => true,
                 ],
             ]);
 
             $data = json_decode((string) $response->getBody(), true);
 
             if (! is_array($data) || ! isset($data['id'])) {
-                throw new \RuntimeException('Invalid response from ChromaDB');
+                throw new \RuntimeException('Invalid response from ChromaDB: '.json_encode($data));
             }
 
             $this->collections[$name] = (string) $data['id'];
@@ -80,9 +108,13 @@ class ChromaDBClient implements ChromaDBClientInterface
                 $payload['documents'] = $documents;
             }
 
-            $this->client->post("/api/v1/collections/{$collectionId}/add", [
+            $response = $this->client->post($this->getCollectionsPath()."/{$collectionId}/add", [
                 'json' => $payload,
             ]);
+
+            if ($response->getStatusCode() >= 400) {
+                throw new \RuntimeException('ChromaDB add failed: '.(string) $response->getBody());
+            }
         } catch (GuzzleException $e) {
             throw new \RuntimeException('Failed to add documents: '.$e->getMessage(), 0, $e);
         }
@@ -101,13 +133,14 @@ class ChromaDBClient implements ChromaDBClientInterface
             $payload = [
                 'query_embeddings' => [$queryEmbedding],
                 'n_results' => $nResults,
+                'include' => ['metadatas', 'documents', 'distances'],
             ];
 
             if (count($where) > 0) {
                 $payload['where'] = $where;
             }
 
-            $response = $this->client->post("/api/v1/collections/{$collectionId}/query", [
+            $response = $this->client->post($this->getCollectionsPath()."/{$collectionId}/query", [
                 'json' => $payload,
             ]);
 
@@ -122,7 +155,7 @@ class ChromaDBClient implements ChromaDBClientInterface
     public function delete(string $collectionId, array $ids): void
     {
         try {
-            $this->client->post("/api/v1/collections/{$collectionId}/delete", [
+            $this->client->post($this->getCollectionsPath()."/{$collectionId}/delete", [
                 'json' => [
                     'ids' => $ids,
                 ],
@@ -150,7 +183,7 @@ class ChromaDBClient implements ChromaDBClientInterface
                 $payload['documents'] = $documents;
             }
 
-            $this->client->post("/api/v1/collections/{$collectionId}/update", [
+            $this->client->post($this->getCollectionsPath()."/{$collectionId}/update", [
                 'json' => $payload,
             ]);
         } catch (GuzzleException $e) {
@@ -158,10 +191,25 @@ class ChromaDBClient implements ChromaDBClientInterface
         }
     }
 
+    /**
+     * Get collection count for verification.
+     */
+    public function getCollectionCount(string $collectionId): int
+    {
+        try {
+            $response = $this->client->get($this->getCollectionsPath()."/{$collectionId}/count");
+            $data = json_decode((string) $response->getBody(), true);
+
+            return is_int($data) ? $data : 0;
+        } catch (GuzzleException $e) {
+            return 0;
+        }
+    }
+
     public function isAvailable(): bool
     {
         try {
-            $response = $this->client->get('/api/v1/heartbeat');
+            $response = $this->client->get('/api/v2/heartbeat');
 
             return $response->getStatusCode() === 200;
         } catch (ConnectException $e) {
