@@ -40,6 +40,50 @@ class Entry extends Model
 {
     use HasFactory;
 
+    /**
+     * Boot the model and register event handlers.
+     */
+    protected static function booted(): void
+    {
+        // Auto-sync to ChromaDB on create/update/delete
+        static::created(function (Entry $entry) {
+            static::syncToChromaDB($entry, 'create');
+        });
+
+        static::updated(function (Entry $entry) {
+            if ($entry->wasChanged(['title', 'content', 'category', 'module', 'priority', 'status', 'confidence'])) {
+                static::syncToChromaDB($entry, 'update');
+            }
+        });
+
+        static::deleted(function (Entry $entry) {
+            static::syncToChromaDB($entry, 'delete');
+        });
+    }
+
+    /**
+     * Sync entry to ChromaDB (fails gracefully).
+     */
+    private static function syncToChromaDB(Entry $entry, string $action): void
+    {
+        // Skip auto-sync in testing or when ChromaDB is disabled
+        if (app()->environment('testing') || ! config('search.chromadb.enabled', false)) {
+            return;
+        }
+
+        try {
+            $indexService = app(\App\Services\ChromaDBIndexService::class);
+
+            match ($action) {
+                'create' => $indexService->indexEntry($entry),
+                'update' => $indexService->updateEntry($entry),
+                'delete' => $indexService->removeEntry($entry),
+            };
+        } catch (\Throwable) {
+            // Fail gracefully - ChromaDB sync is optional
+        }
+    }
+
     protected $fillable = [
         'title',
         'content',
