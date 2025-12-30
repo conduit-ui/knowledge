@@ -23,7 +23,7 @@ class SyncCommand extends Command
      */
     protected $description = 'Synchronize knowledge entries with prefrontal-cortex cloud';
 
-    private string $baseUrl = 'https://prefrontal-cortex.laravel.cloud';
+    private string $baseUrl = 'https://prefrontal-cortex-master-iw3xyv.laravel.cloud';
 
     protected ?Client $client = null;
 
@@ -218,17 +218,14 @@ class SyncCommand extends Command
                 return compact('sent', 'created', 'updated', 'failed');
             }
 
-            $bar = $this->output->createProgressBar($entries->count());
-            $bar->start();
-
-            $payload = [];
-
+            // Build payload array
+            $allPayload = [];
             foreach ($entries as $entry) {
                 $uniqueId = $this->generateUniqueId($entry);
 
-                $payload[] = [
+                $allPayload[] = [
                     'unique_id' => $uniqueId,
-                    'title' => $entry->title,
+                    'title' => mb_substr((string) $entry->title, 0, 255),
                     'content' => $entry->content,
                     'category' => $entry->category,
                     'tags' => $entry->tags ?? [],
@@ -244,40 +241,44 @@ class SyncCommand extends Command
                     'author' => $entry->author,
                     'status' => $entry->status,
                 ];
+            }
+
+            // Send in batches of 100
+            $chunks = array_chunk($allPayload, 100);
+            $totalChunks = count($chunks);
+
+            $this->info("Sending {$entries->count()} entries in {$totalChunks} batches...");
+            $bar = $this->output->createProgressBar($totalChunks);
+            $bar->start();
+
+            foreach ($chunks as $chunk) {
+                $response = $this->getClient()->post('/api/knowledge/sync', [
+                    'headers' => [
+                        'Authorization' => "Bearer {$token}",
+                    ],
+                    'json' => ['entries' => $chunk],
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $result = json_decode((string) $response->getBody(), true);
+                    if (is_array($result)) {
+                        $sent += count($chunk);
+                        $created += $result['created'] ?? 0;
+                        $updated += $result['updated'] ?? 0;
+                        $failed += $result['failed'] ?? 0;
+                    }
+                } else {
+                    $failed += count($chunk);
+                }
 
                 $bar->advance();
             }
 
             $bar->finish();
             $this->newLine();
-
-            // Send batch to API
-            $this->info('Sending entries to cloud...');
-            $response = $this->getClient()->post('/api/knowledge/sync', [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                ],
-                'json' => $payload,
-            ]);
-
-            if ($response->getStatusCode() !== 200) {
-                $this->error('Failed to push to cloud: HTTP '.$response->getStatusCode());
-                $failed = count($payload);
-
-                return compact('sent', 'created', 'updated', 'failed');
-            }
-
-            $result = json_decode((string) $response->getBody(), true);
-
-            if (is_array($result)) {
-                $sent = count($payload);
-                $created = $result['created'] ?? 0;
-                $updated = $result['updated'] ?? 0;
-                $failed = $result['failed'] ?? 0;
-            }
         } catch (GuzzleException $e) {
             $this->error('Failed to push to cloud: '.$e->getMessage());
-            $failed = count($payload ?? []);
+            $failed += count($allPayload ?? []);
         }
 
         return compact('sent', 'created', 'updated', 'failed');

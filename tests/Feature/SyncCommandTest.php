@@ -447,7 +447,7 @@ describe('SyncCommand', function () {
         // Verify the client has the correct configuration
         $config = $client->getConfig();
         expect($config['base_uri'])->toBeInstanceOf(\GuzzleHttp\Psr7\Uri::class);
-        expect((string) $config['base_uri'])->toBe('https://prefrontal-cortex.laravel.cloud');
+        expect((string) $config['base_uri'])->toBe('https://prefrontal-cortex-master-iw3xyv.laravel.cloud');
         expect($config['timeout'])->toBe(30);
         expect($config['headers']['Accept'])->toBe('application/json');
         expect($config['headers']['Content-Type'])->toBe('application/json');
@@ -470,7 +470,7 @@ describe('SyncCommand', function () {
         $client = $method->invoke($command);
 
         expect($client)->toBeInstanceOf(Client::class);
-        expect((string) $client->getConfig('base_uri'))->toBe('https://prefrontal-cortex.laravel.cloud');
+        expect((string) $client->getConfig('base_uri'))->toBe('https://prefrontal-cortex-master-iw3xyv.laravel.cloud');
     });
 
 });
