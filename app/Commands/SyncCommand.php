@@ -23,7 +23,7 @@ class SyncCommand extends Command
      */
     protected $description = 'Synchronize knowledge entries with prefrontal-cortex cloud';
 
-    private string $baseUrl = 'https://prefrontal-cortex.laravel.cloud';
+    private string $baseUrl = 'https://prefrontal-cortex-master-iw3xyv.laravel.cloud';
 
     protected ?Client $client = null;
 
