@@ -78,14 +78,19 @@ class SyncCommand extends Command
     protected function getClient(): Client
     {
         if ($this->client === null) {
-            $this->client = new Client([
-                'base_uri' => $this->baseUrl,
-                'timeout' => 30,
-                'headers' => [
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
-            ]);
+            // Use container-bound client if available (for testing)
+            if (app()->bound(Client::class)) {
+                $this->client = app(Client::class);
+            } else {
+                $this->client = new Client([
+                    'base_uri' => $this->baseUrl,
+                    'timeout' => 30,
+                    'headers' => [
+                        'Accept' => 'application/json',
+                        'Content-Type' => 'application/json',
+                    ],
+                ]);
+            }
         }
 
         return $this->client;
