@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\Entry;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use Mockery as m;
 
 beforeEach(function () {
     Entry::query()->delete();
@@ -12,6 +17,7 @@ beforeEach(function () {
 
 afterEach(function () {
     putenv('PREFRONTAL_API_TOKEN');
+    m::close();
 });
 
 describe('SyncCommand', function () {
@@ -24,11 +30,22 @@ describe('SyncCommand', function () {
     });
 
     it('has pull flag option', function () {
-        // Just verify the command accepts the --pull flag without errors
-        // Actual HTTP testing will be done once API endpoint exists
+        // Mock successful GET request to pull entries
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([
+                'data' => [],
+                'meta' => ['count' => 0, 'synced_at' => now()->toIso8601String()],
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+        $this->app->instance(Client::class, $client);
+
         $this->artisan('sync', ['--pull' => true])
+            ->expectsOutput('Pulling entries from cloud...')
             ->assertSuccessful();
-    })->skip('Requires API endpoint from issue #149');
+    });
 
     it('has push flag option', function () {
         // Create local entry to push
@@ -40,11 +57,23 @@ describe('SyncCommand', function () {
             'status' => 'draft',
         ]);
 
-        // Just verify the command accepts the --push flag without errors
-        // Actual HTTP testing will be done once API endpoint exists
+        // Mock successful POST request to push entries
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([
+                'success' => true,
+                'message' => 'Knowledge entries synced',
+                'summary' => ['created' => 1, 'updated' => 0, 'total' => 1],
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+        $this->app->instance(Client::class, $client);
+
         $this->artisan('sync', ['--push' => true])
+            ->expectsOutput('Pushing local entries to cloud...')
             ->assertSuccessful();
-    })->skip('Requires API endpoint from issue #149');
+    });
 
     it('performs two-way sync by default', function () {
         // Create local entry
@@ -56,11 +85,27 @@ describe('SyncCommand', function () {
             'status' => 'draft',
         ]);
 
-        // Verify two-way sync is the default behavior
+        // Mock both GET (pull) and POST (push) requests for two-way sync
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([
+                'data' => [],
+                'meta' => ['count' => 0, 'synced_at' => now()->toIso8601String()],
+            ])),
+            new Response(200, [], json_encode([
+                'success' => true,
+                'message' => 'Knowledge entries synced',
+                'summary' => ['created' => 1, 'updated' => 0, 'total' => 1],
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+        $this->app->instance(Client::class, $client);
+
         $this->artisan('sync')
             ->expectsOutput('Starting two-way sync (pull then push)...')
             ->assertSuccessful();
-    })->skip('Requires API endpoint from issue #149');
+    });
 
     it('handles empty local database when pushing', function () {
         // Verify graceful handling when no local entries exist
