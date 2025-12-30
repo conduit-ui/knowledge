@@ -65,8 +65,6 @@ class SyncCommand extends Command
             $this->info('Pushing local entries to cloud...');
             $result = $this->pushToCloud($token);
             $this->displayPushSummary($result);
-
-            return self::SUCCESS;
         }
 
         return self::SUCCESS;
@@ -79,21 +77,27 @@ class SyncCommand extends Command
     {
         if ($this->client === null) {
             // Use container-bound client if available (for testing)
-            if (app()->bound(Client::class)) {
-                $this->client = app(Client::class);
-            } else {
-                $this->client = new Client([
-                    'base_uri' => $this->baseUrl,
-                    'timeout' => 30,
-                    'headers' => [
-                        'Accept' => 'application/json',
-                        'Content-Type' => 'application/json',
-                    ],
-                ]);
-            }
+            $this->client = app()->bound(Client::class)
+                ? app(Client::class)
+                : $this->createClient();
         }
 
         return $this->client;
+    }
+
+    /**
+     * Create a new HTTP client instance.
+     */
+    protected function createClient(): Client
+    {
+        return new Client([
+            'base_uri' => $this->baseUrl,
+            'timeout' => 30,
+            'headers' => [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
+        ]);
     }
 
     /**
@@ -108,7 +112,7 @@ class SyncCommand extends Command
         $failed = 0;
 
         try {
-            $response = $this->getClient()->get('/api/knowledge/sync', [
+            $response = $this->getClient()->get('/api/knowledge/entries', [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
                 ],
@@ -120,13 +124,15 @@ class SyncCommand extends Command
                 return compact('created', 'updated', 'failed');
             }
 
-            $entries = json_decode((string) $response->getBody(), true);
+            $responseData = json_decode((string) $response->getBody(), true);
 
-            if (! is_array($entries)) {
+            if (! is_array($responseData) || ! isset($responseData['data'])) {
                 $this->error('Invalid response from cloud API.');
 
                 return compact('created', 'updated', 'failed');
             }
+
+            $entries = $responseData['data'];
 
             $bar = $this->output->createProgressBar(count($entries));
             $bar->start();

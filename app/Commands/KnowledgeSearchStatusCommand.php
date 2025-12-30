@@ -33,8 +33,8 @@ class KnowledgeSearchStatusCommand extends Command
         // Semantic Search Status
         /** @var bool $semanticEnabled */
         $semanticEnabled = config('search.semantic_enabled');
-        /** @var string $embeddingProvider */
-        $embeddingProvider = config('search.embedding_provider');
+        /** @var string|null $embeddingProvider */
+        $embeddingProvider = config('search.embedding_provider') ?: 'none';
 
         $testEmbedding = $embeddingService->generate('test');
         $hasEmbeddingSupport = count($testEmbedding) > 0;
