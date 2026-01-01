@@ -263,9 +263,11 @@ class SyncCommand extends Command
                     $result = json_decode((string) $response->getBody(), true);
                     if (is_array($result)) {
                         $sent += count($chunk);
-                        $created += $result['created'] ?? 0;
-                        $updated += $result['updated'] ?? 0;
-                        $failed += $result['failed'] ?? 0;
+                        // Handle both flat and nested response formats
+                        $summary = $result['summary'] ?? $result;
+                        $created += $summary['created'] ?? 0;
+                        $updated += $summary['updated'] ?? 0;
+                        $failed += $summary['failed'] ?? 0;
                     }
                 } else {
                     $failed += count($chunk);
