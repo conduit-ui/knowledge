@@ -36,14 +36,14 @@ class SimilarityService
     /**
      * Cache for tokenization results.
      *
-     * @var array<int, array<string>>
+     * @var array<string, array<string>>
      */
     private array $tokenCache = [];
 
     /**
      * Cache for MinHash signatures.
      *
-     * @var array<int, array<int>>
+     * @var array<string, array<int>>
      */
     private array $signatureCache = [];
 
@@ -79,14 +79,16 @@ class SimilarityService
      */
     private function getMinHashSignature(Entry $entry): array
     {
-        if (isset($this->signatureCache[$entry->id])) {
-            return $this->signatureCache[$entry->id];
+        $cacheKey = $this->getCacheKey($entry);
+
+        if (isset($this->signatureCache[$cacheKey])) {
+            return $this->signatureCache[$cacheKey];
         }
 
         $tokens = $this->getTokens($entry);
         $signature = $this->computeMinHash($tokens);
 
-        $this->signatureCache[$entry->id] = $signature;
+        $this->signatureCache[$cacheKey] = $signature;
 
         return $signature;
     }
@@ -98,14 +100,16 @@ class SimilarityService
      */
     public function getTokens(Entry $entry): array
     {
-        if (isset($this->tokenCache[$entry->id])) {
-            return $this->tokenCache[$entry->id];
+        $cacheKey = $this->getCacheKey($entry);
+
+        if (isset($this->tokenCache[$cacheKey])) {
+            return $this->tokenCache[$cacheKey];
         }
 
         $text = mb_strtolower($entry->title.' '.$entry->content);
         $tokens = $this->tokenize($text);
 
-        $this->tokenCache[$entry->id] = $tokens;
+        $this->tokenCache[$cacheKey] = $tokens;
 
         return $tokens;
     }
@@ -294,5 +298,18 @@ class SimilarityService
     {
         $this->tokenCache = [];
         $this->signatureCache = [];
+    }
+
+    /**
+     * Get a unique cache key for an entry.
+     *
+     * Uses database ID if available, otherwise falls back to object ID
+     * for non-persisted Entry instances (e.g., in unit tests).
+     */
+    private function getCacheKey(Entry $entry): string
+    {
+        return $entry->id !== null
+            ? 'id_'.$entry->id
+            : 'obj_'.spl_object_id($entry);
     }
 }

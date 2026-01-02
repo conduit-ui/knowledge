@@ -83,20 +83,20 @@ test('duplicates command displays entry details', function () {
     $entry1 = Entry::factory()->create([
         'title' => 'Test Entry',
         'content' => 'Same content',
-        'status' => 'active',
+        'status' => 'validated',
         'confidence' => 85,
     ]);
     $entry2 = Entry::factory()->create([
         'title' => 'Test Entry',
         'content' => 'Same content',
-        'status' => 'active',
+        'status' => 'validated',
         'confidence' => 90,
     ]);
 
     $this->artisan('duplicates', ['--threshold' => 70])
         ->expectsOutputToContain("#{$entry1->id} Test Entry")
         ->expectsOutputToContain("#{$entry2->id} Test Entry")
-        ->expectsOutputToContain('Status: active')
+        ->expectsOutputToContain('Status: validated')
         ->expectsOutputToContain('Confidence: 85%')
         ->expectsOutputToContain('Confidence: 90%')
         ->assertExitCode(0);

@@ -88,6 +88,11 @@ describe('DockerService', function () {
         it('returns boolean', function () {
             $service = new DockerService;
 
+            // Skip if Docker is not installed (avoids timeout in CI environments)
+            if (! $service->isInstalled()) {
+                $this->markTestSkipped('Docker is not installed');
+            }
+
             expect($service->isRunning())->toBeBool();
         });
     });
