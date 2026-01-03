@@ -146,29 +146,23 @@ class EndCommand extends Command
 
     private function saveToKnowledge(string $project, ?string $branch, string $summary): void
     {
-        try {
-            $title = "Session: {$project} " . now()->format('Y-m-d H:i');
+        $title = "Session: {$project} " . now()->format('Y-m-d H:i');
 
-            $tags = ['session-end', $project, now()->format('Y-m-d')];
-            if ($branch !== null) {
-                $tags[] = "branch:{$branch}";
-            }
-
-            Entry::create([
-                'title' => $title,
-                'content' => $summary,
-                'category' => 'session',
-                'tags' => $tags,
-                'priority' => 'low',
-                'confidence' => 80,
-                'status' => 'validated',
-                'repo' => $project,
-                'branch' => $branch,
-            ]);
-        } catch (\Exception $e) {
-            if (!$this->option('quiet')) {
-                $this->warn("[session:end] Could not save to knowledge: " . $e->getMessage());
-            }
+        $tags = ['session-end', $project, now()->format('Y-m-d')];
+        if ($branch !== null) {
+            $tags[] = "branch:{$branch}";
         }
+
+        Entry::create([
+            'title' => $title,
+            'content' => $summary,
+            'category' => 'session',
+            'tags' => $tags,
+            'priority' => 'low',
+            'confidence' => 80,
+            'status' => 'validated',
+            'repo' => $project,
+            'branch' => $branch,
+        ]);
     }
 }

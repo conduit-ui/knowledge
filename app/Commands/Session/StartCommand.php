@@ -178,44 +178,32 @@ class StartCommand extends Command
      */
     private function getRelevantKnowledge(string $project): array
     {
-        try {
-            $entries = Entry::query()
-                ->where(function ($query) use ($project) {
-                    $query->where('tags', 'like', "%{$project}%")
-                        ->orWhere('repo', 'like', "%{$project}%");
-                })
-                ->where('status', '!=', 'deprecated')
-                ->orderByDesc('confidence')
-                ->orderByDesc('updated_at')
-                ->limit(5)
-                ->get(['title', 'confidence']);
+        $entries = Entry::query()
+            ->where(function ($query) use ($project) {
+                $query->where('tags', 'like', "%{$project}%")
+                    ->orWhere('repo', 'like', "%{$project}%");
+            })
+            ->where('status', '!=', 'deprecated')
+            ->orderByDesc('confidence')
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get(['title', 'confidence']);
 
-            return $entries->map(fn ($e) => [
-                'title' => $e->title,
-                'confidence' => $e->confidence,
-            ])->toArray();
-        } catch (\Exception) {
-            return [];
-        }
+        return $entries->map(fn ($e) => [
+            'title' => $e->title,
+            'confidence' => $e->confidence,
+        ])->toArray();
     }
 
     private function getLastSessionSummary(string $project): ?string
     {
-        try {
-            $lastSession = Session::query()
-                ->where('project', $project)
-                ->whereNotNull('ended_at')
-                ->whereNotNull('summary')
-                ->orderByDesc('ended_at')
-                ->first();
+        $lastSession = Session::query()
+            ->where('project', $project)
+            ->whereNotNull('ended_at')
+            ->whereNotNull('summary')
+            ->orderByDesc('ended_at')
+            ->first();
 
-            if ($lastSession !== null && $lastSession->summary !== null) {
-                return $lastSession->summary;
-            }
-        } catch (\Exception) {
-            // Ignore - session table may not exist yet
-        }
-
-        return null;
+        return $lastSession?->summary;
     }
 }
