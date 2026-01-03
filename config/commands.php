@@ -55,6 +55,7 @@ return [
     */
 
     'hidden' => [
+        // Framework internals
         NunoMaduro\LaravelConsoleSummary\SummaryCommand::class,
         Symfony\Component\Console\Command\DumpCompletionCommand::class,
         Symfony\Component\Console\Command\HelpCommand::class,
@@ -63,6 +64,28 @@ return [
         Illuminate\Console\Scheduling\ScheduleFinishCommand::class,
         Illuminate\Foundation\Console\VendorPublishCommand::class,
         LaravelZero\Framework\Commands\StubPublishCommand::class,
+
+        // Database commands (run automatically on install)
+        Illuminate\Database\Console\Migrations\MigrateCommand::class,
+        Illuminate\Database\Console\Migrations\FreshCommand::class,
+        Illuminate\Database\Console\Migrations\InstallCommand::class,
+        Illuminate\Database\Console\Migrations\RefreshCommand::class,
+        Illuminate\Database\Console\Migrations\ResetCommand::class,
+        Illuminate\Database\Console\Migrations\RollbackCommand::class,
+        Illuminate\Database\Console\Migrations\StatusCommand::class,
+        Illuminate\Database\Console\WipeCommand::class,
+        Illuminate\Database\Console\Seeds\SeedCommand::class,
+
+        // Development commands (not for end users)
+        Illuminate\Database\Console\Migrations\MigrateMakeCommand::class,
+        Illuminate\Foundation\Console\ModelMakeCommand::class,
+        Illuminate\Database\Console\Seeds\SeederMakeCommand::class,
+        Illuminate\Database\Console\Factories\FactoryMakeCommand::class,
+        LaravelZero\Framework\Commands\MakeCommand::class,
+        LaravelZero\Framework\Commands\TestMakeCommand::class,
+        LaravelZero\Framework\Commands\BuildCommand::class,
+        LaravelZero\Framework\Commands\InstallCommand::class,
+        LaravelZero\Framework\Commands\RenameCommand::class,
     ],
 
     /*
