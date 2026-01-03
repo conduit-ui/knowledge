@@ -6,6 +6,7 @@ namespace App\Commands\Session;
 
 use App\Models\Entry;
 use App\Models\Session;
+use App\Services\SemanticSearchService;
 use LaravelZero\Framework\Commands\Command;
 
 class StartCommand extends Command
@@ -118,13 +119,16 @@ class StartCommand extends Command
             }
         }
 
-        // Recent relevant knowledge
+        // Recent relevant knowledge (semantic search, excludes session noise)
         $knowledge = $this->getRelevantKnowledge($project);
         if (count($knowledge) > 0) {
             $output[] = '';
             $output[] = '## Relevant Knowledge';
             foreach ($knowledge as $entry) {
                 $output[] = "- **{$entry['title']}** (confidence: {$entry['confidence']}%)";
+                if ($entry['content'] !== '') {
+                    $output[] = "  " . $entry['content'] . '...';
+                }
             }
         }
 
@@ -174,25 +178,46 @@ class StartCommand extends Command
     }
 
     /**
-     * @return array<int, array{title: string, confidence: int}>
+     * @return array<int, array{title: string, confidence: int, content: string}>
      */
     private function getRelevantKnowledge(string $project): array
     {
-        $entries = Entry::query()
-            ->where(function ($query) use ($project) {
-                $query->where('tags', 'like', "%{$project}%")
-                    ->orWhere('repo', 'like', "%{$project}%");
-            })
-            ->where('status', '!=', 'deprecated')
-            ->orderByDesc('confidence')
-            ->orderByDesc('updated_at')
-            ->limit(5)
-            ->get(['title', 'confidence']);
+        // Try semantic search first (uses ChromaDB if available)
+        /** @var SemanticSearchService $searchService */
+        $searchService = app(SemanticSearchService::class);
+        $entries = $searchService->search($project, [
+            'status' => 'validated',
+        ]);
 
-        return $entries->map(fn ($e) => [
+        // Filter: exclude session category, require high confidence
+        $filtered = $entries
+            ->filter(fn (Entry $e) => $e->category !== 'session')
+            ->filter(fn (Entry $e) => $e->confidence >= 80)
+            ->take(5);
+
+        // Fallback to repo/tag matching if semantic search returns nothing useful
+        if ($filtered->isEmpty()) {
+            /** @var \Illuminate\Database\Eloquent\Builder<Entry> $query */
+            $query = Entry::query();
+            $filtered = $query
+                ->where(function (\Illuminate\Database\Eloquent\Builder $q) use ($project): void {
+                    $q->where('repo', $project)
+                        ->orWhereJsonContains('tags', $project);
+                })
+                ->where('status', 'validated')
+                ->where('category', '!=', 'session')
+                ->where('confidence', '>=', 80)
+                ->orderByDesc('confidence')
+                ->orderByDesc('updated_at')
+                ->limit(5)
+                ->get();
+        }
+
+        return $filtered->map(fn (Entry $e) => [
             'title' => $e->title,
             'confidence' => $e->confidence,
-        ])->toArray();
+            'content' => mb_substr($e->content ?? '', 0, 200),
+        ])->values()->toArray();
     }
 
     private function getLastSessionSummary(string $project): ?string
