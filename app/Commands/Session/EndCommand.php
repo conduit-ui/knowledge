@@ -84,7 +84,7 @@ class EndCommand extends Command
         }
 
         $gitRoot = shell_exec('git rev-parse --show-toplevel 2>/dev/null');
-        if ($gitRoot !== null && trim($gitRoot) !== '') {
+        if (is_string($gitRoot) && trim($gitRoot) !== '') {
             return basename(trim($gitRoot));
         }
 
@@ -94,7 +94,7 @@ class EndCommand extends Command
     private function detectBranch(): ?string
     {
         $branch = shell_exec('git branch --show-current 2>/dev/null');
-        if ($branch !== null && trim($branch) !== '') {
+        if (is_string($branch) && trim($branch) !== '') {
             return trim($branch);
         }
 
@@ -113,7 +113,7 @@ class EndCommand extends Command
 
         // Get commit count from session (approximate - last hour)
         $commits = shell_exec('git log --since="1 hour ago" --oneline 2>/dev/null');
-        if ($commits !== null) {
+        if (is_string($commits)) {
             $commitCount = count(array_filter(explode("\n", trim($commits))));
             if ($commitCount > 0) {
                 $lines[] = "Commits: {$commitCount}";
@@ -127,7 +127,7 @@ class EndCommand extends Command
 
         // Get modified files
         $modified = shell_exec('git diff --name-only HEAD~1 2>/dev/null');
-        if ($modified !== null && trim($modified) !== '') {
+        if (is_string($modified) && trim($modified) !== '') {
             $files = array_filter(explode("\n", trim($modified)));
             if (count($files) > 0) {
                 $lines[] = '';

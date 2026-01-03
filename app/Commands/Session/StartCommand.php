@@ -49,7 +49,7 @@ class StartCommand extends Command
 
         // Try to get git repo name
         $gitRoot = shell_exec('git rev-parse --show-toplevel 2>/dev/null');
-        if ($gitRoot !== null && trim($gitRoot) !== '') {
+        if (is_string($gitRoot) && trim($gitRoot) !== '') {
             return basename(trim($gitRoot));
         }
 
@@ -59,7 +59,7 @@ class StartCommand extends Command
     private function detectBranch(): ?string
     {
         $branch = shell_exec('git branch --show-current 2>/dev/null');
-        if ($branch !== null && trim($branch) !== '') {
+        if (is_string($branch) && trim($branch) !== '') {
             return trim($branch);
         }
 
@@ -91,14 +91,14 @@ class StartCommand extends Command
 
         // Uncommitted changes
         $status = shell_exec('git status --porcelain 2>/dev/null');
-        if ($status !== null) {
+        if (is_string($status)) {
             $changes = count(array_filter(explode("\n", trim($status))));
             $output[] = "- **Uncommitted:** {$changes} files";
         }
 
         // Last commit
         $lastCommit = shell_exec('git log -1 --oneline 2>/dev/null');
-        if ($lastCommit !== null && trim($lastCommit) !== '') {
+        if (is_string($lastCommit) && trim($lastCommit) !== '') {
             $output[] = "- **Last commit:** " . trim($lastCommit);
         }
 
@@ -106,7 +106,7 @@ class StartCommand extends Command
         if ($branch !== null && $branch !== 'main' && $branch !== 'master') {
             $commits = shell_exec('git log main..HEAD --oneline 2>/dev/null') ??
                        shell_exec('git log master..HEAD --oneline 2>/dev/null');
-            if ($commits !== null && trim($commits) !== '') {
+            if (is_string($commits) && trim($commits) !== '') {
                 $commitLines = array_slice(array_filter(explode("\n", trim($commits))), 0, 5);
                 if (count($commitLines) > 0) {
                     $output[] = '';
@@ -161,12 +161,12 @@ class StartCommand extends Command
         $context = [];
 
         $lastCommit = shell_exec('git log -1 --oneline 2>/dev/null');
-        if ($lastCommit !== null) {
+        if (is_string($lastCommit)) {
             $context['last_commit'] = trim($lastCommit);
         }
 
         $status = shell_exec('git status --porcelain 2>/dev/null');
-        if ($status !== null) {
+        if (is_string($status)) {
             $context['uncommitted_count'] = count(array_filter(explode("\n", trim($status))));
         }
 
