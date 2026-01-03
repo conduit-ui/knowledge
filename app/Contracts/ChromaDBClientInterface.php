@@ -76,4 +76,13 @@ interface ChromaDBClientInterface
      * Check if ChromaDB is available.
      */
     public function isAvailable(): bool;
+
+    /**
+     * Get all document IDs and metadata from a collection.
+     *
+     * @param  string  $collectionId  Collection ID
+     * @param  int  $limit  Maximum number of documents to retrieve
+     * @return array{ids: array<string>, metadatas: array<array<string, mixed>>}
+     */
+    public function getAll(string $collectionId, int $limit = 10000): array;
 }

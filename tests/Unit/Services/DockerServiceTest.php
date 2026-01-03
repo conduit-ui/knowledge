@@ -68,7 +68,8 @@ describe('DockerService', function () {
             if ($service->isInstalled()) {
                 $version = $service->getVersion();
                 expect($version)->not->toBeNull();
-                expect($version)->toMatch('/^[\d.]+/');
+                // Accept both docker version (e.g., "24.0.6") and podman version (e.g., "podman version 5.7.1")
+                expect($version)->toMatch('/\d+\.\d+/');
             } else {
                 // Docker not installed, version should be null
                 expect($service->getVersion())->toBeNull();

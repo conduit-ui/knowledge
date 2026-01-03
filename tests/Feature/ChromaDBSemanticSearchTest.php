@@ -442,6 +442,11 @@ describe('ChromaDB Semantic Search', function () {
             {
                 return true;
             }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
+            }
         };
 
         // Create entry with SQLite embedding
@@ -589,6 +594,11 @@ describe('ChromaDB Semantic Search', function () {
             public function isAvailable(): bool
             {
                 return true;
+            }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
             }
         };
 

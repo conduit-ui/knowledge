@@ -190,6 +190,26 @@ class MockChromaDBClient implements ChromaDBClientInterface
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function getAll(string $collectionId, int $limit = 10000): array
+    {
+        if (! isset($this->documents[$collectionId])) {
+            return [
+                'ids' => [],
+                'metadatas' => [],
+            ];
+        }
+
+        $docs = array_slice(array_values($this->documents[$collectionId]), 0, $limit);
+
+        return [
+            'ids' => array_column($docs, 'id'),
+            'metadatas' => array_column($docs, 'metadata'),
+        ];
+    }
+
+    /**
      * Get stored documents for testing.
      *
      * @return array<string, array<string, array<string, mixed>>>

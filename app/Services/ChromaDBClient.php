@@ -218,4 +218,30 @@ class ChromaDBClient implements ChromaDBClientInterface
             return false;
         }
     }
+
+    /**
+     * Get all document IDs and metadata from a collection.
+     *
+     * @return array{ids: array<string>, metadatas: array<array<string, mixed>>}
+     */
+    public function getAll(string $collectionId, int $limit = 10000): array
+    {
+        try {
+            $response = $this->client->post($this->getCollectionsPath()."/{$collectionId}/get", [
+                'json' => [
+                    'limit' => $limit,
+                    'include' => ['metadatas'],
+                ],
+            ]);
+
+            $data = json_decode((string) $response->getBody(), true);
+
+            return [
+                'ids' => $data['ids'] ?? [],
+                'metadatas' => $data['metadatas'] ?? [],
+            ];
+        } catch (GuzzleException $e) {
+            throw new \RuntimeException('Failed to get documents: '.$e->getMessage(), 0, $e);
+        }
+    }
 }
