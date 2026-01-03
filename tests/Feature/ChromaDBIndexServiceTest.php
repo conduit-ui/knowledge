@@ -250,6 +250,11 @@ describe('ChromaDBIndexService', function () {
             {
                 return false;
             }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
+            }
         };
 
         $service = new ChromaDBIndexService($failingClient, $this->mockEmbedding);
@@ -291,6 +296,11 @@ describe('ChromaDBIndexService', function () {
             public function isAvailable(): bool
             {
                 return false;
+            }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
             }
         };
 
@@ -334,6 +344,11 @@ describe('ChromaDBIndexService', function () {
             {
                 return false;
             }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
+            }
         };
 
         $service = new ChromaDBIndexService($failingClient, $this->mockEmbedding);
@@ -375,6 +390,11 @@ describe('ChromaDBIndexService', function () {
             public function isAvailable(): bool
             {
                 return false;
+            }
+
+            public function getAll(string $collectionId, int $limit = 10000): array
+            {
+                return ['ids' => [], 'metadatas' => []];
             }
         };
 

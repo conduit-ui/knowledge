@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Models\Entry;
 use App\Services\ChromaDBIndexService;
@@ -17,6 +18,8 @@ class KnowledgeIndexCommand extends Command
      */
     protected $signature = 'index
                             {--force : Force reindexing of all entries}
+                            {--prune : Remove orphaned entries from ChromaDB}
+                            {--dry-run : Show what would be pruned without deleting}
                             {--batch=100 : Batch size for indexing}';
 
     /**
@@ -24,15 +27,32 @@ class KnowledgeIndexCommand extends Command
      */
     protected $description = 'Index or reindex knowledge entries for semantic search';
 
-    public function handle(EmbeddingServiceInterface $embeddingService): int
+    public function handle(EmbeddingServiceInterface $embeddingService, ChromaDBClientInterface $chromaClient): int
     {
         /** @var bool $force */
         $force = $this->option('force');
 
+        /** @var bool $prune */
+        $prune = $this->option('prune');
+
+        /** @var bool $dryRun */
+        $dryRun = $this->option('dry-run');
+
         /** @var int $batchSize */
         $batchSize = (int) $this->option('batch');
 
-        // Check if ChromaDB is enabled
+        // Handle prune operation (only needs ChromaDB connectivity, not full config)
+        if ($prune) {
+            if (! $chromaClient->isAvailable()) {
+                $this->error('ChromaDB is not available. Check connection settings.');
+
+                return self::FAILURE;
+            }
+
+            return $this->pruneOrphans($chromaClient, $dryRun);
+        }
+
+        // Check if ChromaDB is enabled for indexing
         /** @var bool $chromaDBEnabled */
         $chromaDBEnabled = config('search.chromadb.enabled', false);
 
@@ -157,6 +177,104 @@ class KnowledgeIndexCommand extends Command
 
             return self::FAILURE;
         }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Remove orphaned entries from ChromaDB that no longer exist in SQLite.
+     */
+    private function pruneOrphans(ChromaDBClientInterface $chromaClient, bool $dryRun): int
+    {
+        $this->info('Scanning ChromaDB for orphaned entries...');
+
+        try {
+            $collection = $chromaClient->getOrCreateCollection('knowledge_entries');
+            $chromaData = $chromaClient->getAll($collection['id']);
+        } catch (\RuntimeException $e) {
+            $this->error('Failed to connect to ChromaDB: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $chromaIds = $chromaData['ids'];
+        $chromaMetadatas = $chromaData['metadatas'];
+
+        $this->line('Found '.count($chromaIds).' documents in ChromaDB');
+
+        // Get all valid entry IDs from SQLite
+        $validEntryIds = Entry::pluck('id')->toArray();
+        $validEntryIdSet = array_flip($validEntryIds);
+
+        $this->line('Found '.count($validEntryIds).' entries in SQLite');
+        $this->newLine();
+
+        // Find orphaned documents (entry_id not in SQLite, or no entry_id at all)
+        $orphanedDocIds = [];
+        $orphanedWithEntryId = 0;
+        $orphanedNoEntryId = 0;
+
+        foreach ($chromaIds as $index => $docId) {
+            $metadata = $chromaMetadatas[$index] ?? [];
+            $entryId = $metadata['entry_id'] ?? null;
+
+            if ($entryId === null) {
+                // Document has no entry_id (e.g., vision docs)
+                $orphanedDocIds[] = $docId;
+                $orphanedNoEntryId++;
+            } elseif (! isset($validEntryIdSet[$entryId])) {
+                // entry_id doesn't exist in SQLite
+                $orphanedDocIds[] = $docId;
+                $orphanedWithEntryId++;
+            }
+        }
+
+        if (count($orphanedDocIds) === 0) {
+            $this->info('No orphaned entries found. ChromaDB is in sync.');
+
+            return self::SUCCESS;
+        }
+
+        $this->warn('Found '.count($orphanedDocIds).' orphaned documents:');
+        $this->line("  - {$orphanedWithEntryId} with deleted entry_ids");
+        $this->line("  - {$orphanedNoEntryId} without entry_ids (external sources)");
+        $this->newLine();
+
+        if ($dryRun) {
+            $this->info('Dry run - no changes made.');
+            $this->line('Run without --dry-run to delete these documents.');
+
+            return self::SUCCESS;
+        }
+
+        if (! $this->confirm('Delete these orphaned documents from ChromaDB?')) {
+            $this->line('Aborted.');
+
+            return self::SUCCESS;
+        }
+
+        // Delete in batches
+        $batchSize = 100;
+        $deleted = 0;
+
+        $bar = $this->output->createProgressBar(count($orphanedDocIds));
+        $bar->start();
+
+        foreach (array_chunk($orphanedDocIds, $batchSize) as $batch) {
+            try {
+                $chromaClient->delete($collection['id'], $batch);
+                $deleted += count($batch);
+            } catch (\RuntimeException $e) {
+                $this->newLine();
+                $this->warn('Failed to delete batch: '.$e->getMessage());
+            }
+            $bar->advance(count($batch));
+        }
+
+        $bar->finish();
+        $this->newLine(2);
+
+        $this->info("Deleted {$deleted} orphaned documents from ChromaDB.");
 
         return self::SUCCESS;
     }

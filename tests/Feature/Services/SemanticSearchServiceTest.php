@@ -581,6 +581,11 @@ describe('SemanticSearchService', function () {
                 {
                     return true;
                 }
+
+                public function getAll(string $collectionId, int $limit = 10000): array
+                {
+                    return ['ids' => [], 'metadatas' => []];
+                }
             };
 
             $entry = Entry::factory()->create([
@@ -627,6 +632,11 @@ describe('SemanticSearchService', function () {
                 public function isAvailable(): bool
                 {
                     return true;
+                }
+
+                public function getAll(string $collectionId, int $limit = 10000): array
+                {
+                    return ['ids' => [], 'metadatas' => []];
                 }
             };
 
