@@ -449,4 +449,74 @@ describe('ChromaDBClient', function () {
 
         expect($count)->toBe(0);
     });
+
+    it('gets all documents from a collection', function () {
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([
+                'ids' => ['doc1', 'doc2', 'doc3'],
+                'metadatas' => [
+                    ['entry_id' => 1, 'title' => 'First'],
+                    ['entry_id' => 2, 'title' => 'Second'],
+                    ['entry_id' => 3, 'title' => 'Third'],
+                ],
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $result = $chromaClient->getAll('col_123');
+
+        expect($result)->toBeArray()
+            ->and($result['ids'])->toBe(['doc1', 'doc2', 'doc3'])
+            ->and($result['metadatas'])->toHaveCount(3)
+            ->and($result['metadatas'][0]['entry_id'])->toBe(1);
+    });
+
+    it('returns empty arrays when getAll response is missing data', function () {
+        $mock = new MockHandler([
+            new Response(200, [], json_encode([])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $result = $chromaClient->getAll('col_123');
+
+        expect($result)->toBeArray()
+            ->and($result['ids'])->toBe([])
+            ->and($result['metadatas'])->toBe([]);
+    });
+
+    it('throws exception when getAll request fails', function () {
+        $mock = new MockHandler([
+            new \GuzzleHttp\Exception\RequestException(
+                'Request error',
+                new Request('POST', '/api/v2/collections/col_123/get')
+            ),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $client = new Client(['handler' => $handlerStack]);
+
+        $chromaClient = new ChromaDBClient('http://localhost:8000');
+        $reflection = new ReflectionClass($chromaClient);
+        $property = $reflection->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($chromaClient, $client);
+
+        $chromaClient->getAll('col_123');
+    })->throws(RuntimeException::class, 'Failed to get documents');
 });
