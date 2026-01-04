@@ -18,7 +18,7 @@ return new class extends Migration
             $table->json('tags')->nullable();
             $table->string('module', 50)->nullable();
             $table->enum('priority', ['critical', 'high', 'medium', 'low'])->default('medium');
-            $table->unsignedTinyInteger('confidence')->default(50);
+            $table->unsignedTinyInteger('confidence')->nullable()->default(50);
             $table->string('source', 255)->nullable();
             $table->string('ticket', 50)->nullable();
             $table->json('files')->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('branch', 255)->nullable();
             $table->string('commit', 40)->nullable();
             $table->string('author', 255)->nullable();
-            $table->enum('status', ['draft', 'validated', 'deprecated'])->default('draft');
+            $table->enum('status', ['draft', 'pending', 'validated', 'deprecated'])->default('draft');
             $table->unsignedInteger('usage_count')->default(0);
             $table->timestamp('last_used')->nullable();
             $table->timestamp('validation_date')->nullable();
