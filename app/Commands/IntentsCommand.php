@@ -81,7 +81,7 @@ class IntentsCommand extends Command
             $grouped = $this->groupByDate($intents);
 
             foreach ($grouped as $dateLabel => $groupedIntents) {
-                $this->components->info($dateLabel);
+                $this->line("{$dateLabel}:");
                 foreach ($groupedIntents as $intent) {
                     $this->displayCompactIntent($intent);
                 }
@@ -147,7 +147,7 @@ class IntentsCommand extends Command
         $age = (int) $intent->created_at->diffInDays(now());
         $ageText = $age === 0 ? 'today' : "{$age} days ago";
 
-        $this->line("<fg=cyan>[{$intent->id}]</> {$intent->title}");
+        $this->line("[{$intent->id}] {$intent->title}");
 
         $metadata = [];
         $metadata[] = $ageText;

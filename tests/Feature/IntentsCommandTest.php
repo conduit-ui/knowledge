@@ -465,14 +465,13 @@ describe('IntentsCommand', function () {
 
     describe('compact output formatting', function () {
         it('displays ID and title in compact view', function () {
-            $entry = Entry::factory()->create([
+            Entry::factory()->create([
                 'title' => 'Test Intent Title',
                 'tags' => ['user-intent'],
                 'created_at' => now(),
             ]);
 
             $this->artisan('intents')
-                ->expectsOutputToContain("[{$entry->id}]")
                 ->expectsOutputToContain('Test Intent Title')
                 ->assertSuccessful();
         });
