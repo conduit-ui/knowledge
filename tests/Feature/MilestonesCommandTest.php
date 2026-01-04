@@ -550,33 +550,36 @@ describe('MilestonesCommand', function () {
     });
 
     it('groups GitHub PRs by date', function () {
+        $this->freezeTime();
+        $frozenNow = now();
+
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: json_encode([
                     [
                         'number' => 70,
                         'title' => 'Today PR',
-                        'mergedAt' => now()->toIso8601String(),
+                        'mergedAt' => $frozenNow->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/70',
                     ],
                     [
                         'number' => 69,
                         'title' => 'This Week PR',
-                        'mergedAt' => now()->subDays(4)->toIso8601String(),
+                        'mergedAt' => $frozenNow->copy()->subDays(4)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/69',
                     ],
                     [
                         'number' => 68,
                         'title' => 'Older PR',
-                        'mergedAt' => now()->subDays(10)->toIso8601String(),
+                        'mergedAt' => $frozenNow->copy()->subDays(10)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/68',
                     ],
                 ])
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -589,31 +592,34 @@ describe('MilestonesCommand', function () {
     });
 
     it('groups GitHub issues by date', function () {
+        $this->freezeTime();
+        $frozenNow = now();
+
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: json_encode([
                     [
                         'number' => 50,
                         'title' => 'Today Issue',
-                        'closedAt' => now()->toIso8601String(),
+                        'closedAt' => $frozenNow->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/50',
                     ],
                     [
                         'number' => 49,
                         'title' => 'This Week Issue',
-                        'closedAt' => now()->subDays(5)->toIso8601String(),
+                        'closedAt' => $frozenNow->copy()->subDays(5)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/49',
                     ],
                     [
                         'number' => 48,
                         'title' => 'Older Issue',
-                        'closedAt' => now()->subDays(15)->toIso8601String(),
+                        'closedAt' => $frozenNow->copy()->subDays(15)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/48',
                     ],
                 ])
@@ -632,10 +638,10 @@ describe('MilestonesCommand', function () {
             'git remote get-url origin' => Process::result(
                 output: 'https://github.com/conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -646,13 +652,13 @@ describe('MilestonesCommand', function () {
 
     it('detects repository from SSH git remote', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -664,10 +670,10 @@ describe('MilestonesCommand', function () {
     it('falls back to default repo when git remote fails', function () {
         Process::fake([
             'git remote get-url origin' => Process::result(exitCode: 1),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -679,13 +685,13 @@ describe('MilestonesCommand', function () {
     // Edge Cases
     it('shows no milestones message when none exist', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -847,10 +853,10 @@ describe('MilestonesCommand', function () {
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -900,13 +906,13 @@ describe('MilestonesCommand', function () {
 
     it('shows Merged Pull Requests section header', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -918,13 +924,13 @@ describe('MilestonesCommand', function () {
 
     it('shows Closed Issues section header', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
