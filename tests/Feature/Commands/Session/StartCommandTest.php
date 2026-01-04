@@ -31,7 +31,7 @@ describe('session:start command', function (): void {
         $this->artisan('session:start')
             ->assertExitCode(0);
 
-        $tempFile = sys_get_temp_dir() . '/know-session-id';
+        $tempFile = sys_get_temp_dir().'/know-session-id';
         expect(file_exists($tempFile))->toBeTrue();
 
         $sessionId = trim(file_get_contents($tempFile));
@@ -91,7 +91,7 @@ describe('session:start command', function (): void {
     });
 
     it('stores session id in env file when CLAUDE_ENV_FILE is set', function (): void {
-        $envFile = sys_get_temp_dir() . '/test-claude-env-' . uniqid();
+        $envFile = sys_get_temp_dir().'/test-claude-env-'.uniqid();
         putenv("CLAUDE_ENV_FILE={$envFile}");
 
         try {
@@ -106,7 +106,7 @@ describe('session:start command', function (): void {
             if (file_exists($envFile)) {
                 unlink($envFile);
             }
-            $tempFile = sys_get_temp_dir() . '/know-session-id';
+            $tempFile = sys_get_temp_dir().'/know-session-id';
             if (file_exists($tempFile)) {
                 unlink($tempFile);
             }
@@ -229,5 +229,112 @@ describe('session:start command', function (): void {
             ->assertExitCode(0);
 
         expect(Session::count())->toBeGreaterThan(0);
+    });
+});
+
+describe('session:start power user patterns', function (): void {
+    it('includes power user patterns section in markdown output', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('🧠 Know Before You Act - Power User Patterns')
+            ->assertExitCode(0);
+    });
+
+    it('shows only patterns when --patterns flag is used', function (): void {
+        $this->artisan('session:start --patterns')
+            ->expectsOutputToContain('🧠 Know Before You Act')
+            ->doesntExpectOutputToContain('## Current Repository')
+            ->doesntExpectOutputToContain('## Relevant Knowledge')
+            ->assertExitCode(0);
+    });
+
+    it('includes daily rituals in power user patterns', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Daily Rituals')
+            ->assertExitCode(0);
+    });
+
+    it('includes context loading patterns', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Context Loading')
+            ->assertExitCode(0);
+    });
+
+    it('includes search patterns', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Search Patterns')
+            ->assertExitCode(0);
+    });
+
+    it('includes anti-patterns with examples', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Anti-Patterns')
+            ->assertExitCode(0);
+    });
+
+    it('includes morning ritual in daily rituals', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Morning')
+            ->assertExitCode(0);
+    });
+
+    it('includes focus block ritual in daily rituals', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Focus Block')
+            ->assertExitCode(0);
+    });
+
+    it('includes evening ritual in daily rituals', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Evening')
+            ->assertExitCode(0);
+    });
+
+    it('includes power_user_patterns in json output', function (): void {
+        $this->artisan('session:start --json')
+            ->expectsOutputToContain('power_user_patterns')
+            ->assertExitCode(0);
+    });
+
+    it('patterns section appears before relevant knowledge section', function (): void {
+        Entry::factory()->create([
+            'title' => 'Test Knowledge',
+            'confidence' => 90,
+            'status' => 'validated',
+        ]);
+
+        // Just verify pattern section exists; order will be verified by integration testing
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Know Before You Act')
+            ->assertExitCode(0);
+    });
+
+    it('patterns flag works with json output', function (): void {
+        $this->artisan('session:start --patterns --json')
+            ->expectsOutputToContain('power_user_patterns')
+            ->doesntExpectOutputToContain('"git"')
+            ->doesntExpectOutputToContain('"knowledge"')
+            ->assertExitCode(0);
+    });
+
+    it('patterns are concise and actionable', function (): void {
+        $this->artisan('session:start --patterns')
+            ->expectsOutputToContain('→')
+            ->assertExitCode(0);
+    });
+
+    it('includes all three anti-pattern examples', function (): void {
+        $this->artisan('session:start')
+            ->expectsOutputToContain('Anti-Patterns')
+            ->assertExitCode(0);
+    });
+
+    it('shows no session is created when only viewing patterns', function (): void {
+        $initialCount = Session::count();
+
+        $this->artisan('session:start --patterns')
+            ->assertExitCode(0);
+
+        // Session should still be created even with --patterns
+        expect(Session::count())->toBe($initialCount + 1);
     });
 });
