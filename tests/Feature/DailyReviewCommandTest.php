@@ -131,13 +131,13 @@ describe('DailyReviewCommand', function () {
 
         it('handles days with no milestones', function () {
             Process::fake([
-                'git remote get-url origin' => Process::result(
+                '*git*remote*get-url*origin*' => Process::result(
                     output: 'git@github.com:conduit-ui/knowledge.git'
                 ),
-                'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+                '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                     output: '[]'
                 ),
-                'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+                '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                     output: '[]'
                 ),
             ]);
@@ -411,8 +411,7 @@ describe('DailyReviewCommand', function () {
                 ->expectsQuestion('What did you learn?', 'Learnings')
                 ->expectsQuestion('What would you do differently?', 'Improvements')
                 ->expectsQuestion('What are your key takeaways?', 'Takeaways')
-                ->expectsOutputToContain('Daily Review')
-                ->expectsOutputToContain(now()->format('l, F j, Y'))
+                ->expectsOutputToContain('Daily Review - '.now()->format('l, F j, Y'))
                 ->assertSuccessful();
         });
 
