@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string>|null $tags
  * @property string|null $module
  * @property string $priority
- * @property int $confidence
+ * @property int|null $confidence
  * @property string|null $source
  * @property string|null $ticket
  * @property array<string>|null $files
