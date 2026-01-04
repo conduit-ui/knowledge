@@ -270,7 +270,7 @@ class MilestonesCommand extends Command
         $older = new Collection;
 
         foreach ($milestones as $milestone) {
-            $age = (int) $milestone->created_at->diffInDays(now());
+            $age = (int) $milestone->created_at->startOfDay()->diffInDays(now()->startOfDay());
 
             if ($age === 0) {
                 $today->push($milestone);
@@ -364,8 +364,8 @@ class MilestonesCommand extends Command
         $older = [];
 
         foreach ($items as $item) {
-            $date = Carbon::parse($item[$dateField]);
-            $age = (int) $date->diffInDays(now());
+            $date = Carbon::parse($item[$dateField])->startOfDay();
+            $age = (int) $date->diffInDays(now()->startOfDay());
 
             if ($age === 0) {
                 $today[] = $item;

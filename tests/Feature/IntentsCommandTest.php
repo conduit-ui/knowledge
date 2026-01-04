@@ -240,6 +240,7 @@ describe('IntentsCommand', function () {
         });
 
         it('includes intents from exact since date', function () {
+            $this->freezeTime();
             $exactDate = now()->subDays(7);
 
             Entry::factory()->create([
