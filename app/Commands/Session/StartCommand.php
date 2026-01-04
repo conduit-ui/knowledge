@@ -12,7 +12,8 @@ use LaravelZero\Framework\Commands\Command;
 class StartCommand extends Command
 {
     protected $signature = 'session:start
-                            {--json : Output as JSON instead of markdown}';
+                            {--json : Output as JSON instead of markdown}
+                            {--patterns : Show only power user patterns}';
 
     protected $description = 'Start a new session and output context for Claude Code hooks';
 
@@ -32,7 +33,16 @@ class StartCommand extends Command
         $this->storeSessionId($session->id);
 
         // Output context for Claude
-        if ($this->option('json')) {
+        /** @var bool $patterns */
+        $patterns = $this->option('patterns');
+        /** @var bool $json */
+        $json = $this->option('json');
+
+        if ($patterns && $json) {
+            $this->outputPatternsJson();
+        } elseif ($patterns) {
+            $this->outputPatternsMarkdown();
+        } elseif ($json) {
             $this->outputJson($project, $branch, $session->id);
         } else {
             $this->outputMarkdown($project, $branch, $session->id);
@@ -75,7 +85,7 @@ class StartCommand extends Command
         }
 
         // Also store in temp file as fallback
-        $tempFile = sys_get_temp_dir() . '/know-session-id';
+        $tempFile = sys_get_temp_dir().'/know-session-id';
         file_put_contents($tempFile, $sessionId);
     }
 
@@ -100,7 +110,7 @@ class StartCommand extends Command
         // Last commit
         $lastCommit = shell_exec('git log -1 --oneline 2>/dev/null');
         if (is_string($lastCommit) && trim($lastCommit) !== '') {
-            $output[] = "- **Last commit:** " . trim($lastCommit);
+            $output[] = '- **Last commit:** '.trim($lastCommit);
         }
 
         // Branch commits (if on feature branch)
@@ -119,6 +129,10 @@ class StartCommand extends Command
             }
         }
 
+        // Power user patterns
+        $output[] = '';
+        $output = array_merge($output, $this->getPowerUserPatterns());
+
         // Recent relevant knowledge (semantic search, excludes session noise)
         $knowledge = $this->getRelevantKnowledge($project);
         if (count($knowledge) > 0) {
@@ -127,7 +141,7 @@ class StartCommand extends Command
             foreach ($knowledge as $entry) {
                 $output[] = "- **{$entry['title']}** (confidence: {$entry['confidence']}%)";
                 if ($entry['content'] !== '') {
-                    $output[] = "  " . $entry['content'] . '...';
+                    $output[] = '  '.$entry['content'].'...';
                 }
             }
         }
@@ -152,6 +166,7 @@ class StartCommand extends Command
             'started_at' => now()->toIso8601String(),
             'git' => $this->getGitContext(),
             'knowledge' => $this->getRelevantKnowledge($project),
+            'power_user_patterns' => $this->getPowerUserPatternsArray(),
         ];
 
         $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
@@ -230,5 +245,132 @@ class StartCommand extends Command
             ->first();
 
         return $lastSession?->summary;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getPowerUserPatterns(): array
+    {
+        return [
+            '## 🧠 Know Before You Act - Power User Patterns',
+            '',
+            '### Daily Rituals',
+            '**Morning (5 min)**',
+            '- ./know priorities → See top 3 blockers/intents',
+            '- ./know context → Load project-specific knowledge',
+            '- ./know blockers --project=X → Check what\'s blocking progress',
+            '',
+            '**Focus Block (2-4 hours)**',
+            '- ./know focus-time <project> <hours> → Declare focus block',
+            '  → Tracks context switches automatically',
+            '  → Measures effectiveness (0-10 score)',
+            '  → Prompts energy before/after',
+            '',
+            '**Evening (10 min)**',
+            '- ./know daily-review → Structured reflection',
+            '  → Auto-pulls merged PRs + closed issues',
+            '  → 5 reflection questions',
+            '  → Saves as validated entry (confidence: 95)',
+            '',
+            '### Context Loading',
+            '- Before coding: ./know context or ./know session:start',
+            '- Check blockers: ./know blockers --project=prefrontal-cortex',
+            '- Recent wins: ./know milestones --today',
+            '- Recent work: ./know intents --recent',
+            '',
+            '### Search Patterns',
+            '- Already solved? ./know search "authentication flow"',
+            '- High confidence only: ./know search --confidence=80',
+            '- By category: ./know search --category=debugging',
+            '- Semantic search: ./know search --semantic "error handling"',
+            '',
+            '### Anti-Patterns (Learn from Mistakes)',
+            '❌ Ship 5 PRs → ask "what am I missing" → no reflection',
+            '✅ Ship 5 PRs → ./know daily-review → celebrate → extract learning → plan tomorrow',
+            '',
+            '❌ Context switch 20+ times → scattered focus → low effectiveness',
+            '✅ ./know focus-time prefrontal-cortex 3 → declare block → track switches → adjust behavior',
+            '',
+            '❌ Start coding immediately → miss existing solutions → duplicate work',
+            '✅ ./know search first → leverage past work → avoid duplication → ship faster',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getPowerUserPatternsArray(): array
+    {
+        return [
+            'daily_rituals' => [
+                'morning' => [
+                    'duration' => '5 min',
+                    'commands' => [
+                        './know priorities → See top 3 blockers/intents',
+                        './know context → Load project-specific knowledge',
+                        './know blockers --project=X → Check what\'s blocking progress',
+                    ],
+                ],
+                'focus_block' => [
+                    'duration' => '2-4 hours',
+                    'commands' => [
+                        './know focus-time <project> <hours> → Declare focus block',
+                        '→ Tracks context switches automatically',
+                        '→ Measures effectiveness (0-10 score)',
+                        '→ Prompts energy before/after',
+                    ],
+                ],
+                'evening' => [
+                    'duration' => '10 min',
+                    'commands' => [
+                        './know daily-review → Structured reflection',
+                        '→ Auto-pulls merged PRs + closed issues',
+                        '→ 5 reflection questions',
+                        '→ Saves as validated entry (confidence: 95)',
+                    ],
+                ],
+            ],
+            'context_loading' => [
+                'Before coding: ./know context or ./know session:start',
+                'Check blockers: ./know blockers --project=prefrontal-cortex',
+                'Recent wins: ./know milestones --today',
+                'Recent work: ./know intents --recent',
+            ],
+            'search_patterns' => [
+                'Already solved? ./know search "authentication flow"',
+                'High confidence only: ./know search --confidence=80',
+                'By category: ./know search --category=debugging',
+                'Semantic search: ./know search --semantic "error handling"',
+            ],
+            'anti_patterns' => [
+                [
+                    'wrong' => 'Ship 5 PRs → ask "what am I missing" → no reflection',
+                    'right' => 'Ship 5 PRs → ./know daily-review → celebrate → extract learning → plan tomorrow',
+                ],
+                [
+                    'wrong' => 'Context switch 20+ times → scattered focus → low effectiveness',
+                    'right' => './know focus-time prefrontal-cortex 3 → declare block → track switches → adjust behavior',
+                ],
+                [
+                    'wrong' => 'Start coding immediately → miss existing solutions → duplicate work',
+                    'right' => './know search first → leverage past work → avoid duplication → ship faster',
+                ],
+            ],
+        ];
+    }
+
+    private function outputPatternsMarkdown(): void
+    {
+        $this->line(implode("\n", $this->getPowerUserPatterns()));
+    }
+
+    private function outputPatternsJson(): void
+    {
+        $data = [
+            'power_user_patterns' => $this->getPowerUserPatternsArray(),
+        ];
+
+        $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
     }
 }
