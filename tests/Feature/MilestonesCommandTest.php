@@ -551,6 +551,8 @@ describe('MilestonesCommand', function () {
 
     it('groups GitHub PRs by date', function () {
         $this->freezeTime();
+        $frozenNow = now();
+
         Process::fake([
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
@@ -560,19 +562,19 @@ describe('MilestonesCommand', function () {
                     [
                         'number' => 70,
                         'title' => 'Today PR',
-                        'mergedAt' => now()->toIso8601String(),
+                        'mergedAt' => $frozenNow->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/70',
                     ],
                     [
                         'number' => 69,
                         'title' => 'This Week PR',
-                        'mergedAt' => now()->subDays(4)->toIso8601String(),
+                        'mergedAt' => $frozenNow->copy()->subDays(4)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/69',
                     ],
                     [
                         'number' => 68,
                         'title' => 'Older PR',
-                        'mergedAt' => now()->subDays(10)->toIso8601String(),
+                        'mergedAt' => $frozenNow->copy()->subDays(10)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/pull/68',
                     ],
                 ])
@@ -591,6 +593,8 @@ describe('MilestonesCommand', function () {
 
     it('groups GitHub issues by date', function () {
         $this->freezeTime();
+        $frozenNow = now();
+
         Process::fake([
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
@@ -603,19 +607,19 @@ describe('MilestonesCommand', function () {
                     [
                         'number' => 50,
                         'title' => 'Today Issue',
-                        'closedAt' => now()->toIso8601String(),
+                        'closedAt' => $frozenNow->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/50',
                     ],
                     [
                         'number' => 49,
                         'title' => 'This Week Issue',
-                        'closedAt' => now()->subDays(5)->toIso8601String(),
+                        'closedAt' => $frozenNow->copy()->subDays(5)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/49',
                     ],
                     [
                         'number' => 48,
                         'title' => 'Older Issue',
-                        'closedAt' => now()->subDays(15)->toIso8601String(),
+                        'closedAt' => $frozenNow->copy()->subDays(15)->toIso8601String(),
                         'url' => 'https://github.com/conduit-ui/knowledge/issues/48',
                     ],
                 ])
