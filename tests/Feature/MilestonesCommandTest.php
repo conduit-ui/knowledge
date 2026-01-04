@@ -550,6 +550,7 @@ describe('MilestonesCommand', function () {
     });
 
     it('groups GitHub PRs by date', function () {
+        $this->freezeTime();
         Process::fake([
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
@@ -589,6 +590,7 @@ describe('MilestonesCommand', function () {
     });
 
     it('groups GitHub issues by date', function () {
+        $this->freezeTime();
         Process::fake([
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
