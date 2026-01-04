@@ -554,10 +554,10 @@ describe('MilestonesCommand', function () {
         $frozenNow = now();
 
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: json_encode([
                     [
                         'number' => 70,
@@ -579,7 +579,7 @@ describe('MilestonesCommand', function () {
                     ],
                 ])
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -596,13 +596,13 @@ describe('MilestonesCommand', function () {
         $frozenNow = now();
 
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: json_encode([
                     [
                         'number' => 50,
@@ -638,10 +638,10 @@ describe('MilestonesCommand', function () {
             'git remote get-url origin' => Process::result(
                 output: 'https://github.com/conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -652,13 +652,13 @@ describe('MilestonesCommand', function () {
 
     it('detects repository from SSH git remote', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -670,10 +670,10 @@ describe('MilestonesCommand', function () {
     it('falls back to default repo when git remote fails', function () {
         Process::fake([
             'git remote get-url origin' => Process::result(exitCode: 1),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -685,13 +685,13 @@ describe('MilestonesCommand', function () {
     // Edge Cases
     it('shows no milestones message when none exist', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -853,10 +853,10 @@ describe('MilestonesCommand', function () {
             'git remote get-url origin' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -906,13 +906,13 @@ describe('MilestonesCommand', function () {
 
     it('shows Merged Pull Requests section header', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
@@ -924,13 +924,13 @@ describe('MilestonesCommand', function () {
 
     it('shows Closed Issues section header', function () {
         Process::fake([
-            'git remote get-url origin' => Process::result(
+            '*git*remote*get-url*origin*' => Process::result(
                 output: 'git@github.com:conduit-ui/knowledge.git'
             ),
-            'gh pr list --repo conduit-ui/knowledge --state merged --json number,title,mergedAt,url --limit 100' => Process::result(
+            '*gh*pr*list*--repo*conduit-ui/knowledge*--state*merged*' => Process::result(
                 output: '[]'
             ),
-            'gh issue list --repo conduit-ui/knowledge --state closed --json number,title,closedAt,url --limit 100' => Process::result(
+            '*gh*issue*list*--repo*conduit-ui/knowledge*--state*closed*' => Process::result(
                 output: '[]'
             ),
         ]);
