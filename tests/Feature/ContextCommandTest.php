@@ -177,4 +177,24 @@ describe('ContextCommand', function () {
 
         expect($output)->toBe(0);
     });
+
+    it('handles clean git status', function () {
+        Process::fake([
+            '*' => Process::result(output: ''),
+        ]);
+
+        $this->artisan('context')
+            ->expectsOutputToContain('Clean')
+            ->assertSuccessful();
+    });
+
+    it('handles git status with changes', function () {
+        Process::fake([
+            '*' => Process::result(output: 'M file.php'),
+        ]);
+
+        $this->artisan('context')
+            ->expectsOutputToContain('Changes present')
+            ->assertSuccessful();
+    });
 });
