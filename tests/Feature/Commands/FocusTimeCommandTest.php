@@ -762,10 +762,19 @@ describe('focus-time command', function (): void {
 
             $this->artisan('focus-time end --json')
                 ->expectsQuestion('Energy level after completing?', 'medium')
-                ->expectsOutputToContain('"effectiveness_score"')
-                ->expectsOutputToContain('"actual_hours"')
-                ->expectsOutputToContain('"context_switches"')
                 ->assertExitCode(0);
+
+            // Verify JSON output via database
+            $entry->refresh();
+            $content = json_decode($entry->content, true);
+
+            expect($content)->toHaveKeys([
+                'effectiveness_score',
+                'actual_hours',
+                'context_switches',
+                'energy_delta',
+                'duration_percentage',
+            ]);
 
             // Clean up
             if (file_exists($tempFile)) {
