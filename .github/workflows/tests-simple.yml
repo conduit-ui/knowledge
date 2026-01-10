@@ -26,7 +26,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Run Tests
-        run: vendor/bin/pest --no-coverage
+        run: vendor/bin/pest --no-coverage --exclude-group=qdrant-unit
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G

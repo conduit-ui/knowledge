@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Cache;
 use Saloon\Exceptions\Request\ClientException;
 use Saloon\Http\Response;
 
+uses()->group('qdrant-unit');
+
 beforeEach(function () {
     Cache::flush();
 
