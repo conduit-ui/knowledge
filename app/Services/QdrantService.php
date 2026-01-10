@@ -22,7 +22,7 @@ use Saloon\Exceptions\Request\ClientException;
 
 class QdrantService
 {
-    private readonly QdrantConnector $connector;
+    private QdrantConnector $connector;
 
     public function __construct(
         private readonly EmbeddingServiceInterface $embeddingService,
