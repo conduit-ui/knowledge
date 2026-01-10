@@ -326,7 +326,7 @@ PROMPT;
     private function buildIssueAnalysisPrompt(array $issue, array $codebaseContext): string
     {
         $labels = isset($issue['labels']) ? implode(', ', array_column($issue['labels'], 'name')) : '';
-        $contextFiles = ! empty($codebaseContext) ? "\n\nCodebase Context:\n".implode("\n", $codebaseContext) : '';
+        $contextFiles = count($codebaseContext) > 0 ? "\n\nCodebase Context:\n".implode("\n", $codebaseContext) : '';
 
         return <<<PROMPT
 Analyze this GitHub issue and identify which files need to be modified.

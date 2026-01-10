@@ -25,7 +25,7 @@ class KnowledgeSearchService
         }
 
         // Use semantic search to find related entries
-        $entries = $this->semanticSearch->search($searchText, 5);
+        $entries = $this->semanticSearch->search($searchText);
 
         $results = [];
 
