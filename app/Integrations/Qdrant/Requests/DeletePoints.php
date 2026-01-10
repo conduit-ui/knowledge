@@ -16,7 +16,6 @@ class DeletePoints extends Request implements HasBody
     protected Method $method = Method::POST;
 
     /**
-     * @param  string  $collectionName
      * @param  array<string|int>  $pointIds
      */
     public function __construct(

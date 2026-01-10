@@ -6,8 +6,8 @@ namespace App\Commands;
 
 use App\Services\GitContextService;
 use App\Services\QdrantService;
-use LaravelZero\Framework\Commands\Command;
 use Illuminate\Support\Str;
+use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeAddCommand extends Command
 {

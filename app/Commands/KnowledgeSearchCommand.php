@@ -78,7 +78,7 @@ class KnowledgeSearchCommand extends Command
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
 
-            $this->line("<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).")</>");
+            $this->line("<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>');
             $this->line('Category: '.$category." | Priority: {$priority} | Confidence: {$confidence}%");
 
             if ($module !== null) {

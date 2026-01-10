@@ -16,7 +16,6 @@ class UpsertPoints extends Request implements HasBody
     protected Method $method = Method::PUT;
 
     /**
-     * @param  string  $collectionName
      * @param  array<int, array{id: string|int, vector: array<float>, payload: array<string, mixed>}>  $points
      */
     public function __construct(

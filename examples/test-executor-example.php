@@ -19,7 +19,7 @@ function runFullTestSuite(TestExecutorService $executor): void
     $results = $executor->runTests();
 
     echo "Results:\n";
-    echo "- Passed: ".($results['passed'] ? 'Yes' : 'No')."\n";
+    echo '- Passed: '.($results['passed'] ? 'Yes' : 'No')."\n";
     echo "- Total Tests: {$results['total']}\n";
     echo "- Failed Tests: {$results['failed']}\n";
     echo "- Exit Code: {$results['exit_code']}\n\n";
@@ -76,7 +76,7 @@ OUTPUT;
 
     $failures = $executor->parseFailures($sampleOutput);
 
-    echo "Found ".count($failures)." failure(s):\n\n";
+    echo 'Found '.count($failures)." failure(s):\n\n";
 
     foreach ($failures as $i => $failure) {
         echo sprintf(
@@ -194,7 +194,7 @@ function batchProcessing(TestExecutorService $executor): void
         'tests/Feature/Services/SemanticSearchServiceTest.php',
     ];
 
-    echo "Batch processing ".count($testFiles)." test files\n\n";
+    echo 'Batch processing '.count($testFiles)." test files\n\n";
 
     $summary = [
         'total' => 0,
@@ -214,10 +214,10 @@ function batchProcessing(TestExecutorService $executor): void
         $summary['total']++;
         if ($results['passed']) {
             $summary['passed']++;
-            echo "✓ ".basename($testFile)." - Passed\n";
+            echo '✓ '.basename($testFile)." - Passed\n";
         } else {
             $summary['failed']++;
-            echo "✗ ".basename($testFile)." - Failed ({$results['failed']} failures)\n";
+            echo '✗ '.basename($testFile)." - Failed ({$results['failed']} failures)\n";
         }
     }
 

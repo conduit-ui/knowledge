@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\ObservationType;
 use App\Services\StubFtsService;
 
 beforeEach(function () {

@@ -1,7 +1,9 @@
-<?php declare(strict_types = 1);
+<?php
+
+declare(strict_types=1);
 
 // variadic-function-logger-/Users/jordanpartridge/packages/conduit-ui/knowledge/vendor/composer/../laravel-zero/foundation/src/Illuminate/Foundation/helpers.php
-return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1764084145-v4',
-   'data' => false,
-));
+return \PHPStan\Cache\CacheItem::__set_state([
+    'variableKey' => '1764084145-v4',
+    'data' => false,
+]);

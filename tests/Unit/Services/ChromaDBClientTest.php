@@ -8,12 +8,11 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Mockery\MockInterface;
 
 describe('ChromaDBClient', function () {
     beforeEach(function () {
         $this->mockClient = Mockery::mock(Client::class);
-        $this->service = new ChromaDBClient();
+        $this->service = new ChromaDBClient;
 
         // Inject mock client using reflection
         $reflection = new ReflectionClass($this->service);
@@ -24,7 +23,7 @@ describe('ChromaDBClient', function () {
 
     describe('constructor', function () {
         it('initializes with default values', function () {
-            $service = new ChromaDBClient();
+            $service = new ChromaDBClient;
 
             expect($service)->toBeInstanceOf(ChromaDBClient::class);
         });

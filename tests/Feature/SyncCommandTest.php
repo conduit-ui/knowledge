@@ -9,7 +9,6 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Illuminate\Support\Str;
 
 describe('SyncCommand', function () {
     beforeEach(function () {

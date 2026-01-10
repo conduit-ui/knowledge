@@ -1,7 +1,9 @@
-<?php declare(strict_types = 1);
+<?php
+
+declare(strict_types=1);
 
 // variadic-method-Illuminate\Console\Concerns\InteractsWithIO-argument-/Users/jordanpartridge/packages/conduit-ui/knowledge/vendor/composer/../illuminate/console/Concerns/InteractsWithIO.php
-return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1764282503-v4',
-   'data' => false,
-));
+return \PHPStan\Cache\CacheItem::__set_state([
+    'variableKey' => '1764282503-v4',
+    'data' => false,
+]);

@@ -16,10 +16,7 @@ class SearchPoints extends Request implements HasBody
     protected Method $method = Method::POST;
 
     /**
-     * @param  string  $collectionName
      * @param  array<float>  $vector
-     * @param  int  $limit
-     * @param  float  $scoreThreshold
      * @param  array<string, mixed>|null  $filter
      */
     public function __construct(

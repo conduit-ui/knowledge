@@ -1,7 +1,9 @@
-<?php declare(strict_types = 1);
+<?php
+
+declare(strict_types=1);
 
 // variadic-method-Illuminate\Database\Eloquent\Builder-where-/Users/jordanpartridge/packages/conduit-ui/knowledge/vendor/composer/../illuminate/database/Eloquent/Builder.php
-return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1765044505-v4',
-   'data' => true,
-));
+return \PHPStan\Cache\CacheItem::__set_state([
+    'variableKey' => '1765044505-v4',
+    'data' => true,
+]);

@@ -94,7 +94,7 @@ class KnowledgeSearchStatusCommand extends Command
         HTML);
 
         // Database Statistics
-        render(<<<HTML
+        render(<<<'HTML'
             <div class="mx-2 my-1 mt-2">
                 <div class="px-2 py-1">
                     <span class="text-gray-400 font-bold">DATABASE</span>
@@ -122,7 +122,7 @@ class KnowledgeSearchStatusCommand extends Command
             ? './know knowledge:search "query" --semantic'
             : '<span class="text-yellow">Configure provider first</span>';
 
-        render(<<<HTML
+        render(<<<'HTML'
             <div class="mx-2 my-1 mt-2">
                 <div class="px-2 py-1">
                     <span class="text-gray-400 font-bold">USAGE</span>
@@ -130,7 +130,7 @@ class KnowledgeSearchStatusCommand extends Command
             </div>
         HTML);
 
-        render(<<<HTML
+        render(<<<'HTML'
             <div class="mx-2">
                 <div class="px-4 py-1 bg-gray-900 mb-1">
                     <div class="flex justify-between">
@@ -152,7 +152,7 @@ class KnowledgeSearchStatusCommand extends Command
             </div>
         HTML);
 
-        render(<<<HTML
+        render(<<<'HTML'
             <div class="mx-2">
                 <div class="px-4 py-1 bg-gray-900 mb-1">
                     <div class="flex justify-between">

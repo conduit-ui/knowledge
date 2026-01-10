@@ -16,7 +16,6 @@ class GetPoints extends Request implements HasBody
     protected Method $method = Method::POST;
 
     /**
-     * @param  string  $collectionName
      * @param  array<string|int>  $ids
      */
     public function __construct(

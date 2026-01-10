@@ -1,7 +1,9 @@
-<?php declare(strict_types = 1);
+<?php
+
+declare(strict_types=1);
 
 // variadic-method-App\Services\IssueAnalyzerService-__construct-/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/IssueAnalyzerService.php
-return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1768019245-v4',
-   'data' => false,
-));
+return \PHPStan\Cache\CacheItem::__set_state([
+    'variableKey' => '1768019245-v4',
+    'data' => false,
+]);

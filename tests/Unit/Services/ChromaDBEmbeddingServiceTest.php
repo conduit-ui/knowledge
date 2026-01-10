@@ -7,12 +7,11 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Mockery\MockInterface;
 
 describe('ChromaDBEmbeddingService', function () {
     beforeEach(function () {
         $this->mockClient = Mockery::mock(Client::class);
-        $this->service = new ChromaDBEmbeddingService();
+        $this->service = new ChromaDBEmbeddingService;
 
         // Inject mock client using reflection
         $reflection = new ReflectionClass($this->service);
@@ -23,7 +22,7 @@ describe('ChromaDBEmbeddingService', function () {
 
     describe('constructor', function () {
         it('initializes with default values', function () {
-            $service = new ChromaDBEmbeddingService();
+            $service = new ChromaDBEmbeddingService;
 
             expect($service)->toBeInstanceOf(ChromaDBEmbeddingService::class);
         });

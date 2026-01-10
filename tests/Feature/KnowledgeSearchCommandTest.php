@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Contracts\FullTextSearchInterface;
 use App\Services\QdrantService;
-use Illuminate\Support\Collection;
 
 describe('KnowledgeSearchCommand', function () {
     beforeEach(function () {
