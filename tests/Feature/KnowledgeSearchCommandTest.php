@@ -24,7 +24,7 @@ describe('KnowledgeSearchCommand', function () {
     it('finds entries by keyword', function () {
         $this->qdrantService->shouldReceive('search')
             ->once()
-            ->with('Laravel', Mockery::type('array'))
+            ->with('Laravel', [], 20)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -49,7 +49,7 @@ describe('KnowledgeSearchCommand', function () {
     it('filters by tag', function () {
         $this->qdrantService->shouldReceive('search')
             ->once()
-            ->with('', ['tag' => 'php'])
+            ->with('', ['tag' => 'php'], 20)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-2',
@@ -74,7 +74,7 @@ describe('KnowledgeSearchCommand', function () {
     it('filters by category', function () {
         $this->qdrantService->shouldReceive('search')
             ->once()
-            ->with('', ['category' => 'tutorial'])
+            ->with('', ['category' => 'tutorial'], 20)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -109,7 +109,7 @@ describe('KnowledgeSearchCommand', function () {
     it('supports semantic flag', function () {
         $this->qdrantService->shouldReceive('search')
             ->once()
-            ->with('Laravel', Mockery::type('array'))
+            ->with('Laravel', [], 20)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -137,7 +137,7 @@ describe('KnowledgeSearchCommand', function () {
     it('combines query and filters', function () {
         $this->qdrantService->shouldReceive('search')
             ->once()
-            ->with('Laravel', ['category' => 'tutorial'])
+            ->with('Laravel', ['category' => 'tutorial'], 20)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -256,7 +256,7 @@ describe('KnowledgeSearchCommand', function () {
                 'priority' => 'high',
                 'status' => 'validated',
                 'tag' => 'laravel',
-            ])
+            ], 20)
             ->andReturn(collect([]));
 
         $this->artisan('search', [
