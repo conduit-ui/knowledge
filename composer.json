@@ -46,7 +46,7 @@
     },
     "scripts": {
         "test": "vendor/bin/pest",
-        "test-coverage": "vendor/bin/pest --coverage",
+        "test-coverage": "vendor/bin/pest --coverage --parallel --processes=4",
         "format": "vendor/bin/pint",
         "analyse": "vendor/bin/phpstan analyse"
     },
@@ -54,6 +54,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "optimize-autoloader": true,
+        "process-timeout": 900,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "phpstan/extension-installer": true
