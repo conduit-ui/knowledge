@@ -130,10 +130,15 @@ describe('ensureCollection', function () {
     it('throws exception when Qdrant connection fails', function () {
         $connector = Mockery::mock(QdrantConnector::class);
 
+        // Create a mock response for ClientException
+        $response = Mockery::mock(Response::class);
+        $response->shouldReceive('status')->andReturn(500);
+        $response->shouldReceive('body')->andReturn('Connection failed');
+
         $connector->shouldReceive('send')
             ->with(Mockery::type(GetCollectionInfo::class))
             ->once()
-            ->andThrow(new ClientException('Connection failed'));
+            ->andThrow(new ClientException($response, 'Connection failed'));
 
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('connector');
@@ -141,7 +146,7 @@ describe('ensureCollection', function () {
         $property->setValue($this->service, $connector);
 
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(\RuntimeException::class, 'Qdrant connection failed');
+            ->toThrow(\RuntimeException::class, 'Qdrant connection failed: Connection failed');
     });
 });
 
@@ -292,7 +297,7 @@ describe('upsert', function () {
         ];
 
         expect(fn () => $this->service->upsert($entry))
-            ->toThrow(\RuntimeException::class, 'Qdrant upsert failed');
+            ->toThrow(\RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
     });
 
     it('uses cached embeddings when caching is enabled', function () {

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Symfony\Component\Process\Process;
+use Illuminate\Process\ProcessResult;
+use Illuminate\Support\Facades\Process;
 
 /**
  * PullRequestService - GitHub PR creation and git workflow automation
@@ -59,7 +60,7 @@ class PullRequestService
 
         // Get current branch
         $branchProcess = $this->runCommand(['git', 'rev-parse', '--abbrev-ref', 'HEAD']);
-        if (! $branchProcess->isSuccessful()) {
+        if (! $branchProcess->successful()) {
             return [
                 'success' => false,
                 'url' => null,
@@ -67,7 +68,7 @@ class PullRequestService
                 'error' => 'Failed to get current branch',
             ];
         }
-        $branchName = trim($branchProcess->getOutput());
+        $branchName = trim($branchProcess->output());
 
         // Push branch
         if (! $this->pushBranch($branchName)) {
@@ -89,12 +90,12 @@ class PullRequestService
             '--body', $description,
         ]);
 
-        if (! $process->isSuccessful()) {
-            $errorOutput = trim($process->getErrorOutput());
+        if (! $process->successful()) {
+            $errorOutput = trim($process->errorOutput());
             if ($errorOutput !== '') {
                 $error = $errorOutput;
             } else {
-                $error = trim($process->getOutput());
+                $error = trim($process->output());
             }
 
             return [
@@ -106,7 +107,7 @@ class PullRequestService
         }
 
         // Extract PR URL and number from output
-        $output = trim($process->getOutput());
+        $output = trim($process->output());
         $url = $this->extractPrUrl($output);
         $number = $this->extractPrNumber($url);
 
@@ -165,11 +166,11 @@ class PullRequestService
     {
         $process = $this->runCommand(['composer', 'test-coverage']);
 
-        if (! $process->isSuccessful()) {
+        if (! $process->successful()) {
             return 0.0;
         }
 
-        $output = $process->getOutput();
+        $output = $process->output();
 
         // Extract coverage percentage from output
         if (preg_match('/(\d+\.?\d*)%/', $output, $matches)) {
@@ -187,14 +188,14 @@ class PullRequestService
         // Stage all changes
         $stageProcess = $this->runCommand(['git', 'add', '.']);
 
-        if (! $stageProcess->isSuccessful()) {
+        if (! $stageProcess->successful()) {
             return false;
         }
 
         // Commit with message
         $commitProcess = $this->runCommand(['git', 'commit', '-m', $message]);
 
-        return $commitProcess->isSuccessful();
+        return $commitProcess->successful();
     }
 
     /**
@@ -204,7 +205,7 @@ class PullRequestService
     {
         $process = $this->runCommand(['git', 'push', '-u', 'origin', $branchName]);
 
-        return $process->isSuccessful();
+        return $process->successful();
     }
 
     /**
@@ -257,24 +258,12 @@ class PullRequestService
     }
 
     /**
-     * Execute a command using Symfony Process.
+     * Execute a command using Laravel Process facade.
      *
      * @param  array<int, string>  $command  Command and arguments
      */
-    private function runCommand(array $command): Process
+    private function runCommand(array $command): ProcessResult
     {
-        $cwd = getcwd();
-
-        // @codeCoverageIgnoreStart
-        if ($cwd === false) {
-            $cwd = null;
-        }
-        // @codeCoverageIgnoreEnd
-
-        $process = new Process($command, $cwd);
-        $process->setTimeout(300); // 5 minutes timeout for long-running commands
-        $process->run();
-
-        return $process;
+        return Process::timeout(300)->run($command);
     }
 }
