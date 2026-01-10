@@ -142,7 +142,7 @@ class SimilarityService
      */
     private function computeMinHash(array $tokens): array
     {
-        if (empty($tokens)) {
+        if (count($tokens) === 0) {
             return array_fill(0, self::HASH_COUNT, PHP_INT_MAX);
         }
 

@@ -19,7 +19,7 @@ class ConfidenceService
      */
     public function calculateConfidence(Entry $entry): int
     {
-        $initialConfidence = $entry->confidence;
+        $initialConfidence = $entry->confidence ?? 0;
 
         // Calculate age factor
         $daysOld = $entry->created_at->diffInDays(now());

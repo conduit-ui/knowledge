@@ -159,7 +159,8 @@ class SemanticSearchService
 
                 // Convert distance to similarity (1 - distance for L2, adjust if using cosine)
                 $similarity = 1.0 - ($distances[$index] ?? 0.0);
-                $score = $similarity * ($entry->confidence / 100);
+                $confidence = $entry->confidence ?? 0;
+                $score = $confidence > 0 ? $similarity * ($confidence / 100) : $similarity;
                 $entry->setAttribute('search_score', $score);
 
                 $rankedResults->push($entry);
@@ -209,7 +210,8 @@ class SemanticSearchService
             }
 
             $similarity = $this->embeddingService->similarity($queryEmbedding, $entryEmbedding);
-            $score = $similarity * ($entry->confidence / 100);
+            $confidence = $entry->confidence ?? 0;
+            $score = $confidence > 0 ? $similarity * ($confidence / 100) : $similarity;
             $entry->setAttribute('search_score', $score);
 
             return $entry;
