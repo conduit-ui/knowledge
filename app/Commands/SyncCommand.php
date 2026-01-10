@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
+use App\Services\QdrantService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
 class SyncCommand extends Command
@@ -27,14 +28,14 @@ class SyncCommand extends Command
 
     protected ?Client $client = null;
 
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
         $pull = $this->option('pull');
         $push = $this->option('push');
 
         // Validate API token
         $token = env('PREFRONTAL_API_TOKEN');
-        if (empty($token)) {
+        if (! is_string($token) || $token === '') {
             $this->error('PREFRONTAL_API_TOKEN environment variable is not set.');
 
             return self::FAILURE;
@@ -43,8 +44,8 @@ class SyncCommand extends Command
         // Default behavior: two-way sync (pull then push)
         if (! $pull && ! $push) {
             $this->info('Starting two-way sync (pull then push)...');
-            $pullResult = $this->pullFromCloud($token);
-            $pushResult = $this->pushToCloud($token);
+            $pullResult = $this->pullFromCloud($token, $qdrant);
+            $pushResult = $this->pushToCloud($token, $qdrant);
 
             $this->displaySummary($pullResult, $pushResult);
 
@@ -54,7 +55,7 @@ class SyncCommand extends Command
         // Pull only
         if ($pull) {
             $this->info('Pulling entries from cloud...');
-            $result = $this->pullFromCloud($token);
+            $result = $this->pullFromCloud($token, $qdrant);
             $this->displayPullSummary($result);
 
             return self::SUCCESS;
@@ -63,7 +64,7 @@ class SyncCommand extends Command
         // Push only
         if ($push) {
             $this->info('Pushing local entries to cloud...');
-            $result = $this->pushToCloud($token);
+            $result = $this->pushToCloud($token, $qdrant);
             $this->displayPushSummary($result);
         }
 
@@ -105,7 +106,7 @@ class SyncCommand extends Command
      *
      * @return array{created: int, updated: int, failed: int}
      */
-    private function pullFromCloud(string $token): array
+    private function pullFromCloud(string $token, QdrantService $qdrant): array
     {
         $created = 0;
         $updated = 0;
@@ -139,7 +140,6 @@ class SyncCommand extends Command
 
             foreach ($entries as $entryData) {
                 try {
-                    // Check if entry exists by unique_id
                     $uniqueId = $entryData['unique_id'] ?? null;
 
                     if ($uniqueId === null) {
@@ -149,36 +149,32 @@ class SyncCommand extends Command
                         continue;
                     }
 
-                    // For now, we'll match by title as we don't have unique_id field locally yet
-                    // This will be improved when we add unique_id to the local schema
-                    $existingEntry = Entry::where('title', $entryData['title'] ?? '')->first();
+                    // Search for existing entry by title (best we can do without unique_id in Qdrant)
+                    $title = $entryData['title'] ?? '';
+                    $existing = $qdrant->search($title, [], 1);
+                    $existingEntry = $existing->first();
+
+                    // Prepare entry data for Qdrant
+                    $entry = [
+                        'id' => $existingEntry['id'] ?? Str::uuid()->toString(),
+                        'title' => $entryData['title'] ?? 'Untitled',
+                        'content' => $entryData['content'] ?? '',
+                        'category' => $entryData['category'] ?? null,
+                        'tags' => $entryData['tags'] ?? [],
+                        'module' => $entryData['module'] ?? null,
+                        'priority' => $entryData['priority'] ?? 'medium',
+                        'confidence' => $entryData['confidence'] ?? 50,
+                        'status' => $entryData['status'] ?? 'draft',
+                        'usage_count' => $existingEntry['usage_count'] ?? 0,
+                        'created_at' => $existingEntry['created_at'] ?? now()->toIso8601String(),
+                        'updated_at' => now()->toIso8601String(),
+                    ];
+
+                    $qdrant->upsert($entry);
 
                     if ($existingEntry) {
-                        $existingEntry->update([
-                            'content' => $entryData['content'] ?? $existingEntry->content,
-                            'category' => $entryData['category'] ?? $existingEntry->category,
-                            'tags' => $entryData['tags'] ?? $existingEntry->tags,
-                            'module' => $entryData['module'] ?? $existingEntry->module,
-                            'priority' => $entryData['priority'] ?? $existingEntry->priority,
-                            'confidence' => $entryData['confidence'] ?? $existingEntry->confidence,
-                            'source' => $entryData['source'] ?? $existingEntry->source,
-                            'ticket' => $entryData['ticket'] ?? $existingEntry->ticket,
-                            'status' => $entryData['status'] ?? $existingEntry->status,
-                        ]);
                         $updated++;
                     } else {
-                        Entry::create([
-                            'title' => $entryData['title'] ?? 'Untitled',
-                            'content' => $entryData['content'] ?? '',
-                            'category' => $entryData['category'] ?? null,
-                            'tags' => $entryData['tags'] ?? null,
-                            'module' => $entryData['module'] ?? null,
-                            'priority' => $entryData['priority'] ?? 'medium',
-                            'confidence' => $entryData['confidence'] ?? 50,
-                            'source' => $entryData['source'] ?? null,
-                            'ticket' => $entryData['ticket'] ?? null,
-                            'status' => $entryData['status'] ?? 'draft',
-                        ]);
                         $created++;
                     }
                 } catch (\Exception $e) {
@@ -203,7 +199,7 @@ class SyncCommand extends Command
      *
      * @return array{sent: int, created: int, updated: int, failed: int}
      */
-    private function pushToCloud(string $token): array
+    private function pushToCloud(string $token, QdrantService $qdrant): array
     {
         $sent = 0;
         $created = 0;
@@ -211,7 +207,8 @@ class SyncCommand extends Command
         $failed = 0;
 
         try {
-            $entries = Entry::all();
+            // Get all entries from Qdrant
+            $entries = $qdrant->search('', [], 10000);
 
             if ($entries->isEmpty()) {
                 $this->warn('No local entries to push.');
@@ -226,21 +223,21 @@ class SyncCommand extends Command
 
                 $allPayload[] = [
                     'unique_id' => $uniqueId,
-                    'title' => mb_substr((string) $entry->title, 0, 255),
-                    'content' => $entry->content,
-                    'category' => $entry->category,
-                    'tags' => $entry->tags ?? [],
-                    'module' => $entry->module,
-                    'priority' => $entry->priority,
-                    'confidence' => $entry->confidence,
-                    'source' => $entry->source,
-                    'ticket' => $entry->ticket,
-                    'files' => $entry->files ?? [],
-                    'repo' => $entry->repo,
-                    'branch' => $entry->branch,
-                    'commit' => $entry->commit,
-                    'author' => $entry->author,
-                    'status' => $entry->status,
+                    'title' => mb_substr((string) $entry['title'], 0, 255),
+                    'content' => $entry['content'],
+                    'category' => $entry['category'],
+                    'tags' => $entry['tags'] ?? [],
+                    'module' => $entry['module'],
+                    'priority' => $entry['priority'],
+                    'confidence' => $entry['confidence'],
+                    'source' => null,
+                    'ticket' => null,
+                    'files' => [],
+                    'repo' => null,
+                    'branch' => null,
+                    'commit' => null,
+                    'author' => null,
+                    'status' => $entry['status'],
                 ];
             }
 
@@ -289,11 +286,13 @@ class SyncCommand extends Command
 
     /**
      * Generate unique ID for an entry.
+     *
+     * @param  array<string, mixed>  $entry
      */
-    private function generateUniqueId(Entry $entry): string
+    private function generateUniqueId(array $entry): string
     {
         // Use hash of id and title for uniqueness
-        return hash('sha256', $entry->id.'-'.$entry->title);
+        return hash('sha256', $entry['id'].'-'.$entry['title']);
     }
 
     /**

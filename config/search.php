@@ -60,6 +60,7 @@ return [
         'enabled' => env('QDRANT_ENABLED', true),
         'host' => env('QDRANT_HOST', 'localhost'),
         'port' => env('QDRANT_PORT', 6333),
+        'secure' => env('QDRANT_SECURE', false), // Use HTTPS in production
         'api_key' => env('QDRANT_API_KEY', null),
         'embedding_server' => env('QDRANT_EMBEDDING_SERVER', 'http://localhost:8001'),
         'model' => env('QDRANT_EMBEDDING_MODEL', 'all-MiniLM-L6-v2'),
@@ -93,7 +94,7 @@ return [
     |
     */
 
-    'minimum_similarity' => env('SEARCH_MIN_SIMILARITY', 0.7),
+    'minimum_similarity' => env('SEARCH_MIN_SIMILARITY', 0.3),
     'max_results' => env('SEARCH_MAX_RESULTS', 20),
 
     /*

@@ -18,7 +18,9 @@
     "require": {
         "php": "^8.2",
         "illuminate/database": "^12.17",
-        "laravel-zero/framework": "^12.0.2"
+        "laravel-zero/framework": "^12.0.2",
+        "saloonphp/saloon": "^3.14",
+        "symfony/uid": "^8.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

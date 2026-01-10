@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
-use App\Services\ConfidenceService;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeValidateCommand extends Command
@@ -20,24 +19,11 @@ class KnowledgeValidateCommand extends Command
      */
     protected $description = 'Mark an entry as validated and boost its confidence';
 
-    public function __construct(
-        private readonly ConfidenceService $confidenceService
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
         $id = $this->argument('id');
 
-        if (! is_numeric($id)) {
-            $this->error('Entry ID must be a number.');
-
-            return self::FAILURE;
-        }
-
-        /** @var Entry|null $entry */
-        $entry = Entry::query()->find((int) $id);
+        $entry = $qdrant->getById($id);
 
         if ($entry === null) {
             $this->error("Entry not found with ID: {$id}");
@@ -45,24 +31,24 @@ class KnowledgeValidateCommand extends Command
             return self::FAILURE;
         }
 
-        $oldConfidence = $entry->confidence;
-        $oldStatus = $entry->status;
+        $oldConfidence = $entry['confidence'];
+        $oldStatus = $entry['status'];
 
-        $this->confidenceService->validateEntry($entry);
+        // Calculate new confidence (boosted by validation)
+        $newConfidence = min(100, $oldConfidence + 20);
 
-        $entry->refresh();
-        $newConfidence = $entry->confidence;
+        // Update entry with validated status
+        $qdrant->updateFields($id, [
+            'status' => 'validated',
+            'confidence' => $newConfidence,
+        ]);
 
-        $this->info("Entry #{$entry->id} validated successfully!");
+        $this->info("Entry #{$id} validated successfully!");
         $this->newLine();
 
-        $this->line("Title: {$entry->title}");
+        $this->line("Title: {$entry['title']}");
         $this->line("Status: {$oldStatus} -> validated");
         $this->line("Confidence: {$oldConfidence}% -> {$newConfidence}%");
-
-        if ($entry->validation_date !== null) {
-            $this->line("Validation Date: {$entry->validation_date->format('Y-m-d H:i:s')}");
-        }
 
         $this->newLine();
         $this->comment('The entry has been marked as validated and its confidence has been updated.');

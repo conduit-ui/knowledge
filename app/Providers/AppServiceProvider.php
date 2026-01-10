@@ -10,6 +10,7 @@ use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\DatabaseInitializer;
+use App\Services\QdrantService;
 use App\Services\DockerService;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
@@ -89,12 +90,16 @@ class AppServiceProvider extends ServiceProvider
 
         // Register embedding service
         $this->app->singleton(EmbeddingServiceInterface::class, function ($app) {
-            $provider = config('search.embedding_provider', 'none');
+            $provider = config('search.embedding_provider', 'qdrant');
 
             return match ($provider) {
                 'chromadb' => new ChromaDBEmbeddingService(
                     config('search.chromadb.embedding_server', 'http://localhost:8001'),
                     config('search.chromadb.model', 'all-MiniLM-L6-v2')
+                ),
+                'qdrant' => new ChromaDBEmbeddingService(
+                    config('search.qdrant.embedding_server', 'http://localhost:8001'),
+                    config('search.qdrant.model', 'all-MiniLM-L6-v2')
                 ),
                 default => new StubEmbeddingService,
             };
@@ -117,6 +122,17 @@ class AppServiceProvider extends ServiceProvider
                 (bool) config('search.semantic_enabled', false),
                 $chromaDBEnabled ? $app->make(ChromaDBClientInterface::class) : null,
                 $chromaDBEnabled
+            );
+        });
+
+        // Register Qdrant service
+        $this->app->singleton(QdrantService::class, function ($app) {
+            return new QdrantService(
+                $app->make(EmbeddingServiceInterface::class),
+                (int) config('search.embedding_dimension', 384),
+                (float) config('search.minimum_similarity', 0.7),
+                (int) config('search.qdrant.cache_ttl', 604800),
+                (bool) config('search.qdrant.secure', false)
             );
         });
 

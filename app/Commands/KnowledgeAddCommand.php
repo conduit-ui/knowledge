@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
 use App\Services\GitContextService;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
+use Illuminate\Support\Str;
 
 class KnowledgeAddCommand extends Command
 {
@@ -41,23 +42,38 @@ class KnowledgeAddCommand extends Command
 
     private const VALID_STATUSES = ['draft', 'validated', 'deprecated'];
 
-    public function handle(GitContextService $gitService): int
+    public function handle(GitContextService $gitService, QdrantService $qdrant): int
     {
-        $title = $this->argument('title');
-        $content = $this->option('content');
-        $category = $this->option('category');
-        $tags = $this->option('tags');
-        $module = $this->option('module');
-        $priority = $this->option('priority');
-        $confidence = $this->option('confidence');
-        $source = $this->option('source');
-        $ticket = $this->option('ticket');
-        $author = $this->option('author');
-        $status = $this->option('status');
-        $repo = $this->option('repo');
-        $branch = $this->option('branch');
-        $commit = $this->option('commit');
-        $noGit = $this->option('no-git');
+        /** @var string $title */
+        $title = (string) $this->argument('title');
+        /** @var string|null $content */
+        $content = is_string($this->option('content')) ? $this->option('content') : null;
+        /** @var string|null $category */
+        $category = is_string($this->option('category')) ? $this->option('category') : null;
+        /** @var string|null $tags */
+        $tags = is_string($this->option('tags')) ? $this->option('tags') : null;
+        /** @var string|null $module */
+        $module = is_string($this->option('module')) ? $this->option('module') : null;
+        /** @var string $priority */
+        $priority = is_string($this->option('priority')) ? $this->option('priority') : 'medium';
+        /** @var int|string $confidence */
+        $confidence = $this->option('confidence') ?? 50;
+        /** @var string|null $source */
+        $source = is_string($this->option('source')) ? $this->option('source') : null;
+        /** @var string|null $ticket */
+        $ticket = is_string($this->option('ticket')) ? $this->option('ticket') : null;
+        /** @var string|null $author */
+        $author = is_string($this->option('author')) ? $this->option('author') : null;
+        /** @var string $status */
+        $status = is_string($this->option('status')) ? $this->option('status') : 'draft';
+        /** @var string|null $repo */
+        $repo = is_string($this->option('repo')) ? $this->option('repo') : null;
+        /** @var string|null $branch */
+        $branch = is_string($this->option('branch')) ? $this->option('branch') : null;
+        /** @var string|null $commit */
+        $commit = is_string($this->option('commit')) ? $this->option('commit') : null;
+        /** @var bool $noGit */
+        $noGit = (bool) $this->option('no-git');
 
         // Validate required fields
         if ($content === null || $content === '') {
@@ -127,16 +143,27 @@ class KnowledgeAddCommand extends Command
             $data['author'] = $author;
         }
 
-        $entry = Entry::create($data);
+        // Generate unique ID (UUID for Qdrant compatibility)
+        $id = Str::uuid()->toString();
+        $data['id'] = $id;
 
-        $this->info("Knowledge entry created successfully with ID: {$entry->id}");
-        $this->line("Title: {$entry->title}");
-        $this->line('Category: '.($entry->category ?? 'N/A'));
-        $this->line("Priority: {$entry->priority}");
-        $this->line("Confidence: {$entry->confidence}%");
+        // Store in Qdrant
+        $success = $qdrant->upsert($data);
 
-        if ($entry->tags) {
-            $this->line('Tags: '.implode(', ', $entry->tags));
+        if (! $success) {
+            $this->error('Failed to create knowledge entry');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Knowledge entry created successfully with ID: {$id}");
+        $this->line("Title: {$title}");
+        $this->line('Category: '.($category ?? 'N/A'));
+        $this->line("Priority: {$priority}");
+        $this->line("Confidence: {$confidence}%");
+
+        if (isset($data['tags'])) {
+            $this->line('Tags: '.implode(', ', $data['tags']));
         }
 
         return self::SUCCESS;

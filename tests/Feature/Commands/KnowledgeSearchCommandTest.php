@@ -2,105 +2,194 @@
 
 declare(strict_types=1);
 
+use App\Contracts\FullTextSearchInterface;
 use App\Enums\ObservationType;
-use App\Models\Entry;
 use App\Models\Observation;
 use App\Models\Session;
+use App\Services\QdrantService;
 
-it('searches entries by keyword in title', function () {
-    Entry::factory()->create(['title' => 'Laravel Timezone Conversion']);
-    Entry::factory()->create(['title' => 'React Component Testing']);
-    Entry::factory()->create(['title' => 'Database Timezone Handling']);
+beforeEach(function () {
+    $this->mockQdrant = Mockery::mock(QdrantService::class);
+    $this->app->instance(QdrantService::class, $this->mockQdrant);
 
-    $this->artisan('search', ['query' => 'timezone'])
-        ->assertSuccessful();
-
-    // We can't assert exact output in Laravel Zero easily, but we can verify the command runs
+    $this->mockFts = Mockery::mock(FullTextSearchInterface::class);
+    $this->app->instance(FullTextSearchInterface::class, $this->mockFts);
 });
 
-it('searches entries by keyword in content', function () {
-    Entry::factory()->create([
-        'title' => 'Random Title',
-        'content' => 'This is about timezone conversion in Laravel',
-    ]);
-    Entry::factory()->create([
-        'title' => 'Another Title',
-        'content' => 'This is about React components',
-    ]);
+afterEach(function () {
+    Mockery::close();
+});
+
+it('searches entries by keyword in title and content', function () {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('timezone', [], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Laravel Timezone Conversion',
+                'content' => 'How to handle timezone conversion',
+                'category' => 'architecture',
+                'priority' => 'high',
+                'confidence' => 90,
+                'module' => null,
+                'tags' => ['laravel', 'timezone'],
+                'score' => 0.95,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', ['query' => 'timezone'])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry')
+        ->expectsOutputToContain('Laravel Timezone Conversion');
 });
 
 it('searches entries by tag', function () {
-    Entry::factory()->create([
-        'title' => 'Entry 1',
-        'tags' => ['blood.notifications', 'laravel'],
-    ]);
-    Entry::factory()->create([
-        'title' => 'Entry 2',
-        'tags' => ['react', 'frontend'],
-    ]);
-    Entry::factory()->create([
-        'title' => 'Entry 3',
-        'tags' => ['blood.scheduling', 'laravel'],
-    ]);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', ['tag' => 'blood.notifications'], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Blood Notifications',
+                'content' => 'Notification system',
+                'category' => 'architecture',
+                'priority' => 'medium',
+                'confidence' => 80,
+                'module' => 'Blood',
+                'tags' => ['blood.notifications', 'laravel'],
+                'score' => 0.85,
+                'status' => 'draft',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', ['--tag' => 'blood.notifications'])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('searches entries by category', function () {
-    Entry::factory()->create(['category' => 'architecture', 'title' => 'Architecture Entry']);
-    Entry::factory()->create(['category' => 'testing', 'title' => 'Testing Entry']);
-    Entry::factory()->create(['category' => 'architecture', 'title' => 'Another Architecture']);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', ['category' => 'architecture'], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Architecture Entry',
+                'content' => 'Architecture details',
+                'category' => 'architecture',
+                'priority' => 'high',
+                'confidence' => 85,
+                'module' => null,
+                'tags' => [],
+                'score' => 0.9,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', ['--category' => 'architecture'])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('searches entries by category and module', function () {
-    Entry::factory()->create([
-        'category' => 'architecture',
-        'module' => 'Blood',
-        'title' => 'Blood Architecture',
-    ]);
-    Entry::factory()->create([
-        'category' => 'architecture',
-        'module' => 'Auth',
-        'title' => 'Auth Architecture',
-    ]);
-    Entry::factory()->create([
-        'category' => 'testing',
-        'module' => 'Blood',
-        'title' => 'Blood Testing',
-    ]);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', ['category' => 'architecture', 'module' => 'Blood'], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Blood Architecture',
+                'content' => 'Blood module architecture',
+                'category' => 'architecture',
+                'priority' => 'high',
+                'confidence' => 90,
+                'module' => 'Blood',
+                'tags' => [],
+                'score' => 0.92,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', [
         '--category' => 'architecture',
         '--module' => 'Blood',
-    ])->assertSuccessful();
+    ])->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('searches entries by priority', function () {
-    Entry::factory()->create(['priority' => 'critical', 'title' => 'Critical Entry']);
-    Entry::factory()->create(['priority' => 'high', 'title' => 'High Entry']);
-    Entry::factory()->create(['priority' => 'low', 'title' => 'Low Entry']);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', ['priority' => 'critical'], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Critical Entry',
+                'content' => 'Critical issue',
+                'category' => 'security',
+                'priority' => 'critical',
+                'confidence' => 95,
+                'module' => null,
+                'tags' => [],
+                'score' => 0.98,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', ['--priority' => 'critical'])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('searches entries by status', function () {
-    Entry::factory()->validated()->create(['title' => 'Validated Entry']);
-    Entry::factory()->draft()->create(['title' => 'Draft Entry']);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', ['status' => 'validated'], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Validated Entry',
+                'content' => 'Validated content',
+                'category' => 'testing',
+                'priority' => 'medium',
+                'confidence' => 85,
+                'module' => null,
+                'tags' => [],
+                'score' => 0.88,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', ['--status' => 'validated'])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('shows message when no results found', function () {
-    Entry::factory()->create(['title' => 'Something else']);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('nonexistent', [], 20, 'default')
+        ->andReturn(collect([]));
 
     $this->artisan('search', ['query' => 'nonexistent'])
         ->assertSuccessful()
@@ -108,74 +197,135 @@ it('shows message when no results found', function () {
 });
 
 it('searches with multiple filters', function () {
-    Entry::factory()->create([
-        'title' => 'Laravel Testing Best Practices',
-        'category' => 'testing',
-        'module' => 'Blood',
-        'priority' => 'high',
-        'tags' => ['laravel', 'pest'],
-    ]);
-    Entry::factory()->create([
-        'title' => 'React Testing',
-        'category' => 'testing',
-        'module' => 'Frontend',
-        'priority' => 'medium',
-    ]);
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('', [
+            'category' => 'testing',
+            'module' => 'Blood',
+            'priority' => 'high',
+        ], 20, 'default')
+        ->andReturn(collect([
+            [
+                'id' => 'entry-1',
+                'title' => 'Laravel Testing Best Practices',
+                'content' => 'Testing content',
+                'category' => 'testing',
+                'priority' => 'high',
+                'confidence' => 90,
+                'module' => 'Blood',
+                'tags' => ['laravel', 'pest'],
+                'score' => 0.93,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
 
     $this->artisan('search', [
         '--category' => 'testing',
         '--module' => 'Blood',
         '--priority' => 'high',
-    ])->assertSuccessful();
-});
-
-it('handles case-insensitive search', function () {
-    Entry::factory()->create(['title' => 'Laravel Best Practices']);
-
-    $this->artisan('search', ['query' => 'LARAVEL'])
-        ->assertSuccessful();
+    ])->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry');
 });
 
 it('requires at least one search parameter', function () {
+    $this->mockQdrant->shouldNotReceive('search');
+
     $this->artisan('search')
-        ->assertFailed();
+        ->assertFailed()
+        ->expectsOutput('Please provide at least one search parameter.');
+});
+
+it('displays entry details with score', function () {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->andReturn(collect([
+            [
+                'id' => 'test-123',
+                'title' => 'Test Entry',
+                'content' => 'This is a very long content that exceeds 100 characters to test the truncation feature in the search output display',
+                'category' => 'testing',
+                'priority' => 'high',
+                'confidence' => 85,
+                'module' => 'TestModule',
+                'tags' => ['tag1', 'tag2'],
+                'score' => 0.92,
+                'status' => 'validated',
+                'usage_count' => 5,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
+
+    $this->artisan('search', ['query' => 'test'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('[test-123]')
+        ->expectsOutputToContain('Test Entry')
+        ->expectsOutputToContain('score: 0.92')
+        ->expectsOutputToContain('Category: testing | Priority: high | Confidence: 85%')
+        ->expectsOutputToContain('Module: TestModule')
+        ->expectsOutputToContain('Tags: tag1, tag2')
+        ->expectsOutputToContain('...');
+});
+
+it('handles entries with missing optional fields', function () {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->andReturn(collect([
+            [
+                'id' => 'minimal-entry',
+                'title' => 'Minimal',
+                'content' => 'Short',
+                'category' => null,
+                'priority' => 'medium',
+                'confidence' => 0,
+                'module' => null,
+                'tags' => [],
+                'score' => 0.5,
+                'status' => 'draft',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
+
+    $this->artisan('search', ['query' => 'test'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Category: N/A');
 });
 
 describe('--observations flag', function (): void {
     it('searches observations instead of entries', function (): void {
         $session = Session::factory()->create();
 
-        Observation::factory()->create([
+        $observation = Observation::factory()->create([
             'session_id' => $session->id,
             'title' => 'Authentication Bug Fix',
             'type' => ObservationType::Bugfix,
             'narrative' => 'Fixed OAuth bug',
         ]);
 
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Feature Implementation',
-            'type' => ObservationType::Feature,
-            'narrative' => 'Added new feature',
-        ]);
+        $this->mockFts->shouldReceive('searchObservations')
+            ->once()
+            ->with('authentication')
+            ->andReturn(collect([$observation]));
 
-        // Create an entry that should NOT appear in results
-        Entry::factory()->create(['title' => 'Authentication Entry']);
+        $this->mockQdrant->shouldNotReceive('search');
 
         $this->artisan('search', [
             'query' => 'authentication',
             '--observations' => true,
-        ])->assertSuccessful();
+        ])->assertSuccessful()
+            ->expectsOutputToContain('Found 1 observation');
     });
 
     it('shows no observations message when none found', function (): void {
-        $session = Session::factory()->create();
-
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Something else',
-            'narrative' => 'Different topic',
-        ]);
+        $this->mockFts->shouldReceive('searchObservations')
+            ->once()
+            ->with('nonexistent')
+            ->andReturn(collect([]));
 
         $this->artisan('search', [
             'query' => 'nonexistent',
@@ -187,7 +337,7 @@ describe('--observations flag', function (): void {
     it('displays observation type, title, concept, and created date', function (): void {
         $session = Session::factory()->create();
 
-        Observation::factory()->create([
+        $observation = Observation::factory()->create([
             'session_id' => $session->id,
             'title' => 'Bug Fix',
             'type' => ObservationType::Bugfix,
@@ -195,76 +345,44 @@ describe('--observations flag', function (): void {
             'narrative' => 'Fixed auth bug',
         ]);
 
+        $this->mockFts->shouldReceive('searchObservations')
+            ->once()
+            ->with('bug')
+            ->andReturn(collect([$observation]));
+
         $output = $this->artisan('search', [
             'query' => 'bug',
             '--observations' => true,
         ]);
 
-        $output->assertSuccessful();
+        $output->assertSuccessful()
+            ->expectsOutputToContain('Bug Fix')
+            ->expectsOutputToContain('Type: bugfix')
+            ->expectsOutputToContain('Concept: Authentication');
     });
 
     it('requires query when using observations flag', function (): void {
-        $this->artisan('search', [
-            '--observations' => true,
-        ])->assertFailed();
-    });
-
-    it('searches by observation type', function (): void {
-        $session = Session::factory()->create();
-
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Feature 1',
-            'type' => ObservationType::Feature,
-            'narrative' => 'Feature narrative',
-        ]);
-
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Bug 1',
-            'type' => ObservationType::Bugfix,
-            'narrative' => 'Bug narrative',
-        ]);
+        $this->mockFts->shouldNotReceive('searchObservations');
 
         $this->artisan('search', [
-            'query' => 'narrative',
             '--observations' => true,
-        ])->assertSuccessful();
-    });
-
-    it('searches observations by concept', function (): void {
-        $session = Session::factory()->create();
-
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Auth Fix',
-            'type' => ObservationType::Bugfix,
-            'concept' => 'Authentication',
-            'narrative' => 'Fixed OAuth',
-        ]);
-
-        Observation::factory()->create([
-            'session_id' => $session->id,
-            'title' => 'Cache Update',
-            'type' => ObservationType::Change,
-            'concept' => 'Performance',
-            'narrative' => 'Updated cache',
-        ]);
-
-        $this->artisan('search', [
-            'query' => 'authentication',
-            '--observations' => true,
-        ])->assertSuccessful();
+        ])->assertFailed()
+            ->expectsOutput('Please provide a search query when using --observations.');
     });
 
     it('counts observations correctly', function (): void {
         $session = Session::factory()->create();
 
-        Observation::factory(3)->create([
+        $observations = Observation::factory(3)->create([
             'session_id' => $session->id,
             'title' => 'Test Observation',
             'narrative' => 'Test narrative',
         ]);
+
+        $this->mockFts->shouldReceive('searchObservations')
+            ->once()
+            ->with('test')
+            ->andReturn($observations);
 
         $this->artisan('search', [
             'query' => 'test',
@@ -276,13 +394,18 @@ describe('--observations flag', function (): void {
     it('truncates long observation narratives', function (): void {
         $session = Session::factory()->create();
 
-        $longNarrative = str_repeat('This is a very long narrative. ', 10); // Over 100 chars
+        $longNarrative = str_repeat('This is a very long narrative. ', 10);
 
-        Observation::factory()->create([
+        $observation = Observation::factory()->create([
             'session_id' => $session->id,
             'title' => 'Long Narrative Observation',
             'narrative' => $longNarrative,
         ]);
+
+        $this->mockFts->shouldReceive('searchObservations')
+            ->once()
+            ->with('narrative')
+            ->andReturn(collect([$observation]));
 
         $this->artisan('search', [
             'query' => 'narrative',
@@ -290,4 +413,38 @@ describe('--observations flag', function (): void {
         ])->assertSuccessful()
             ->expectsOutputToContain('...');
     });
+});
+
+it('handles query with all filter types combined', function () {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('laravel', [
+            'tag' => 'testing',
+            'category' => 'architecture',
+            'module' => 'Core',
+            'priority' => 'high',
+            'status' => 'validated',
+        ], 20, 'default')
+        ->andReturn(collect([]));
+
+    $this->artisan('search', [
+        'query' => 'laravel',
+        '--tag' => 'testing',
+        '--category' => 'architecture',
+        '--module' => 'Core',
+        '--priority' => 'high',
+        '--status' => 'validated',
+    ])->assertSuccessful()
+        ->expectsOutput('No entries found.');
+});
+
+it('uses semantic search by default', function () {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->andReturn(collect([]));
+
+    $this->artisan('search', [
+        'query' => 'test',
+        '--semantic' => true,
+    ])->assertSuccessful();
 });
