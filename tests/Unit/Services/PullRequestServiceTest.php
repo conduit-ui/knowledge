@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Services\PullRequestService;
 use Illuminate\Support\Facades\Process;
 
+uses()->group('pr-service-unit');
+
 describe('PullRequestService', function (): void {
     beforeEach(function (): void {
         $this->service = new PullRequestService;
