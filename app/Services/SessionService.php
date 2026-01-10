@@ -46,13 +46,41 @@ class SessionService
 
     /**
      * Get a session with its observations loaded.
+     * Supports both full UUIDs and partial IDs (minimum 8 characters).
+     *
+     * @return Session|null|array{error: string, matches: array<string>} Returns Session on success, null if not found, or error array if multiple matches
      */
-    public function getSessionWithObservations(string $id): ?Session
+    public function getSessionWithObservations(string $id): Session|array|null
     {
-        /** @var Session|null */
-        return Session::query()
+        // First try exact match
+        $exactMatch = Session::query()
             ->with('observations')
             ->find($id);
+
+        if ($exactMatch !== null) {
+            return $exactMatch;
+        }
+
+        // If no exact match and ID is short enough to be partial, try partial match
+        if (strlen($id) < 36) { // UUID length is 36 characters
+            $matches = Session::query()
+                ->where('id', 'like', $id.'%')
+                ->with('observations')
+                ->get();
+
+            if ($matches->count() === 1) {
+                return $matches->first();
+            }
+
+            if ($matches->count() > 1) {
+                return [
+                    'error' => 'Multiple sessions found with this prefix. Please use a more specific ID.',
+                    'matches' => $matches->pluck('id')->toArray(),
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**

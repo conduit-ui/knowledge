@@ -9,7 +9,7 @@ use Tests\Support\MockChromaDBClient;
 describe('index command', function (): void {
     describe('--prune flag', function (): void {
         it('shows error when ChromaDB is not available', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             $mockClient->setAvailable(false);
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
@@ -19,7 +19,7 @@ describe('index command', function (): void {
         });
 
         it('reports no orphans when ChromaDB is in sync', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
             // Create entry in SQLite
@@ -40,7 +40,7 @@ describe('index command', function (): void {
         });
 
         it('detects orphaned documents with deleted entry_ids', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
             // Add document to ChromaDB with entry_id that doesn't exist in SQLite
@@ -60,7 +60,7 @@ describe('index command', function (): void {
         });
 
         it('detects orphaned documents without entry_ids', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
             // Add document to ChromaDB without entry_id (e.g., vision doc)
@@ -79,7 +79,7 @@ describe('index command', function (): void {
         });
 
         it('deletes orphans when user confirms', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
             // Add orphaned document
@@ -102,7 +102,7 @@ describe('index command', function (): void {
         });
 
         it('aborts when user declines confirmation', function (): void {
-            $mockClient = new MockChromaDBClient();
+            $mockClient = new MockChromaDBClient;
             app()->instance(ChromaDBClientInterface::class, $mockClient);
 
             // Add orphaned document

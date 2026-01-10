@@ -21,11 +21,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | The embedding provider to use for generating text embeddings.
-    | Supported: "none", "chromadb"
+    | Supported: "none", "chromadb", "qdrant"
     |
     */
 
-    'embedding_provider' => env('EMBEDDING_PROVIDER', 'none'),
+    'embedding_provider' => env('EMBEDDING_PROVIDER', 'qdrant'),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,10 +41,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | ChromaDB Configuration
+    | Vector Database Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure ChromaDB connection settings for vector database integration.
+    | Configure vector database connection settings.
     |
     */
 
@@ -54,6 +54,19 @@ return [
         'port' => env('CHROMADB_PORT', 8000),
         'embedding_server' => env('CHROMADB_EMBEDDING_SERVER', 'http://localhost:8001'),
         'model' => env('CHROMADB_EMBEDDING_MODEL', 'all-MiniLM-L6-v2'),
+    ],
+
+    'qdrant' => [
+        'enabled' => env('QDRANT_ENABLED', true),
+        'host' => env('QDRANT_HOST', 'localhost'),
+        'port' => env('QDRANT_PORT', 6333),
+        'api_key' => env('QDRANT_API_KEY', null),
+        'embedding_server' => env('QDRANT_EMBEDDING_SERVER', 'http://localhost:8001'),
+        'model' => env('QDRANT_EMBEDDING_MODEL', 'all-MiniLM-L6-v2'),
+        'collection' => env('QDRANT_COLLECTION', 'knowledge'),
+        // Redis caching for embeddings and search results
+        'cache_embeddings' => env('QDRANT_CACHE_EMBEDDINGS', true),
+        'cache_ttl' => env('QDRANT_CACHE_TTL', 604800), // 7 days
     ],
 
     /*
@@ -82,4 +95,28 @@ return [
 
     'minimum_similarity' => env('SEARCH_MIN_SIMILARITY', 0.7),
     'max_results' => env('SEARCH_MAX_RESULTS', 20),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ollama Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Local LLM for entry enhancement, tagging, and concept extraction.
+    |
+    */
+
+    'ollama' => [
+        'enabled' => env('OLLAMA_ENABLED', true),
+        'host' => env('OLLAMA_HOST', 'localhost'),
+        'port' => env('OLLAMA_PORT', 11434),
+        'model' => env('OLLAMA_MODEL', 'llama3.2:3b'), // Fast, good for structured output
+        'timeout' => env('OLLAMA_TIMEOUT', 30),
+
+        // Features to enable
+        'auto_tag' => env('OLLAMA_AUTO_TAG', true),
+        'auto_categorize' => env('OLLAMA_AUTO_CATEGORIZE', true),
+        'extract_concepts' => env('OLLAMA_EXTRACT_CONCEPTS', true),
+        'suggest_relationships' => env('OLLAMA_SUGGEST_RELATIONSHIPS', true),
+        'enhance_queries' => env('OLLAMA_ENHANCE_QUERIES', true),
+    ],
 ];

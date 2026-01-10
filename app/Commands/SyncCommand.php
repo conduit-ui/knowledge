@@ -145,6 +145,7 @@ class SyncCommand extends Command
                     if ($uniqueId === null) {
                         $failed++;
                         $bar->advance();
+
                         continue;
                     }
 
