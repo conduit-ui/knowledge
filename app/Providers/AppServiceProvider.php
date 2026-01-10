@@ -14,7 +14,6 @@ use App\Services\QdrantService;
 use App\Services\DockerService;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
-use App\Services\KnowledgeSearchService;
 use App\Services\OllamaService;
 use App\Services\PullRequestService;
 use App\Services\QualityGateService;
@@ -155,13 +154,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(IssueAnalyzerService::class, function ($app) {
             return new IssueAnalyzerService(
                 $app->make(OllamaService::class)
-            );
-        });
-
-        // Register knowledge search service
-        $this->app->singleton(KnowledgeSearchService::class, function ($app) {
-            return new KnowledgeSearchService(
-                $app->make(SemanticSearchService::class)
             );
         });
 
