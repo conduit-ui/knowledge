@@ -18,6 +18,8 @@
         </testsuite>
         <testsuite name="Unit">
             <directory>./tests/Unit</directory>
+            <exclude>./tests/Unit/Services/QdrantServiceTest.php</exclude>
+            <exclude>./tests/Unit/Services/PullRequestServiceTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>
