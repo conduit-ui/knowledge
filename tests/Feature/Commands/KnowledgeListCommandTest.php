@@ -209,3 +209,25 @@ it('shows pagination info when results are limited', function () {
     $this->artisan('entries', ['--limit' => 10])
         ->assertSuccessful();
 })->skip('Pagination info not implemented in KnowledgeListCommand');
+
+it('displays tags when entry has tags', function () {
+    $this->qdrantMock->shouldReceive('search')
+        ->once()
+        ->with('', [], 20)
+        ->andReturn(collect([
+            [
+                'id' => '1',
+                'title' => 'Tagged Entry',
+                'category' => 'architecture',
+                'priority' => 'high',
+                'status' => 'validated',
+                'confidence' => 90,
+                'module' => null,
+                'tags' => ['laravel', 'testing', 'php'],
+            ],
+        ]));
+
+    $this->artisan('entries')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Tags: laravel, testing, php');
+});

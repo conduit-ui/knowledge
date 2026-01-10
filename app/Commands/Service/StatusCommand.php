@@ -113,14 +113,14 @@ class StatusCommand extends Command
 
         render(<<<HTML
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-gray-800 rounded-lg">
-                    <div class="flex justify-between items-center">
+                <div class="px-4 py-2 bg-gray-800">
+                    <div class="flex justify-between">
                         <div>
                             <span class="text-gray-400 font-bold">KNOWLEDGE SERVICE STATUS</span>
                             <span class="ml-2 text-gray-500">·</span>
                             <span class="ml-2 text-gray-400">{$environment}</span>
                         </div>
-                        <div class="flex items-center">
+                        <div class="flex">
                             <span class="text-{$statusColor} mr-2">{$statusIcon}</span>
                             <span class="text-{$statusColor} font-bold">{$statusText}</span>
                             <span class="ml-3 text-gray-500">{$healthyCount}/{$totalCount}</span>
@@ -150,18 +150,18 @@ class StatusCommand extends Command
 
             render(<<<HTML
                 <div class="mx-2">
-                    <div class="px-4 py-2 bg-gray-900 rounded-lg mb-1">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <span class="text-{$color} text-xl mr-3">{$icon}</span>
+                    <div class="px-4 py-2 bg-gray-900 mb-1">
+                        <div class="flex justify-between ">
+                            <div class="flex ">
+                                <span class="text-{$color} mr-3">{$icon}</span>
                                 <div>
                                     <div class="text-white font-bold">{$name}</div>
-                                    <div class="text-gray-500 text-sm">{$type}</div>
+                                    <div class="text-gray-500">{$type}</div>
                                 </div>
                             </div>
                             <div class="text-right">
                                 <div class="text-{$color} font-bold">{$status}</div>
-                                <div class="text-gray-500 text-sm">{$endpoint}</div>
+                                <div class="text-gray-500">{$endpoint}</div>
                             </div>
                         </div>
                     </div>
@@ -199,13 +199,13 @@ class StatusCommand extends Command
 
                 render(<<<HTML
                     <div class="mx-2">
-                        <div class="px-4 py-1 bg-gray-900 rounded mb-1">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
+                        <div class="px-4 py-1 bg-gray-900 mb-1">
+                            <div class="flex justify-between ">
+                                <div class="flex ">
                                     <span class="text-{$stateColor} mr-3">{$stateIcon}</span>
                                     <span class="text-white">{$name}</span>
                                 </div>
-                                <span class="text-{$stateColor} uppercase text-sm">{$state}</span>
+                                <span class="text-{$stateColor} uppercase">{$state}</span>
                             </div>
                         </div>
                     </div>
@@ -216,7 +216,7 @@ class StatusCommand extends Command
         // Footer
         render(<<<'HTML'
             <div class="mx-2 my-1 mt-1">
-                <div class="px-2 text-gray-500 text-sm">
+                <div class="px-2 text-gray-500">
                     <span>Run </span><span class="text-cyan-400">know service:logs</span><span> to view service logs</span>
                 </div>
             </div>
@@ -233,6 +233,10 @@ class StatusCommand extends Command
 
     private function checkRedis(): bool
     {
+        if (! extension_loaded('redis')) {
+            return false;
+        }
+
         try {
             $redis = new \Redis;
             $host = config('database.redis.default.host', '127.0.0.1');

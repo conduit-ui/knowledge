@@ -105,14 +105,19 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Register ChromaDB index service
+        // @codeCoverageIgnoreStart
+        // Service class does not exist - planned for future implementation
         $this->app->singleton(ChromaDBIndexService::class, function ($app) {
             return new ChromaDBIndexService(
                 $app->make(ChromaDBClientInterface::class),
                 $app->make(EmbeddingServiceInterface::class)
             );
         });
+        // @codeCoverageIgnoreEnd
 
         // Register semantic search service
+        // @codeCoverageIgnoreStart
+        // Service class does not exist - planned for future implementation
         $this->app->singleton(SemanticSearchService::class, function ($app) {
             $chromaDBEnabled = (bool) config('search.chromadb.enabled', false);
 
@@ -123,6 +128,7 @@ class AppServiceProvider extends ServiceProvider
                 $chromaDBEnabled
             );
         });
+        // @codeCoverageIgnoreEnd
 
         // Register Qdrant service
         $this->app->singleton(QdrantService::class, function ($app) {

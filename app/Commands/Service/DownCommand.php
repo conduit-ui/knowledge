@@ -13,7 +13,7 @@ use function Termwind\render;
 class DownCommand extends Command
 {
     protected $signature = 'service:down
-                            {--v|volumes : Remove volumes}
+                            {--volumes : Remove volumes}
                             {--odin : Use Odin (remote) configuration}
                             {--force : Skip confirmation prompts}';
 
@@ -30,7 +30,7 @@ class DownCommand extends Command
         if (! file_exists(base_path($composeFile))) {
             render(<<<HTML
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-2 bg-red-900 rounded-lg">
+                    <div class="px-4 py-2 bg-red-900">
                         <div class="text-red-400 font-bold">✗ Configuration Error</div>
                         <div class="text-red-300 mt-1">Docker Compose file not found: {$composeFile}</div>
                     </div>
@@ -44,12 +44,12 @@ class DownCommand extends Command
         if ($this->option('volumes') === true && $this->option('force') !== true) {
             render(<<<'HTML'
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-2 bg-yellow-900 rounded-lg">
-                        <div class="flex items-center">
-                            <span class="text-yellow-400 text-xl mr-3">⚠</span>
+                    <div class="px-4 py-2 bg-yellow-900">
+                        <div class="flex">
+                            <span class="text-yellow-400 mr-3">⚠</span>
                             <div>
                                 <div class="text-yellow-300 font-bold">Warning: Volume Removal</div>
-                                <div class="text-gray-300 text-sm mt-1">This will permanently delete all data stored in volumes</div>
+                                <div class="text-gray-300 mt-1">This will permanently delete all data stored in volumes</div>
                             </div>
                         </div>
                     </div>
@@ -65,7 +65,7 @@ class DownCommand extends Command
             if (! $confirmed) {
                 render(<<<'HTML'
                     <div class="mx-2 my-1">
-                        <div class="px-4 py-2 bg-gray-800 rounded-lg">
+                        <div class="px-4 py-2 bg-gray-800">
                             <div class="text-gray-400">Operation cancelled</div>
                         </div>
                     </div>
@@ -78,12 +78,12 @@ class DownCommand extends Command
         // Display shutdown banner
         render(<<<HTML
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-orange-900 rounded-lg">
-                    <div class="flex items-center">
-                        <span class="text-orange-400 text-xl mr-3">■</span>
+                <div class="px-4 py-2 bg-orange-900">
+                    <div class="flex">
+                        <span class="text-orange-400 mr-3">■</span>
                         <div>
                             <div class="text-orange-300 font-bold">Stopping Knowledge Services</div>
-                            <div class="text-gray-400 text-sm">Environment: {$environment}</div>
+                            <div class="text-gray-400">Environment: {$environment}</div>
                         </div>
                     </div>
                 </div>
@@ -108,12 +108,12 @@ class DownCommand extends Command
 
             render(<<<HTML
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-2 bg-green-900 rounded-lg">
-                        <div class="flex items-center">
-                            <span class="text-green-400 text-xl mr-3">✓</span>
+                    <div class="px-4 py-2 bg-green-900">
+                        <div class="flex">
+                            <span class="text-green-400 mr-3">✓</span>
                             <div>
                                 <div class="text-green-300 font-bold">Services Stopped Successfully</div>
-                                <div class="text-gray-400 text-sm mt-1">All containers have been stopped{$volumeText}</div>
+                                <div class="text-gray-400 mt-1">All containers have been stopped{$volumeText}</div>
                             </div>
                         </div>
                     </div>
@@ -123,8 +123,8 @@ class DownCommand extends Command
             if ($this->option('volumes') !== true) {
                 render(<<<'HTML'
                     <div class="mx-2 my-1">
-                        <div class="px-4 py-2 bg-gray-800 rounded-lg">
-                            <div class="text-gray-400 text-sm">
+                        <div class="px-4 py-2 bg-gray-800">
+                            <div class="text-gray-400">
                                 <span>Tip: Use </span>
                                 <span class="text-cyan-400">know service:down --volumes</span>
                                 <span> to remove data volumes</span>
@@ -139,12 +139,12 @@ class DownCommand extends Command
 
         render(<<<'HTML'
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-red-900 rounded-lg">
-                    <div class="flex items-center">
-                        <span class="text-red-400 text-xl mr-3">✗</span>
+                <div class="px-4 py-2 bg-red-900">
+                    <div class="flex">
+                        <span class="text-red-400 mr-3">✗</span>
                         <div>
                             <div class="text-red-300 font-bold">Failed to Stop Services</div>
-                            <div class="text-gray-400 text-sm mt-1">Check the error output above for details</div>
+                            <div class="text-gray-400 mt-1">Check the error output above for details</div>
                         </div>
                     </div>
                 </div>

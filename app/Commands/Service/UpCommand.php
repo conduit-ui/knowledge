@@ -28,10 +28,10 @@ class UpCommand extends Command
         if (! file_exists(base_path($composeFile))) {
             render(<<<HTML
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-2 bg-red-900 rounded-lg">
+                    <div class="px-4 py-2 bg-red-900">
                         <div class="text-red-400 font-bold">✗ Configuration Error</div>
                         <div class="text-red-300 mt-1">Docker Compose file not found: {$composeFile}</div>
-                        <div class="text-gray-400 mt-2 text-sm">
+                        <div class="text-gray-400 mt-2">
                             <span>Run </span><span class="text-cyan-400">know service:init</span><span> to initialize</span>
                         </div>
                     </div>
@@ -44,12 +44,12 @@ class UpCommand extends Command
         // Display startup banner
         render(<<<HTML
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-blue-900 rounded-lg">
-                    <div class="flex items-center">
-                        <span class="text-blue-400 text-xl mr-3">▶</span>
+                <div class="px-4 py-2 bg-blue-900">
+                    <div class="flex">
+                        <span class="text-blue-400 mr-3">▶</span>
                         <div>
                             <div class="text-blue-300 font-bold">Starting Knowledge Services</div>
-                            <div class="text-gray-400 text-sm">Environment: {$environment}</div>
+                            <div class="text-gray-400">Environment: {$environment}</div>
                         </div>
                     </div>
                 </div>
@@ -74,12 +74,12 @@ class UpCommand extends Command
             if ($this->option('detach') === true) {
                 render(<<<'HTML'
                     <div class="mx-2 my-1">
-                        <div class="px-4 py-2 bg-green-900 rounded-lg">
-                            <div class="flex items-center">
-                                <span class="text-green-400 text-xl mr-3">✓</span>
+                        <div class="px-4 py-2 bg-green-900">
+                            <div class="flex">
+                                <span class="text-green-400 mr-3">✓</span>
                                 <div>
                                     <div class="text-green-300 font-bold">Services Started Successfully</div>
-                                    <div class="text-gray-400 text-sm mt-1">All containers are running in detached mode</div>
+                                    <div class="text-gray-400 mt-1">All containers are running in detached mode</div>
                                 </div>
                             </div>
                         </div>
@@ -88,20 +88,20 @@ class UpCommand extends Command
 
                 render(<<<'HTML'
                     <div class="mx-2 my-1">
-                        <div class="px-4 py-2 bg-gray-800 rounded-lg">
+                        <div class="px-4 py-2 bg-gray-800">
                             <div class="text-gray-400 font-bold mb-2">NEXT STEPS</div>
                             <div class="space-y-1">
-                                <div class="flex items-center">
+                                <div class="flex">
                                     <span class="text-cyan-400 mr-2">→</span>
                                     <span class="text-gray-300">Check status: </span>
                                     <span class="text-cyan-400 ml-1">know service:status</span>
                                 </div>
-                                <div class="flex items-center">
+                                <div class="flex">
                                     <span class="text-cyan-400 mr-2">→</span>
                                     <span class="text-gray-300">View logs: </span>
                                     <span class="text-cyan-400 ml-1">know service:logs</span>
                                 </div>
-                                <div class="flex items-center">
+                                <div class="flex">
                                     <span class="text-cyan-400 mr-2">→</span>
                                     <span class="text-gray-300">Stop services: </span>
                                     <span class="text-cyan-400 ml-1">know service:down</span>
@@ -117,12 +117,12 @@ class UpCommand extends Command
 
         render(<<<'HTML'
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-red-900 rounded-lg">
-                    <div class="flex items-center">
-                        <span class="text-red-400 text-xl mr-3">✗</span>
+                <div class="px-4 py-2 bg-red-900">
+                    <div class="flex">
+                        <span class="text-red-400 mr-3">✗</span>
                         <div>
                             <div class="text-red-300 font-bold">Failed to Start Services</div>
-                            <div class="text-gray-400 text-sm mt-1">Check the error output above for details</div>
+                            <div class="text-gray-400 mt-1">Check the error output above for details</div>
                         </div>
                     </div>
                 </div>

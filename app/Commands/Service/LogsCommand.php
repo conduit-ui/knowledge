@@ -31,7 +31,7 @@ class LogsCommand extends Command
         if (! file_exists(base_path($composeFile))) {
             render(<<<HTML
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-2 bg-red-900 rounded-lg">
+                    <div class="px-4 py-2 bg-red-900">
                         <div class="text-red-400 font-bold">✗ Configuration Error</div>
                         <div class="text-red-300 mt-1">Docker Compose file not found: {$composeFile}</div>
                     </div>
@@ -70,18 +70,18 @@ class LogsCommand extends Command
         // Display logs banner
         render(<<<HTML
             <div class="mx-2 my-1">
-                <div class="px-4 py-2 bg-purple-900 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <span class="text-purple-400 text-xl mr-3">📋</span>
+                <div class="px-4 py-2 bg-purple-900">
+                    <div class="flex justify-between">
+                        <div class="flex">
+                            <span class="text-purple-400 mr-3">📋</span>
                             <div>
                                 <div class="text-purple-300 font-bold">Service Logs: {$serviceDisplay}</div>
-                                <div class="text-gray-400 text-sm">Environment: {$environment}</div>
+                                <div class="text-gray-400">Environment: {$environment}</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-purple-300 text-sm font-bold">{$followMode}</div>
-                            <div class="text-gray-400 text-sm">Last {$tailCount} lines</div>
+                            <div class="text-purple-300 font-bold">{$followMode}</div>
+                            <div class="text-gray-400">Last {$tailCount} lines</div>
                         </div>
                     </div>
                 </div>
@@ -91,8 +91,8 @@ class LogsCommand extends Command
         if ($this->option('follow') === true) {
             render(<<<'HTML'
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-1 bg-gray-800 rounded">
-                        <div class="text-gray-400 text-sm">
+                    <div class="px-4 py-1 bg-gray-800">
+                        <div class="text-gray-400">
                             <span>Press </span><span class="text-cyan-400">Ctrl+C</span><span> to stop following logs</span>
                         </div>
                     </div>
@@ -130,8 +130,8 @@ class LogsCommand extends Command
             $this->newLine();
             render(<<<'HTML'
                 <div class="mx-2 my-1">
-                    <div class="px-4 py-1 bg-gray-800 rounded">
-                        <div class="text-gray-400 text-sm">
+                    <div class="px-4 py-1 bg-gray-800">
+                        <div class="text-gray-400">
                             <span>Tip: Use </span>
                             <span class="text-cyan-400">--follow</span>
                             <span> to stream logs in real-time</span>
