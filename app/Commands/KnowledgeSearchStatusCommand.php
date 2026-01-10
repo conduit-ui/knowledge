@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Contracts\EmbeddingServiceInterface;
-use App\Models\Entry;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeSearchStatusCommand extends Command
@@ -51,17 +50,14 @@ class KnowledgeSearchStatusCommand extends Command
         $this->newLine();
 
         // Database Statistics
-        $totalEntries = Entry::count();
-        $entriesWithEmbeddings = Entry::whereNotNull('embedding')->count();
+        $qdrant = app(\App\Services\QdrantService::class);
+        $entries = $qdrant->search('', [], 10000);
+        $totalEntries = $entries->count();
 
         $this->line('<fg=cyan>Database Statistics</>');
         $this->line("  Total entries: {$totalEntries}");
-        $this->line("  Entries with embeddings: {$entriesWithEmbeddings}");
-
-        if ($totalEntries > 0) {
-            $percentage = round(($entriesWithEmbeddings / $totalEntries) * 100, 1);
-            $this->line("  Indexed: {$percentage}%");
-        }
+        $this->line("  Storage: Qdrant vector database");
+        $this->line("  All entries are automatically indexed for semantic search");
 
         $this->newLine();
 
