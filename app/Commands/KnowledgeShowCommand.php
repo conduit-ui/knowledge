@@ -24,6 +24,11 @@ class KnowledgeShowCommand extends Command
     {
         $id = $this->argument('id');
 
+        // Convert to integer if numeric, otherwise keep as string (for UUID support)
+        if (is_numeric($id)) {
+            $id = (int) $id;
+        }
+
         $entry = $qdrant->getById($id);
 
         if (! $entry) {
