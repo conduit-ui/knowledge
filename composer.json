@@ -1,7 +1,7 @@
 {
     "name": "conduit-ui/knowledge",
-    "description": "AI-powered knowledge base with semantic search and ChromaDB integration",
-    "keywords": ["knowledge", "ai", "semantic-search", "chromadb", "cli"],
+    "description": "AI-powered knowledge base with semantic search and Qdrant vector database",
+    "keywords": ["knowledge", "ai", "semantic-search", "qdrant", "vector-database", "cli"],
     "homepage": "https://github.com/conduit-ui/knowledge",
     "type": "library",
     "license": "MIT",
