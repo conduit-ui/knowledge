@@ -65,6 +65,7 @@ class ChromaDBClient implements ChromaDBClientInterface
                 $data = json_decode((string) $response->getBody(), true);
                 if (is_array($data) && isset($data['id'])) {
                     $this->collections[$name] = (string) $data['id'];
+
                     return $data;
                 }
             }

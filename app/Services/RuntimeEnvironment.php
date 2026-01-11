@@ -36,23 +36,6 @@ class RuntimeEnvironment
     }
 
     /**
-     * Get the database path.
-     *
-     * Priority:
-     * 1. KNOWLEDGE_DB_PATH environment variable
-     * 2. Base path + /knowledge.sqlite
-     */
-    public function databasePath(): string
-    {
-        $dbPath = getenv('KNOWLEDGE_DB_PATH');
-        if ($dbPath !== false && $dbPath !== '') {
-            return $dbPath;
-        }
-
-        return $this->basePath.'/knowledge.sqlite';
-    }
-
-    /**
      * Get the cache path for a specific type.
      *
      * @param  string  $type  Cache type (e.g., 'views', 'data')

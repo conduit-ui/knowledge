@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
 
 class KnowledgeListCommand extends Command
 {
@@ -18,7 +21,6 @@ class KnowledgeListCommand extends Command
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}
                             {--module= : Filter by module}
-                            {--min-confidence= : Minimum confidence level (0-100)}
                             {--limit=20 : Maximum number of entries to display}';
 
     /**
@@ -26,78 +28,56 @@ class KnowledgeListCommand extends Command
      */
     protected $description = 'List knowledge entries with filtering and pagination';
 
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
         $category = $this->option('category');
         $priority = $this->option('priority');
         $status = $this->option('status');
         $module = $this->option('module');
-        $minConfidence = $this->option('min-confidence');
         $limit = (int) $this->option('limit');
 
-        $query = Entry::query()
-            ->when($category, function (Builder $q, mixed $categoryValue): void {
-                if (is_string($categoryValue)) {
-                    $q->where('category', $categoryValue);
-                }
-            })
-            ->when($priority, function (Builder $q, mixed $priorityValue): void {
-                if (is_string($priorityValue)) {
-                    $q->where('priority', $priorityValue);
-                }
-            })
-            ->when($status, function (Builder $q, mixed $statusValue): void {
-                if (is_string($statusValue)) {
-                    $q->where('status', $statusValue);
-                }
-            })
-            ->when($module, function (Builder $q, mixed $moduleValue): void {
-                if (is_string($moduleValue)) {
-                    $q->where('module', $moduleValue);
-                }
-            })
-            ->when($minConfidence, function (Builder $q, mixed $minConfidenceValue): void {
-                if (is_string($minConfidenceValue) || is_int($minConfidenceValue)) {
-                    $q->where('confidence', '>=', (int) $minConfidenceValue);
-                }
-            })
-            ->orderBy('confidence', 'desc')
-            ->orderBy('usage_count', 'desc');
+        // Build filters for Qdrant
+        $filters = array_filter([
+            'category' => is_string($category) ? $category : null,
+            'priority' => is_string($priority) ? $priority : null,
+            'status' => is_string($status) ? $status : null,
+            'module' => is_string($module) ? $module : null,
+        ]);
 
-        $totalCount = $query->count();
+        // Use scroll to get all entries (no vector search needed)
+        $results = spin(
+            fn () => $qdrant->scroll($filters, $limit),
+            'Fetching entries...'
+        );
 
-        if ($totalCount === 0) {
+        if ($results->isEmpty()) {
             $this->line('No entries found.');
 
             return self::SUCCESS;
         }
 
-        $entries = $query->limit($limit)->get();
+        info("Found {$results->count()} ".str('entry')->plural($results->count()));
 
-        $this->info("Showing {$entries->count()} of {$totalCount} ".str('entry')->plural($totalCount));
-        $this->newLine();
+        // Build table data
+        $rows = $results->map(function (array $entry) {
+            $tags = isset($entry['tags']) && count($entry['tags']) > 0
+                ? implode(', ', array_slice($entry['tags'], 0, 3)).(count($entry['tags']) > 3 ? '...' : '')
+                : '-';
 
-        foreach ($entries as $entry) {
-            $this->line("<fg=cyan>[{$entry->id}]</> <fg=green>{$entry->title}</>");
+            return [
+                substr((string) $entry['id'], 0, 8).'...',
+                substr($entry['title'], 0, 40).(strlen($entry['title']) > 40 ? '...' : ''),
+                $entry['category'] ?? '-',
+                $entry['priority'] ?? '-',
+                $entry['confidence'].'%',
+                $tags,
+            ];
+        })->toArray();
 
-            $details = [];
-            $details[] = 'Category: '.($entry->category ?? 'N/A');
-            $details[] = "Priority: {$entry->priority}";
-            $details[] = "Confidence: {$entry->confidence}%";
-            $details[] = "Status: {$entry->status}";
-
-            if ($entry->module) {
-                $details[] = "Module: {$entry->module}";
-            }
-
-            $this->line(implode(' | ', $details));
-
-            if ($entry->tags) {
-                $this->line('Tags: '.implode(', ', $entry->tags));
-            }
-
-            $this->newLine();
-        }
+        table(
+            ['ID', 'Title', 'Category', 'Priority', 'Confidence', 'Tags'],
+            $rows
+        );
 
         return self::SUCCESS;
     }

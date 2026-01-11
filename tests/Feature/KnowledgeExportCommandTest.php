@@ -2,182 +2,216 @@
 
 declare(strict_types=1);
 
-use App\Models\Entry;
+use App\Services\MarkdownExporter;
+use App\Services\QdrantService;
 
-beforeEach(function () {
-    Entry::query()->delete();
-});
+describe('KnowledgeExportCommand', function () {
+    beforeEach(function () {
+        $this->qdrant = mock(QdrantService::class);
+        $this->markdownExporter = mock(MarkdownExporter::class);
 
-describe('knowledge:export command', function () {
-    it('exports a single entry to markdown format', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'Test Export',
-            'content' => 'Export content',
-            'category' => 'testing',
-            'tags' => ['php', 'export'],
+        app()->instance(QdrantService::class, $this->qdrant);
+        app()->instance(MarkdownExporter::class, $this->markdownExporter);
+
+        // Create temp directory for tests
+        if (! is_dir('/tmp/export-tests')) {
+            mkdir('/tmp/export-tests', 0755, true);
+        }
+    });
+
+    afterEach(function () {
+        // Clean up test files
+        if (is_dir('/tmp/export-tests')) {
+            array_map('unlink', glob('/tmp/export-tests/*'));
+            rmdir('/tmp/export-tests');
+        }
+    });
+
+    it('validates ID is numeric', function () {
+        $this->artisan('export', ['id' => 'not-numeric'])
+            ->expectsOutput('The ID must be a valid number.')
+            ->assertFailed();
+    });
+
+    it('fails when entry not found', function () {
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(999)
+            ->andReturn(null);
+
+        $this->artisan('export', ['id' => '999'])
+            ->expectsOutput('Entry not found.')
+            ->assertFailed();
+    });
+
+    it('exports entry as markdown to stdout by default', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Test Entry',
+            'content' => 'Test content',
+            'category' => 'tutorial',
+            'tags' => ['laravel', 'testing'],
+            'module' => 'Core',
             'priority' => 'high',
-            'confidence' => 90,
-        ]);
+            'confidence' => 95,
+            'status' => 'validated',
+        ];
 
-        $outputFile = sys_get_temp_dir().'/test-markdown-'.time().'.md';
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
 
-        $this->artisan('export', [
-            'id' => $entry->id,
-            '--format' => 'markdown',
-            '--output' => $outputFile,
-        ])->assertSuccessful();
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->with($entry)
+            ->andReturn('# Test Entry
 
-        $output = file_get_contents($outputFile);
+Test content');
 
-        expect($output)->toContain('---');
-        expect($output)->toContain('title: "Test Export"');
-        expect($output)->toContain('# Test Export');
-        expect($output)->toContain('Export content');
-        expect($output)->toContain('category: "testing"');
-        expect($output)->toContain('priority: "high"');
-        expect($output)->toContain('confidence: 90');
-        expect($output)->toContain('tags:');
-        expect($output)->toContain('- "php"');
-        expect($output)->toContain('- "export"');
+        $this->artisan('export', ['id' => '1'])
+            ->expectsOutput('# Test Entry
 
-        unlink($outputFile);
+Test content')
+            ->assertSuccessful();
     });
 
-    it('exports a single entry to json format', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'JSON Export',
-            'content' => 'JSON content',
-        ]);
+    it('exports entry as markdown to file', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Test Entry',
+            'content' => 'Test content',
+            'category' => 'tutorial',
+            'tags' => ['laravel'],
+            'module' => null,
+            'priority' => 'medium',
+            'confidence' => 80,
+            'status' => 'draft',
+        ];
 
-        $outputFile = sys_get_temp_dir().'/test-json-'.time().'.json';
+        $outputPath = '/tmp/export-tests/test-entry.md';
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->with($entry)
+            ->andReturn('# Test Entry
+
+Test content');
 
         $this->artisan('export', [
-            'id' => $entry->id,
+            'id' => '1',
+            '--output' => $outputPath,
+        ])
+            ->expectsOutputToContain("Exported entry #1 to: {$outputPath}")
+            ->assertSuccessful();
+
+        expect(file_exists($outputPath))->toBeTrue();
+        expect(file_get_contents($outputPath))->toContain('# Test Entry');
+    });
+
+    it('exports entry as json to stdout', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Test Entry',
+            'content' => 'Test content',
+            'category' => 'guide',
+            'tags' => ['php'],
+            'module' => null,
+            'priority' => 'low',
+            'confidence' => 50,
+            'status' => 'draft',
+        ];
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $expectedJson = json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        $this->artisan('export', [
+            'id' => '1',
             '--format' => 'json',
-            '--output' => $outputFile,
-        ])->assertSuccessful();
-
-        $output = file_get_contents($outputFile);
-        $json = json_decode($output, true);
-        expect($json)->not->toBeNull();
-        expect($json['title'])->toBe('JSON Export');
-        expect($json['content'])->toBe('JSON content');
-
-        unlink($outputFile);
+        ])
+            ->expectsOutput($expectedJson)
+            ->assertSuccessful();
     });
 
-    it('exports entry to a file', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'File Export',
-            'content' => 'File content',
-        ]);
+    it('exports entry as json to file', function () {
+        $entry = [
+            'id' => 2,
+            'title' => 'JSON Export',
+            'content' => 'Content for JSON',
+            'category' => null,
+            'tags' => [],
+            'module' => null,
+            'priority' => 'medium',
+            'confidence' => 70,
+            'status' => 'draft',
+        ];
 
-        $outputFile = sys_get_temp_dir().'/test-export.md';
+        $outputPath = '/tmp/export-tests/test-entry.json';
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(2)
+            ->andReturn($entry);
 
         $this->artisan('export', [
-            'id' => $entry->id,
-            '--format' => 'markdown',
-            '--output' => $outputFile,
-        ])->assertSuccessful();
+            'id' => '2',
+            '--format' => 'json',
+            '--output' => $outputPath,
+        ])
+            ->expectsOutputToContain("Exported entry #2 to: {$outputPath}")
+            ->assertSuccessful();
 
-        expect(file_exists($outputFile))->toBeTrue();
-        $content = file_get_contents($outputFile);
-        expect($content)->toContain('# File Export');
-        expect($content)->toContain('File content');
-
-        unlink($outputFile);
+        expect(file_exists($outputPath))->toBeTrue();
+        $json = json_decode(file_get_contents($outputPath), true);
+        expect($json['title'])->toBe('JSON Export');
     });
 
     it('creates output directory if it does not exist', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'Directory Test',
+        $entry = [
+            'id' => 3,
+            'title' => 'New Directory Test',
             'content' => 'Content',
-        ]);
+            'category' => null,
+            'tags' => [],
+            'module' => null,
+            'priority' => 'medium',
+            'confidence' => 60,
+            'status' => 'draft',
+        ];
 
-        $outputFile = sys_get_temp_dir().'/test-dir-'.time().'/export.md';
+        $outputPath = '/tmp/export-tests/nested/dir/test.md';
 
-        $this->artisan('export', [
-            'id' => $entry->id,
-            '--output' => $outputFile,
-        ])->assertSuccessful();
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(3)
+            ->andReturn($entry);
 
-        expect(file_exists($outputFile))->toBeTrue();
-
-        unlink($outputFile);
-        rmdir(dirname($outputFile));
-    });
-
-    it('fails when entry does not exist', function () {
-        $this->artisan('export', [
-            'id' => 99999,
-            '--format' => 'markdown',
-        ])->assertFailed();
-    });
-
-    it('fails with invalid ID', function () {
-        $this->artisan('export', [
-            'id' => 'invalid',
-            '--format' => 'markdown',
-        ])->assertFailed();
-    });
-
-    it('exports entry with all metadata fields', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'Full Metadata',
-            'content' => 'Content',
-            'category' => 'test',
-            'module' => 'core',
-            'tags' => ['tag1', 'tag2'],
-            'source' => 'test-source',
-            'ticket' => 'TICK-123',
-            'author' => 'John Doe',
-            'files' => ['file1.php', 'file2.php'],
-            'repo' => 'test/repo',
-            'branch' => 'main',
-            'commit' => 'abc123',
-        ]);
-
-        $outputFile = sys_get_temp_dir().'/test-metadata-'.time().'.md';
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->with($entry)
+            ->andReturn('# New Directory Test');
 
         $this->artisan('export', [
-            'id' => $entry->id,
-            '--format' => 'markdown',
-            '--output' => $outputFile,
-        ])->assertSuccessful();
+            'id' => '3',
+            '--output' => $outputPath,
+        ])
+            ->expectsOutputToContain("Exported entry #3 to: {$outputPath}")
+            ->assertSuccessful();
 
-        $output = file_get_contents($outputFile);
+        expect(file_exists($outputPath))->toBeTrue();
 
-        expect($output)->toContain('module: "core"');
-        expect($output)->toContain('source: "test-source"');
-        expect($output)->toContain('ticket: "TICK-123"');
-        expect($output)->toContain('author: "John Doe"');
-        expect($output)->toContain('files:');
-        expect($output)->toContain('- "file1.php"');
-        expect($output)->toContain('- "file2.php"');
-        expect($output)->toContain('repo: "test/repo"');
-        expect($output)->toContain('branch: "main"');
-        expect($output)->toContain('commit: "abc123"');
-
-        unlink($outputFile);
-    });
-
-    it('escapes special characters in yaml', function () {
-        $entry = Entry::factory()->create([
-            'title' => 'Title with "quotes"',
-            'content' => 'Content',
-        ]);
-
-        $outputFile = sys_get_temp_dir().'/test-escape-'.time().'.md';
-
-        $this->artisan('export', [
-            'id' => $entry->id,
-            '--format' => 'markdown',
-            '--output' => $outputFile,
-        ])->assertSuccessful();
-
-        $output = file_get_contents($outputFile);
-        expect($output)->toContain('title: "Title with \"quotes\""');
-
-        unlink($outputFile);
+        // Clean up nested directories
+        unlink($outputPath);
+        rmdir('/tmp/export-tests/nested/dir');
+        rmdir('/tmp/export-tests/nested');
     });
 });

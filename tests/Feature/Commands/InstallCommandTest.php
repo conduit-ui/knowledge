@@ -2,76 +2,61 @@
 
 declare(strict_types=1);
 
-use App\Services\DatabaseInitializer;
-use App\Services\KnowledgePathService;
+use App\Services\QdrantService;
 
 describe('install command', function (): void {
-    it('shows already initialized message when database exists', function (): void {
-        $pathService = Mockery::mock(KnowledgePathService::class);
-        $pathService->shouldReceive('getDatabasePath')
-            ->andReturn('/home/user/.knowledge/knowledge.sqlite');
+    it('initializes Qdrant collection successfully', function (): void {
+        $qdrant = Mockery::mock(QdrantService::class);
+        $qdrant->shouldReceive('ensureCollection')
+            ->with('default')
+            ->once();
 
-        $initializer = Mockery::mock(DatabaseInitializer::class);
-        $initializer->shouldReceive('isInitialized')->andReturn(true);
-
-        $this->app->instance(KnowledgePathService::class, $pathService);
-        $this->app->instance(DatabaseInitializer::class, $initializer);
+        $this->app->instance(QdrantService::class, $qdrant);
 
         $this->artisan('install')
-            ->expectsOutputToContain('Knowledge database already exists')
+            ->expectsOutputToContain('knowledge_default')
+            ->expectsOutputToContain('initialized successfully')
             ->assertExitCode(0);
     });
 
-    it('initializes database when not yet installed', function (): void {
-        $pathService = Mockery::mock(KnowledgePathService::class);
-        $pathService->shouldReceive('getDatabasePath')
-            ->andReturn('/home/user/.knowledge/knowledge.sqlite');
+    it('accepts custom project name', function (): void {
+        $qdrant = Mockery::mock(QdrantService::class);
+        $qdrant->shouldReceive('ensureCollection')
+            ->with('myproject')
+            ->once();
 
-        $initializer = Mockery::mock(DatabaseInitializer::class);
-        $initializer->shouldReceive('isInitialized')->andReturn(false);
-        $initializer->shouldReceive('initialize')->once();
+        $this->app->instance(QdrantService::class, $qdrant);
 
-        $this->app->instance(KnowledgePathService::class, $pathService);
-        $this->app->instance(DatabaseInitializer::class, $initializer);
-
-        $this->artisan('install')
-            ->expectsOutputToContain('Initializing knowledge database')
-            ->expectsOutputToContain('Knowledge database initialized successfully')
+        $this->artisan('install', ['--project' => 'myproject'])
+            ->expectsOutputToContain('knowledge_myproject')
             ->assertExitCode(0);
     });
 
     it('displays usage instructions after initialization', function (): void {
-        $pathService = Mockery::mock(KnowledgePathService::class);
-        $pathService->shouldReceive('getDatabasePath')
-            ->andReturn('/tmp/test/.knowledge/knowledge.sqlite');
+        $qdrant = Mockery::mock(QdrantService::class);
+        $qdrant->shouldReceive('ensureCollection')
+            ->with('default')
+            ->once();
 
-        $initializer = Mockery::mock(DatabaseInitializer::class);
-        $initializer->shouldReceive('isInitialized')->andReturn(false);
-        $initializer->shouldReceive('initialize')->once();
-
-        $this->app->instance(KnowledgePathService::class, $pathService);
-        $this->app->instance(DatabaseInitializer::class, $initializer);
+        $this->app->instance(QdrantService::class, $qdrant);
 
         $this->artisan('install')
             ->expectsOutputToContain('know add')
             ->expectsOutputToContain('know search')
-            ->expectsOutputToContain('know list')
+            ->expectsOutputToContain('know entries')
             ->assertExitCode(0);
     });
 
-    it('does not show usage instructions when already initialized', function (): void {
-        $pathService = Mockery::mock(KnowledgePathService::class);
-        $pathService->shouldReceive('getDatabasePath')
-            ->andReturn('/home/user/.knowledge/knowledge.sqlite');
+    it('shows error when Qdrant connection fails', function (): void {
+        $qdrant = Mockery::mock(QdrantService::class);
+        $qdrant->shouldReceive('ensureCollection')
+            ->andThrow(new \Exception('Connection refused'));
 
-        $initializer = Mockery::mock(DatabaseInitializer::class);
-        $initializer->shouldReceive('isInitialized')->andReturn(true);
-
-        $this->app->instance(KnowledgePathService::class, $pathService);
-        $this->app->instance(DatabaseInitializer::class, $initializer);
+        $this->app->instance(QdrantService::class, $qdrant);
 
         $this->artisan('install')
-            ->doesntExpectOutputToContain('know add')
-            ->assertExitCode(0);
+            ->expectsOutputToContain('Failed to initialize')
+            ->expectsOutputToContain('docker start')
+            ->assertExitCode(1);
     });
 });
