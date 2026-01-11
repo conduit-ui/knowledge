@@ -7,6 +7,10 @@ namespace App\Commands;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
+
 class KnowledgeListCommand extends Command
 {
     /**
@@ -40,8 +44,11 @@ class KnowledgeListCommand extends Command
             'module' => is_string($module) ? $module : null,
         ]);
 
-        // Search with empty query to get all entries matching filters
-        $results = $qdrant->search('', $filters, $limit);
+        // Use scroll to get all entries (no vector search needed)
+        $results = spin(
+            fn () => $qdrant->scroll($filters, $limit),
+            'Fetching entries...'
+        );
 
         if ($results->isEmpty()) {
             $this->line('No entries found.');
@@ -49,30 +56,28 @@ class KnowledgeListCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->info("Found {$results->count()} ".str('entry')->plural($results->count()));
-        $this->newLine();
+        info("Found {$results->count()} ".str('entry')->plural($results->count()));
 
-        foreach ($results as $entry) {
-            $this->line("<fg=cyan>[{$entry['id']}]</> <fg=green>{$entry['title']}</>");
+        // Build table data
+        $rows = $results->map(function (array $entry) {
+            $tags = isset($entry['tags']) && count($entry['tags']) > 0
+                ? implode(', ', array_slice($entry['tags'], 0, 3)).(count($entry['tags']) > 3 ? '...' : '')
+                : '-';
 
-            $details = [];
-            $details[] = 'Category: '.($entry['category'] ?? 'N/A');
-            $details[] = "Priority: {$entry['priority']}";
-            $details[] = "Confidence: {$entry['confidence']}%";
-            $details[] = "Status: {$entry['status']}";
+            return [
+                substr((string) $entry['id'], 0, 8).'...',
+                substr($entry['title'], 0, 40).(strlen($entry['title']) > 40 ? '...' : ''),
+                $entry['category'] ?? '-',
+                $entry['priority'] ?? '-',
+                $entry['confidence'].'%',
+                $tags,
+            ];
+        })->toArray();
 
-            if ($entry['module'] !== null) {
-                $details[] = "Module: {$entry['module']}";
-            }
-
-            $this->line(implode(' | ', $details));
-
-            if (isset($entry['tags']) && count($entry['tags']) > 0) {
-                $this->line('Tags: '.implode(', ', $entry['tags']));
-            }
-
-            $this->newLine();
-        }
+        table(
+            ['ID', 'Title', 'Category', 'Priority', 'Confidence', 'Tags'],
+            $rows
+        );
 
         return self::SUCCESS;
     }

@@ -5,131 +5,93 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Services\QdrantService;
+use Illuminate\Support\Collection;
 use LaravelZero\Framework\Commands\Command;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
 
 class KnowledgeStatsCommand extends Command
 {
-    /**
-     * @var string
-     */
     protected $signature = 'stats';
 
-    /**
-     * @var string
-     */
     protected $description = 'Display analytics dashboard for knowledge entries';
 
     public function handle(QdrantService $qdrant): int
     {
-        $this->info('Knowledge Base Analytics');
-        $this->newLine();
+        $entries = spin(
+            fn () => $qdrant->search('', [], 10000),
+            'Loading knowledge base...'
+        );
 
-        $this->displayOverview($qdrant);
-        $this->newLine();
-
-        $this->displayStatusBreakdown($qdrant);
-        $this->newLine();
-
-        $this->displayCategoryBreakdown($qdrant);
-        $this->newLine();
-
-        $this->displayUsageStatistics($qdrant);
+        $this->renderDashboard($entries);
 
         return self::SUCCESS;
     }
 
-    /**
-     * Display total entries count overview.
-     */
-    private function displayOverview(QdrantService $qdrant): void
+    private function renderDashboard(Collection $entries): void
     {
-        $entries = $this->getAllEntries($qdrant);
-        $this->line('Total Entries: '.$entries->count());
-    }
+        $total = $entries->count();
 
-    /**
-     * Display breakdown of entries by status.
-     */
-    private function displayStatusBreakdown(QdrantService $qdrant): void
-    {
-        $this->comment('Entries by Status:');
+        info("Knowledge Base: {$total} entries");
+        $this->newLine();
 
-        $entries = $this->getAllEntries($qdrant);
-        $statusGroups = $entries->groupBy('status');
-
-        if ($statusGroups->isEmpty()) {
-            $this->line('  No entries found');
-
-            return;
-        }
-
-        foreach ($statusGroups as $status => $group) {
-            $this->line("  {$status}: ".$group->count());
-        }
-    }
-
-    /**
-     * Display breakdown of entries by category.
-     */
-    private function displayCategoryBreakdown(QdrantService $qdrant): void
-    {
-        $this->comment('Entries by Category:');
-
-        $entries = $this->getAllEntries($qdrant);
-        $categorized = $entries->whereNotNull('category');
-        $categoryGroups = $categorized->groupBy('category');
-
-        if ($categoryGroups->isEmpty()) {
-            $this->line('  No categorized entries found');
-
-            return;
-        }
-
-        foreach ($categoryGroups as $category => $group) {
-            $this->line("  {$category}: ".$group->count());
-        }
-
-        $uncategorized = $entries->whereNull('category')->count();
-        if ($uncategorized > 0) {
-            $this->line("  (uncategorized): {$uncategorized}");
-        }
-    }
-
-    /**
-     * Display usage statistics for knowledge entries.
-     */
-    private function displayUsageStatistics(QdrantService $qdrant): void
-    {
-        $this->comment('Usage Statistics:');
-
-        $entries = $this->getAllEntries($qdrant);
-
+        // Overview metrics
         $totalUsage = $entries->sum('usage_count');
-        $this->line("  Total Usage: {$totalUsage}");
+        $avgUsage = round($entries->avg('usage_count') ?? 0);
 
-        $avgUsage = $entries->avg('usage_count');
-        $this->line('  Average Usage: '.round($avgUsage ?? 0));
+        $this->line('<fg=gray>Overview</>');
+        table(
+            ['Metric', 'Value'],
+            [
+                ['Total Entries', (string) $total],
+                ['Total Usage', (string) $totalUsage],
+                ['Avg Usage', (string) $avgUsage],
+            ]
+        );
 
+        // Status breakdown
+        $statusGroups = $entries->groupBy('status');
+        if ($statusGroups->isNotEmpty()) {
+            $this->newLine();
+            $this->line('<fg=gray>By Status</>');
+            $statusRows = [];
+            foreach ($statusGroups as $status => $group) {
+                $count = $group->count();
+                $pct = $total > 0 ? round(($count / $total) * 100) : 0;
+                $color = match ($status) {
+                    'validated' => 'green',
+                    'deprecated' => 'red',
+                    default => 'yellow',
+                };
+                $statusRows[] = ["<fg={$color}>{$status}</>", "{$count} ({$pct}%)"];
+            }
+            table(['Status', 'Count'], $statusRows);
+        }
+
+        // Category breakdown
+        $categoryGroups = $entries->whereNotNull('category')->groupBy('category');
+        if ($categoryGroups->isNotEmpty()) {
+            $this->newLine();
+            $this->line('<fg=gray>By Category</>');
+            $categoryRows = [];
+            foreach ($categoryGroups as $category => $group) {
+                $categoryRows[] = [$category, (string) $group->count()];
+            }
+            $uncategorized = $entries->whereNull('category')->count();
+            if ($uncategorized > 0) {
+                $categoryRows[] = ['<fg=gray>(none)</>', (string) $uncategorized];
+            }
+            table(['Category', 'Count'], $categoryRows);
+        }
+
+        // Most used
         $mostUsed = $entries->sortByDesc('usage_count')->first();
-        if ($mostUsed !== null && $mostUsed['usage_count'] > 0) {
-            $this->line("  Most Used: \"{$mostUsed['title']}\" ({$mostUsed['usage_count']} times)");
+        if ($mostUsed && $mostUsed['usage_count'] > 0) {
+            $this->newLine();
+            $this->line('<fg=gray>Most Used</>');
+            $this->line("  <fg=cyan>\"{$mostUsed['title']}\"</> ({$mostUsed['usage_count']} uses)");
         }
-    }
-
-    /**
-     * Get all entries from Qdrant (cached for multiple calls).
-     *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
-     */
-    private function getAllEntries(QdrantService $qdrant)
-    {
-        static $entries = null;
-
-        if ($entries === null) {
-            // Fetch all entries with high limit (Qdrant default is ~1000, adjust as needed)
-            $entries = $qdrant->search('', [], 10000);
-        }
-
-        return $entries;
     }
 }

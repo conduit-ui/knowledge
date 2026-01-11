@@ -14,6 +14,7 @@ use App\Integrations\Qdrant\Requests\CreateCollection;
 use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
 use App\Integrations\Qdrant\Requests\GetPoints;
+use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
 use Illuminate\Support\Collection;
@@ -210,6 +211,69 @@ class QdrantService
             return [
                 'id' => $result['id'],
                 'score' => $result['score'] ?? 0.0,
+                'title' => $payload['title'] ?? '',
+                'content' => $payload['content'] ?? '',
+                'tags' => $payload['tags'] ?? [],
+                'category' => $payload['category'] ?? null,
+                'module' => $payload['module'] ?? null,
+                'priority' => $payload['priority'] ?? null,
+                'status' => $payload['status'] ?? null,
+                'confidence' => $payload['confidence'] ?? 0,
+                'usage_count' => $payload['usage_count'] ?? 0,
+                'created_at' => $payload['created_at'] ?? '',
+                'updated_at' => $payload['updated_at'] ?? '',
+            ];
+        });
+    }
+
+    /**
+     * Scroll/list all entries without requiring a search query.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, array{
+     *     id: string|int,
+     *     title: string,
+     *     content: string,
+     *     tags: array<string>,
+     *     category: ?string,
+     *     module: ?string,
+     *     priority: ?string,
+     *     status: ?string,
+     *     confidence: int,
+     *     usage_count: int,
+     *     created_at: string,
+     *     updated_at: string
+     * }>
+     */
+    public function scroll(
+        array $filters = [],
+        int $limit = 20,
+        string $project = 'default'
+    ): Collection {
+        $this->ensureCollection($project);
+
+        $qdrantFilter = ! empty($filters) ? $this->buildFilter($filters) : null;
+
+        $response = $this->connector->send(
+            new ScrollPoints(
+                $this->getCollectionName($project),
+                $limit,
+                $qdrantFilter
+            )
+        );
+
+        if (! $response->successful()) {
+            return collect();
+        }
+
+        $data = $response->json();
+        $points = $data['result']['points'] ?? [];
+
+        return collect($points)->map(function (array $point) {
+            $payload = $point['payload'] ?? [];
+
+            return [
+                'id' => $point['id'],
                 'title' => $payload['title'] ?? '',
                 'content' => $payload['content'] ?? '',
                 'tags' => $payload['tags'] ?? [],

@@ -7,7 +7,6 @@ use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
-use App\Services\DatabaseInitializer;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
 use App\Services\OllamaService;
@@ -15,7 +14,6 @@ use App\Services\PullRequestService;
 use App\Services\QdrantService;
 use App\Services\QualityGateService;
 use App\Services\RuntimeEnvironment;
-use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 use App\Services\TestExecutorService;
@@ -32,12 +30,6 @@ describe('AppServiceProvider', function () {
         $service = app(KnowledgePathService::class);
 
         expect($service)->toBeInstanceOf(KnowledgePathService::class);
-    });
-
-    it('registers DatabaseInitializer', function () {
-        $service = app(DatabaseInitializer::class);
-
-        expect($service)->toBeInstanceOf(DatabaseInitializer::class);
     });
 
     it('registers ChromaDBClient', function () {
@@ -111,15 +103,13 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-    it('registers SQLiteFtsService by default', function () {
-        config(['search.fts_provider' => 'sqlite']);
-
+    it('registers StubFtsService (Qdrant handles vector search)', function () {
         // Force rebinding
         app()->forgetInstance(FullTextSearchInterface::class);
 
         $service = app(FullTextSearchInterface::class);
 
-        expect($service)->toBeInstanceOf(SQLiteFtsService::class);
+        expect($service)->toBeInstanceOf(StubFtsService::class);
     });
 
     it('registers StubFtsService when provider is stub', function () {

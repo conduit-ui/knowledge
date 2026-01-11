@@ -181,7 +181,7 @@ describe('autoFixFailure', function () {
 
         $failure = [
             'test' => 'example test',
-            'file' => base_path('tests/Unit/Services/DatabaseInitializerTest.php'),
+            'file' => base_path('tests/Unit/Services/QdrantServiceTest.php'),
             'message' => 'Failed',
             'trace' => '',
         ];
@@ -212,10 +212,10 @@ describe('getTestFileForClass', function () {
     });
 
     it('finds test file in Unit directory', function () {
-        $testFile = base_path('tests/Unit/Services/DatabaseInitializerTest.php');
+        $testFile = base_path('tests/Unit/Services/QdrantServiceTest.php');
 
         if (File::exists($testFile)) {
-            $result = $this->service->getTestFileForClass('App\Services\DatabaseInitializer');
+            $result = $this->service->getTestFileForClass('App\Services\QdrantService');
 
             expect($result)->toBeString();
         } else {

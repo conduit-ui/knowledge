@@ -9,11 +9,13 @@ use App\Services\QdrantService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
+
 class KnowledgeAddCommand extends Command
 {
-    /**
-     * @var string
-     */
     protected $signature = 'add
                             {title : The title of the knowledge entry}
                             {--content= : The content of the knowledge entry}
@@ -31,9 +33,6 @@ class KnowledgeAddCommand extends Command
                             {--commit= : Git commit hash}
                             {--no-git : Skip automatic git context detection}';
 
-    /**
-     * @var string
-     */
     protected $description = 'Add a new knowledge entry';
 
     private const VALID_CATEGORIES = ['debugging', 'architecture', 'testing', 'deployment', 'security'];
@@ -77,35 +76,35 @@ class KnowledgeAddCommand extends Command
 
         // Validate required fields
         if ($content === null || $content === '') {
-            $this->error('The content field is required.');
+            error('The content field is required.');
 
             return self::FAILURE;
         }
 
         // Validate confidence
         if (! is_numeric($confidence) || $confidence < 0 || $confidence > 100) {
-            $this->error('The confidence must be between 0 and 100.');
+            error('The confidence must be between 0 and 100.');
 
             return self::FAILURE;
         }
 
         // Validate category
         if ($category !== null && ! in_array($category, self::VALID_CATEGORIES, true)) {
-            $this->error('The selected category is invalid. Valid options: '.implode(', ', self::VALID_CATEGORIES));
+            error('Invalid category. Valid: '.implode(', ', self::VALID_CATEGORIES));
 
             return self::FAILURE;
         }
 
         // Validate priority
         if (! in_array($priority, self::VALID_PRIORITIES, true)) {
-            $this->error('The selected priority is invalid. Valid options: '.implode(', ', self::VALID_PRIORITIES));
+            error('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES));
 
             return self::FAILURE;
         }
 
         // Validate status
         if (! in_array($status, self::VALID_STATUSES, true)) {
-            $this->error('The selected status is invalid. Valid options: '.implode(', ', self::VALID_STATUSES));
+            error('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES));
 
             return self::FAILURE;
         }
@@ -129,42 +128,46 @@ class KnowledgeAddCommand extends Command
         // Auto-populate git context unless --no-git is specified
         if ($noGit !== true && $gitService->isGitRepository()) {
             $gitContext = $gitService->getContext();
-
-            // Only use auto-detected values if not manually provided
             $data['repo'] = $repo ?? $gitContext['repo'];
             $data['branch'] = $branch ?? $gitContext['branch'];
             $data['commit'] = $commit ?? $gitContext['commit'];
             $data['author'] = $author ?? $gitContext['author'];
         } else {
-            // Use manually provided values or null
             $data['repo'] = $repo;
             $data['branch'] = $branch;
             $data['commit'] = $commit;
             $data['author'] = $author;
         }
 
-        // Generate unique ID (UUID for Qdrant compatibility)
+        // Generate unique ID
         $id = Str::uuid()->toString();
         $data['id'] = $id;
 
         // Store in Qdrant
-        $success = $qdrant->upsert($data);
+        $success = spin(
+            fn () => $qdrant->upsert($data),
+            'Storing knowledge entry...'
+        );
 
         if (! $success) {
-            $this->error('Failed to create knowledge entry');
+            error('Failed to create knowledge entry');
 
             return self::FAILURE;
         }
 
-        $this->info("Knowledge entry created successfully with ID: {$id}");
-        $this->line("Title: {$title}");
-        $this->line('Category: '.($category ?? 'N/A'));
-        $this->line("Priority: {$priority}");
-        $this->line("Confidence: {$confidence}%");
+        info('Knowledge entry created!');
 
-        if (isset($data['tags'])) {
-            $this->line('Tags: '.implode(', ', $data['tags']));
-        }
+        table(
+            ['Field', 'Value'],
+            [
+                ['ID', $id],
+                ['Title', $title],
+                ['Category', $category ?? 'N/A'],
+                ['Priority', $priority],
+                ['Confidence', "{$confidence}%"],
+                ['Tags', isset($data['tags']) ? implode(', ', $data['tags']) : 'N/A'],
+            ]
+        );
 
         return self::SUCCESS;
     }

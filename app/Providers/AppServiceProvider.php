@@ -9,7 +9,6 @@ use App\Contracts\FullTextSearchInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
-use App\Services\DatabaseInitializer;
 use App\Services\DockerService;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
@@ -19,7 +18,6 @@ use App\Services\QdrantService;
 use App\Services\QualityGateService;
 use App\Services\RuntimeEnvironment;
 use App\Services\SemanticSearchService;
-use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 use App\Services\TestExecutorService;
@@ -72,11 +70,6 @@ class AppServiceProvider extends ServiceProvider
             return new DockerService;
         });
         // @codeCoverageIgnoreEnd
-
-        // Register database initializer
-        $this->app->singleton(DatabaseInitializer::class, function ($app) {
-            return new DatabaseInitializer($app->make(KnowledgePathService::class));
-        });
 
         // Register ChromaDB client
         $this->app->singleton(ChromaDBClientInterface::class, function () {
@@ -141,14 +134,9 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Register full-text search service
+        // Register full-text search service (Qdrant handles vector search)
         $this->app->singleton(FullTextSearchInterface::class, function () {
-            $provider = config('search.fts_provider', 'sqlite');
-
-            return match ($provider) {
-                'sqlite' => new SQLiteFtsService,
-                default => new StubFtsService,
-            };
+            return new StubFtsService;
         });
 
         // Register Ollama service for AI analysis

@@ -7,68 +7,105 @@ namespace App\Commands;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
+
 class KnowledgeShowCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected $signature = 'show
-                            {id : The ID of the knowledge entry to display}';
+    protected $signature = 'show {id : The ID of the knowledge entry to display}';
 
-    /**
-     * @var string
-     */
     protected $description = 'Display full details of a knowledge entry';
 
     public function handle(QdrantService $qdrant): int
     {
         $id = $this->argument('id');
 
-        // Convert to integer if numeric, otherwise keep as string (for UUID support)
         if (is_numeric($id)) {
             $id = (int) $id;
         }
 
-        $entry = $qdrant->getById($id);
+        $entry = spin(
+            fn () => $qdrant->getById($id),
+            'Fetching entry...'
+        );
 
         if (! $entry) {
-            $this->line('Entry not found.');
+            error('Entry not found.');
 
             return self::FAILURE;
         }
 
-        // Increment usage count
         $qdrant->incrementUsage($id);
 
-        // Display entry details
-        $this->info("ID: {$entry['id']}");
-        $this->info("Title: {$entry['title']}");
-        $this->newLine();
-
-        $this->line("Content: {$entry['content']}");
-        $this->newLine();
-
-        $this->line('Category: '.($entry['category'] ?? 'N/A'));
-
-        if ($entry['module']) {
-            $this->line("Module: {$entry['module']}");
-        }
-
-        $this->line("Priority: {$entry['priority']}");
-        $this->line("Confidence: {$entry['confidence']}%");
-        $this->line("Status: {$entry['status']}");
-        $this->newLine();
-
-        if (! empty($entry['tags'])) {
-            $this->line('Tags: '.implode(', ', $entry['tags']));
-        }
-
-        $this->newLine();
-        $this->line("Usage Count: {$entry['usage_count']}");
-
-        $this->line("Created: {$entry['created_at']}");
-        $this->line("Updated: {$entry['updated_at']}");
+        $this->renderEntry($entry);
 
         return self::SUCCESS;
+    }
+
+    private function renderEntry(array $entry): void
+    {
+        $this->newLine();
+        $this->line("<fg=cyan;options=bold>{$entry['title']}</>");
+        $this->line("<fg=gray>ID: {$entry['id']}</>");
+        $this->newLine();
+
+        $this->line($entry['content']);
+        $this->newLine();
+
+        // Metadata table
+        $rows = [
+            ['Category', $entry['category'] ?? 'N/A'],
+            ['Priority', $this->colorize($entry['priority'], $this->priorityColor($entry['priority']))],
+            ['Status', $this->colorize($entry['status'], $this->statusColor($entry['status']))],
+            ['Confidence', $this->colorize("{$entry['confidence']}%", $this->confidenceColor($entry['confidence']))],
+            ['Usage', (string) $entry['usage_count']],
+        ];
+
+        if ($entry['module']) {
+            $rows[] = ['Module', $entry['module']];
+        }
+
+        if (! empty($entry['tags'])) {
+            $rows[] = ['Tags', implode(', ', $entry['tags'])];
+        }
+
+        table(['Field', 'Value'], $rows);
+
+        $this->newLine();
+        $this->line("<fg=gray>Created: {$entry['created_at']} | Updated: {$entry['updated_at']}</>");
+    }
+
+    private function colorize(string $text, string $color): string
+    {
+        return "<fg={$color}>{$text}</>";
+    }
+
+    private function priorityColor(string $priority): string
+    {
+        return match ($priority) {
+            'critical' => 'red',
+            'high' => 'yellow',
+            'medium' => 'white',
+            default => 'gray',
+        };
+    }
+
+    private function statusColor(string $status): string
+    {
+        return match ($status) {
+            'validated' => 'green',
+            'deprecated' => 'red',
+            default => 'yellow',
+        };
+    }
+
+    private function confidenceColor(int $confidence): string
+    {
+        return match (true) {
+            $confidence >= 80 => 'green',
+            $confidence >= 50 => 'yellow',
+            default => 'red',
+        };
     }
 }
