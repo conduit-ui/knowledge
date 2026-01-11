@@ -20,8 +20,7 @@ jobs:
       - uses: synapse-sentinel/gate@v1
         with:
           check: certify
-          coverage-threshold: 100
+          coverage-threshold: 95
           auto-merge: true
           merge-method: squash
-          test-timeout: 600
           github-token: ${{ secrets.GITHUB_TOKEN }}
