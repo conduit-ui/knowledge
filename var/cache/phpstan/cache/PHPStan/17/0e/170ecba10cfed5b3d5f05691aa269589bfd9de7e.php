@@ -801,5 +801,16 @@ return \PHPStan\Cache\CacheItem::__set_state([
             3 => [
             ],
         ],
+        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/KnowledgeUpdateCommand.php' => [
+            0 => 'f46744b6fd773559186dd7249ca36288fd0f6fa7',
+            1 => [
+                0 => 'app\\commands\\knowledgeupdatecommand',
+            ],
+            2 => [
+                0 => 'app\\commands\\handle',
+            ],
+            3 => [
+            ],
+        ],
     ],
 ]);
