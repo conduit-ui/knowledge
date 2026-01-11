@@ -20,20 +20,21 @@ class KnowledgeStatsCommand extends Command
 
     public function handle(QdrantService $qdrant): int
     {
-        $entries = spin(
-            fn () => $qdrant->search('', [], 10000),
+        $total = spin(
+            fn () => $qdrant->count(),
             'Loading knowledge base...'
         );
 
-        $this->renderDashboard($entries);
+        // Get a sample of entries for category/status breakdown (limit to 1000 for performance)
+        $entries = $qdrant->scroll([], min($total, 1000));
+
+        $this->renderDashboard($entries, $total);
 
         return self::SUCCESS;
     }
 
-    private function renderDashboard(Collection $entries): void
+    private function renderDashboard(Collection $entries, int $total): void
     {
-        $total = $entries->count();
-
         info("Knowledge Base: {$total} entries");
         $this->newLine();
 

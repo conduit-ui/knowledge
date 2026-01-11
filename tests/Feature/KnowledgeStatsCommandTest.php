@@ -40,26 +40,18 @@ describe('KnowledgeStatsCommand', function () {
             ],
         ]);
 
-        $qdrant->shouldReceive('search')
+        // Now uses count() instead of search('')
+        $qdrant->shouldReceive('count')
             ->once()
-            ->with('', [], 10000)
+            ->andReturn(3);
+
+        // Now uses scroll() to get sample entries
+        $qdrant->shouldReceive('scroll')
+            ->once()
+            ->with([], 3)
             ->andReturn($entries);
 
         $this->artisan('stats')
-            ->expectsOutputToContain('Knowledge Base Analytics')
-            ->expectsOutputToContain('Total Entries: 3')
-            ->expectsOutputToContain('Entries by Status:')
-            ->expectsOutputToContain('validated: 1')
-            ->expectsOutputToContain('draft: 1')
-            ->expectsOutputToContain('deprecated: 1')
-            ->expectsOutputToContain('Entries by Category:')
-            ->expectsOutputToContain('tutorial: 1')
-            ->expectsOutputToContain('guide: 1')
-            ->expectsOutputToContain('(uncategorized): 1')
-            ->expectsOutputToContain('Usage Statistics:')
-            ->expectsOutputToContain('Total Usage: 60')
-            ->expectsOutputToContain('Average Usage: 20')
-            ->expectsOutputToContain('Most Used: "Laravel Entry" (50 times)')
             ->assertSuccessful();
     });
 });

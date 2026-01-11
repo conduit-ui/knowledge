@@ -21,7 +21,8 @@ class KnowledgeListCommand extends Command
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}
                             {--module= : Filter by module}
-                            {--limit=20 : Maximum number of entries to display}';
+                            {--limit=20 : Maximum number of entries to display}
+                            {--offset= : Skip N entries (use point ID for pagination)}';
 
     /**
      * @var string
@@ -35,6 +36,7 @@ class KnowledgeListCommand extends Command
         $status = $this->option('status');
         $module = $this->option('module');
         $limit = (int) $this->option('limit');
+        $offset = $this->option('offset');
 
         // Build filters for Qdrant
         $filters = array_filter([
@@ -44,9 +46,12 @@ class KnowledgeListCommand extends Command
             'module' => is_string($module) ? $module : null,
         ]);
 
-        // Use scroll to get all entries (no vector search needed)
+        // Parse offset - can be integer ID or null
+        $parsedOffset = is_string($offset) && $offset !== '' ? (int) $offset : null;
+
+        // Use scroll to get entries (no vector search needed)
         $results = spin(
-            fn () => $qdrant->scroll($filters, $limit),
+            fn () => $qdrant->scroll($filters, $limit, 'default', $parsedOffset),
             'Fetching entries...'
         );
 

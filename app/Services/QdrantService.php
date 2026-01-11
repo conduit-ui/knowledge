@@ -248,7 +248,8 @@ class QdrantService
     public function scroll(
         array $filters = [],
         int $limit = 20,
-        string $project = 'default'
+        string $project = 'default',
+        string|int|null $offset = null
     ): Collection {
         $this->ensureCollection($project);
 
@@ -258,7 +259,8 @@ class QdrantService
             new ScrollPoints(
                 $this->getCollectionName($project),
                 $limit,
-                $qdrantFilter
+                $qdrantFilter,
+                $offset
             )
         );
 
@@ -458,6 +460,26 @@ class QdrantService
         }
 
         return empty($must) ? null : ['must' => $must];
+    }
+
+    /**
+     * Get the total count of entries in a collection.
+     */
+    public function count(string $project = 'default'): int
+    {
+        $this->ensureCollection($project);
+
+        $response = $this->connector->send(
+            new GetCollectionInfo($this->getCollectionName($project))
+        );
+
+        if (! $response->successful()) {
+            return 0;
+        }
+
+        $data = $response->json();
+
+        return $data['result']['points_count'] ?? 0;
     }
 
     /**

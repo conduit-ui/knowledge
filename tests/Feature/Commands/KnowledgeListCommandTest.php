@@ -12,7 +12,7 @@ beforeEach(function () {
 it('lists all entries', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Entry 1', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '2', 'title' => 'Entry 2', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 70, 'module' => null, 'tags' => []],
@@ -26,7 +26,7 @@ it('lists all entries', function () {
 it('filters by category', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with(['category' => 'architecture'], 20)
+        ->with(['category' => 'architecture'], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Architecture Entry', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '3', 'title' => 'Another Architecture', 'category' => 'architecture', 'priority' => 'low', 'status' => 'validated', 'confidence' => 50, 'module' => null, 'tags' => []],
@@ -39,7 +39,7 @@ it('filters by category', function () {
 it('filters by priority', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with(['priority' => 'critical'], 20)
+        ->with(['priority' => 'critical'], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Critical Entry', 'category' => 'architecture', 'priority' => 'critical', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
         ]));
@@ -51,7 +51,7 @@ it('filters by priority', function () {
 it('filters by status', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with(['status' => 'validated'], 20)
+        ->with(['status' => 'validated'], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Validated Entry', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
         ]));
@@ -63,7 +63,7 @@ it('filters by status', function () {
 it('filters by module', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with(['module' => 'Blood'], 20)
+        ->with(['module' => 'Blood'], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Blood Module Entry 1', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => 'Blood', 'tags' => []],
             ['id' => '3', 'title' => 'Blood Module Entry 2', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 70, 'module' => 'Blood', 'tags' => []],
@@ -76,7 +76,7 @@ it('filters by module', function () {
 it('limits results', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 5)
+        ->with([], 5, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Entry 1', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '2', 'title' => 'Entry 2', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 70, 'module' => null, 'tags' => []],
@@ -106,7 +106,7 @@ it('shows default limit of 20', function () {
 
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn($entries);
 
     $this->artisan('entries')
@@ -116,7 +116,7 @@ it('shows default limit of 20', function () {
 it('combines multiple filters', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with(['category' => 'architecture', 'priority' => 'high'], 20)
+        ->with(['category' => 'architecture', 'priority' => 'high'], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Filtered Entry', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
         ]));
@@ -130,7 +130,7 @@ it('combines multiple filters', function () {
 it('shows message when no entries exist', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect());
 
     $this->artisan('entries')
@@ -141,7 +141,7 @@ it('shows message when no entries exist', function () {
 it('orders by confidence and usage count', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '2', 'title' => 'High confidence', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '3', 'title' => 'Medium confidence', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 60, 'module' => null, 'tags' => []],
@@ -155,7 +155,7 @@ it('orders by confidence and usage count', function () {
 it('shows entry count', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'Entry 1', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '2', 'title' => 'Entry 2', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 70, 'module' => null, 'tags' => []],
@@ -174,7 +174,7 @@ it('accepts min-confidence filter', function () {
     // This test should be removed or the command should be updated
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect([
             ['id' => '1', 'title' => 'High Confidence', 'category' => 'architecture', 'priority' => 'high', 'status' => 'validated', 'confidence' => 90, 'module' => null, 'tags' => []],
             ['id' => '3', 'title' => 'Medium High Confidence', 'category' => 'testing', 'priority' => 'medium', 'status' => 'draft', 'confidence' => 80, 'module' => null, 'tags' => []],
@@ -203,7 +203,7 @@ it('shows pagination info when results are limited', function () {
 
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 10)
+        ->with([], 10, 'default', null)
         ->andReturn($entries);
 
     $this->artisan('entries', ['--limit' => 10])
@@ -213,7 +213,7 @@ it('shows pagination info when results are limited', function () {
 it('displays tags when entry has tags', function () {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
-        ->with([], 20)
+        ->with([], 20, 'default', null)
         ->andReturn(collect([
             [
                 'id' => '1',
