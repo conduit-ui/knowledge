@@ -23,5 +23,5 @@ jobs:
           coverage-threshold: 100
           auto-merge: true
           merge-method: squash
-          timeout: 600
+          test-timeout: 600
           github-token: ${{ secrets.GITHUB_TOKEN }}
