@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
 use App\Services\MarkdownExporter;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeExportCommand extends Command
@@ -39,8 +39,7 @@ class KnowledgeExportCommand extends Command
             return self::FAILURE;
         }
 
-        /** @var \App\Models\Entry|null $entry */
-        $entry = Entry::query()->find((int) $id);
+        $entry = app(QdrantService::class)->getById((int) $id);
 
         if ($entry === null) {
             $this->error('Entry not found.');
@@ -50,8 +49,8 @@ class KnowledgeExportCommand extends Command
 
         // Generate export content based on format
         $content = match ($format) {
-            'markdown' => $markdownExporter->export($entry),
-            'json' => json_encode($entry->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            'markdown' => $markdownExporter->exportArray($entry),
+            'json' => json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
             // @codeCoverageIgnoreStart
             default => throw new \InvalidArgumentException("Unsupported format: {$format}"),
             // @codeCoverageIgnoreEnd

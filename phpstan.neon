@@ -6,18 +6,15 @@ parameters:
     paths:
         - app
         - config
-    checkMissingIterableValueType: false
     treatPhpDocTypesAsCertain: false
+    tmpDir: var/cache/phpstan
+    parallel:
+        maximumNumberOfProcesses: 1
     ignoreErrors:
         -
             message: '#does not specify its types: TFactory#'
             paths:
                 - app/Models/*
-        -
-            message: '#Call to an undefined static method App\\Models\\(Entry|Collection|Tag|Observation)::(query|where|orderBy|selectRaw|whereNotNull|whereIn)#'
-            paths:
-                - app/Services/*
-                - app/Commands/*
         -
             message: '#Only booleans are allowed in (an if condition|&&)#'
             paths:

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
-use App\Services\ConfidenceService;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeStatsCommand extends Command
@@ -20,30 +19,21 @@ class KnowledgeStatsCommand extends Command
      */
     protected $description = 'Display analytics dashboard for knowledge entries';
 
-    public function __construct(
-        private readonly ConfidenceService $confidenceService
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
         $this->info('Knowledge Base Analytics');
         $this->newLine();
 
-        $this->displayOverview();
+        $this->displayOverview($qdrant);
         $this->newLine();
 
-        $this->displayStatusBreakdown();
+        $this->displayStatusBreakdown($qdrant);
         $this->newLine();
 
-        $this->displayCategoryBreakdown();
+        $this->displayCategoryBreakdown($qdrant);
         $this->newLine();
 
-        $this->displayUsageStatistics();
-        $this->newLine();
-
-        $this->displayStaleEntries();
+        $this->displayUsageStatistics($qdrant);
 
         return self::SUCCESS;
     }
@@ -51,63 +41,55 @@ class KnowledgeStatsCommand extends Command
     /**
      * Display total entries count overview.
      */
-    private function displayOverview(): void
+    private function displayOverview(QdrantService $qdrant): void
     {
-        /** @phpstan-ignore-next-line */
-        $total = Entry::query()->count();
-        $this->line("Total Entries: {$total}");
+        $entries = $this->getAllEntries($qdrant);
+        $this->line('Total Entries: '.$entries->count());
     }
 
     /**
      * Display breakdown of entries by status.
      */
-    private function displayStatusBreakdown(): void
+    private function displayStatusBreakdown(QdrantService $qdrant): void
     {
         $this->comment('Entries by Status:');
 
-        /** @phpstan-ignore-next-line */
-        $statuses = Entry::query()
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get();
+        $entries = $this->getAllEntries($qdrant);
+        $statusGroups = $entries->groupBy('status');
 
-        if ($statuses->isEmpty()) {
+        if ($statusGroups->isEmpty()) {
             $this->line('  No entries found');
 
             return;
         }
 
-        foreach ($statuses as $status) {
-            $this->line("  {$status->status}: {$status->count}");
+        foreach ($statusGroups as $status => $group) {
+            $this->line("  {$status}: ".$group->count());
         }
     }
 
     /**
      * Display breakdown of entries by category.
      */
-    private function displayCategoryBreakdown(): void
+    private function displayCategoryBreakdown(QdrantService $qdrant): void
     {
         $this->comment('Entries by Category:');
 
-        /** @phpstan-ignore-next-line */
-        $categories = Entry::query()
-            ->selectRaw('category, count(*) as count')
-            ->whereNotNull('category')
-            ->groupBy('category')
-            ->get();
+        $entries = $this->getAllEntries($qdrant);
+        $categorized = $entries->whereNotNull('category');
+        $categoryGroups = $categorized->groupBy('category');
 
-        if ($categories->isEmpty()) {
+        if ($categoryGroups->isEmpty()) {
             $this->line('  No categorized entries found');
 
             return;
         }
 
-        foreach ($categories as $category) {
-            $this->line("  {$category->category}: {$category->count}");
+        foreach ($categoryGroups as $category => $group) {
+            $this->line("  {$category}: ".$group->count());
         }
 
-        /** @phpstan-ignore-next-line */
-        $uncategorized = Entry::query()->whereNull('category')->count();
+        $uncategorized = $entries->whereNull('category')->count();
         if ($uncategorized > 0) {
             $this->line("  (uncategorized): {$uncategorized}");
         }
@@ -116,47 +98,38 @@ class KnowledgeStatsCommand extends Command
     /**
      * Display usage statistics for knowledge entries.
      */
-    private function displayUsageStatistics(): void
+    private function displayUsageStatistics(QdrantService $qdrant): void
     {
         $this->comment('Usage Statistics:');
 
-        /** @phpstan-ignore-next-line */
-        $totalUsage = Entry::query()->sum('usage_count');
+        $entries = $this->getAllEntries($qdrant);
+
+        $totalUsage = $entries->sum('usage_count');
         $this->line("  Total Usage: {$totalUsage}");
 
-        /** @phpstan-ignore-next-line */
-        $avgUsage = Entry::query()->avg('usage_count');
+        $avgUsage = $entries->avg('usage_count');
         $this->line('  Average Usage: '.round($avgUsage ?? 0));
 
-        /** @phpstan-ignore-next-line */
-        $mostUsed = Entry::query()->orderBy('usage_count', 'desc')->first();
-        if ($mostUsed !== null && $mostUsed->usage_count > 0) { // @phpstan-ignore-line
-            $this->line("  Most Used: \"{$mostUsed->title}\" ({$mostUsed->usage_count} times)"); // @phpstan-ignore-line
-        }
-
-        /** @phpstan-ignore-next-line */
-        $recentlyUsed = Entry::query()->whereNotNull('last_used')
-            ->orderBy('last_used', 'desc')
-            ->first();
-
-        if ($recentlyUsed !== null && $recentlyUsed->last_used !== null) {
-            $daysAgo = $recentlyUsed->last_used->diffInDays(now());
-            $this->line("  Last Used: \"{$recentlyUsed->title}\" ({$daysAgo} days ago)");
+        $mostUsed = $entries->sortByDesc('usage_count')->first();
+        if ($mostUsed !== null && $mostUsed['usage_count'] > 0) {
+            $this->line("  Most Used: \"{$mostUsed['title']}\" ({$mostUsed['usage_count']} times)");
         }
     }
 
     /**
-     * Display stale entries requiring maintenance.
+     * Get all entries from Qdrant (cached for multiple calls).
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
-    private function displayStaleEntries(): void
+    private function getAllEntries(QdrantService $qdrant)
     {
-        $this->comment('Maintenance:');
+        static $entries = null;
 
-        $staleCount = $this->confidenceService->getStaleEntries()->count();
-        $this->line("  Stale Entries (90+ days): {$staleCount}");
-
-        if ($staleCount > 0) {
-            $this->line('  Tip: Run "knowledge:stale" to review and validate them');
+        if ($entries === null) {
+            // Fetch all entries with high limit (Qdrant default is ~1000, adjust as needed)
+            $entries = $qdrant->search('', [], 10000);
         }
+
+        return $entries;
     }
 }
