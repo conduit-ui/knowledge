@@ -66,7 +66,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Providers/AppServiceProvider.php' => [
-            0 => '2a854cf55db94804b54f652b42b772e15c532269',
+            0 => '24be9efec91045346c4f8136992f8da66ca69392',
             1 => [
                 0 => 'app\\providers\\appserviceprovider',
             ],
@@ -83,30 +83,6 @@ return \PHPStan\Cache\CacheItem::__set_state([
                 0 => 'app\\enums\\observationtype',
             ],
             2 => [
-            ],
-            3 => [
-            ],
-        ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Models/Session.php' => [
-            0 => '11d7a5a1619eeda335835f392ea7693d2ec81dec',
-            1 => [
-                0 => 'app\\models\\session',
-            ],
-            2 => [
-                0 => 'app\\models\\casts',
-                1 => 'app\\models\\observations',
-            ],
-            3 => [
-            ],
-        ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Models/Tag.php' => [
-            0 => '683f5c8d342924c8a73d15c8fc8db51c55c96d0e',
-            1 => [
-                0 => 'app\\models\\tag',
-            ],
-            2 => [
-                0 => 'app\\models\\casts',
-                1 => 'app\\models\\entries',
             ],
             3 => [
             ],
@@ -268,17 +244,13 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/KnowledgeStatsCommand.php' => [
-            0 => 'dc0029e04abe8001f30da4cda807e2eb2c314b2a',
+            0 => '291283e895d1dfbd83499830880e805daef4f2f9',
             1 => [
                 0 => 'app\\commands\\knowledgestatscommand',
             ],
             2 => [
                 0 => 'app\\commands\\handle',
-                1 => 'app\\commands\\displayoverview',
-                2 => 'app\\commands\\displaystatusbreakdown',
-                3 => 'app\\commands\\displaycategorybreakdown',
-                4 => 'app\\commands\\displayusagestatistics',
-                5 => 'app\\commands\\getallentries',
+                1 => 'app\\commands\\renderdashboard',
             ],
             3 => [
             ],
@@ -303,12 +275,17 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/KnowledgeShowCommand.php' => [
-            0 => '00ac0b1edf07f8e4e7debe1657a024f2c5428e7d',
+            0 => 'f010c34fd4ecb3ad55590d25866e9be187faf602',
             1 => [
                 0 => 'app\\commands\\knowledgeshowcommand',
             ],
             2 => [
                 0 => 'app\\commands\\handle',
+                1 => 'app\\commands\\renderentry',
+                2 => 'app\\commands\\colorize',
+                3 => 'app\\commands\\prioritycolor',
+                4 => 'app\\commands\\statuscolor',
+                5 => 'app\\commands\\confidencecolor',
             ],
             3 => [
             ],
@@ -336,7 +313,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/InstallCommand.php' => [
-            0 => '9213693f80dd5a232116592b2206e4ef90d7b373',
+            0 => '279779bfd8f27337205ff63d0487faa8309551b7',
             1 => [
                 0 => 'app\\commands\\installcommand',
             ],
@@ -394,7 +371,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/KnowledgeAddCommand.php' => [
-            0 => '45f5bb4f65c33a68d6263cbef4ab9f37753cce8d',
+            0 => '2200ae859dd4af61a43ef0273640dc88bb4b68e0',
             1 => [
                 0 => 'app\\commands\\knowledgeaddcommand',
             ],
@@ -508,7 +485,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/KnowledgeListCommand.php' => [
-            0 => 'db1718e98b3cc1458935a23a6c32a371f804fd53',
+            0 => 'c9f1c58d0b14475f69c9d9b5e5beeca13ed0b096',
             1 => [
                 0 => 'app\\commands\\knowledgelistcommand',
             ],
@@ -580,23 +557,8 @@ return \PHPStan\Cache\CacheItem::__set_state([
             3 => [
             ],
         ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/ObservationService.php' => [
-            0 => '73e9330e37faff3cec4a61df1a4d8387c37037ce',
-            1 => [
-                0 => 'app\\services\\observationservice',
-            ],
-            2 => [
-                0 => 'app\\services\\__construct',
-                1 => 'app\\services\\createobservation',
-                2 => 'app\\services\\searchobservations',
-                3 => 'app\\services\\getobservationsbytype',
-                4 => 'app\\services\\getrecentobservations',
-            ],
-            3 => [
-            ],
-        ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/QdrantService.php' => [
-            0 => '191b95fb0c3a9eba78f99859651252356bc1bbeb',
+            0 => '71da1c9864864ab99435ad63023b0037a947fd7f',
             1 => [
                 0 => 'app\\services\\qdrantservice',
             ],
@@ -605,41 +567,28 @@ return \PHPStan\Cache\CacheItem::__set_state([
                 1 => 'app\\services\\ensurecollection',
                 2 => 'app\\services\\upsert',
                 3 => 'app\\services\\search',
-                4 => 'app\\services\\delete',
-                5 => 'app\\services\\getbyid',
-                6 => 'app\\services\\incrementusage',
-                7 => 'app\\services\\updatefields',
-                8 => 'app\\services\\getcachedembedding',
-                9 => 'app\\services\\buildfilter',
-                10 => 'app\\services\\getcollectionname',
+                4 => 'app\\services\\scroll',
+                5 => 'app\\services\\delete',
+                6 => 'app\\services\\getbyid',
+                7 => 'app\\services\\incrementusage',
+                8 => 'app\\services\\updatefields',
+                9 => 'app\\services\\getcachedembedding',
+                10 => 'app\\services\\buildfilter',
+                11 => 'app\\services\\count',
+                12 => 'app\\services\\getcollectionname',
             ],
             3 => [
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/KnowledgePathService.php' => [
-            0 => '623b756d46dd406a925f944c1e7364a64a3ad90c',
+            0 => '57996762c55f03a28dc99340471b1c57197c859d',
             1 => [
                 0 => 'app\\services\\knowledgepathservice',
             ],
             2 => [
                 0 => 'app\\services\\__construct',
                 1 => 'app\\services\\getknowledgedirectory',
-                2 => 'app\\services\\getdatabasepath',
-                3 => 'app\\services\\ensuredirectoryexists',
-                4 => 'app\\services\\databaseexists',
-            ],
-            3 => [
-            ],
-        ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/DatabaseInitializer.php' => [
-            0 => 'f3e1c0d556505cb6150c95341c9b6cb7dbc708ff',
-            1 => [
-                0 => 'app\\services\\databaseinitializer',
-            ],
-            2 => [
-                0 => 'app\\services\\__construct',
-                1 => 'app\\services\\initialize',
-                2 => 'app\\services\\isinitialized',
+                2 => 'app\\services\\ensuredirectoryexists',
             ],
             3 => [
             ],
@@ -706,7 +655,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/RuntimeEnvironment.php' => [
-            0 => '9575f9b860597d2ac34f2819cb463e17131b6893',
+            0 => '27d5db176ba0e2c911b75f4de288303daae4ec02',
             1 => [
                 0 => 'app\\services\\runtimeenvironment',
             ],
@@ -714,10 +663,9 @@ return \PHPStan\Cache\CacheItem::__set_state([
                 0 => 'app\\services\\__construct',
                 1 => 'app\\services\\isphar',
                 2 => 'app\\services\\basepath',
-                3 => 'app\\services\\databasepath',
-                4 => 'app\\services\\cachepath',
-                5 => 'app\\services\\resolvebasepath',
-                6 => 'app\\services\\ensuredirectoryexists',
+                3 => 'app\\services\\cachepath',
+                4 => 'app\\services\\resolvebasepath',
+                5 => 'app\\services\\ensuredirectoryexists',
             ],
             3 => [
             ],
@@ -800,33 +748,6 @@ return \PHPStan\Cache\CacheItem::__set_state([
             3 => [
             ],
         ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/SQLiteFtsService.php' => [
-            0 => '4008b6e18c0bb021d005e7703f9b5e192f7ee0a0',
-            1 => [
-                0 => 'app\\services\\sqliteftsservice',
-            ],
-            2 => [
-                0 => 'app\\services\\searchobservations',
-                1 => 'app\\services\\isavailable',
-                2 => 'app\\services\\rebuildindex',
-            ],
-            3 => [
-            ],
-        ],
-        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/SessionService.php' => [
-            0 => 'faad44ce118dbc60502c65bff99c61feae500f76',
-            1 => [
-                0 => 'app\\services\\sessionservice',
-            ],
-            2 => [
-                0 => 'app\\services\\getactivesessions',
-                1 => 'app\\services\\getrecentsessions',
-                2 => 'app\\services\\getsessionwithobservations',
-                3 => 'app\\services\\getsessionobservations',
-            ],
-            3 => [
-            ],
-        ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/OllamaService.php' => [
             0 => '27199ab158d4a0ce7c6e6d315419818cd4eaa2d6',
             1 => [
@@ -863,6 +784,19 @@ return \PHPStan\Cache\CacheItem::__set_state([
                 0 => 'app\\services\\__construct',
                 1 => 'app\\services\\generate',
                 2 => 'app\\services\\similarity',
+            ],
+            3 => [
+            ],
+        ],
+        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Integrations/Qdrant/Requests/ScrollPoints.php' => [
+            0 => '80d3a3d4e9cd2db26f0b424c0bd07f416845ac09',
+            1 => [
+                0 => 'app\\integrations\\qdrant\\requests\\scrollpoints',
+            ],
+            2 => [
+                0 => 'app\\integrations\\qdrant\\requests\\__construct',
+                1 => 'app\\integrations\\qdrant\\requests\\resolveendpoint',
+                2 => 'app\\integrations\\qdrant\\requests\\defaultbody',
             ],
             3 => [
             ],

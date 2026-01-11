@@ -7,8 +7,8 @@ namespace App\Commands;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
-use function Laravel\Prompts\info;
 use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\spin;
 
