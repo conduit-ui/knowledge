@@ -4,159 +4,95 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
-use App\Services\ConfidenceService;
+use App\Services\QdrantService;
+use Illuminate\Support\Collection;
 use LaravelZero\Framework\Commands\Command;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
 
 class KnowledgeStatsCommand extends Command
 {
-    /**
-     * @var string
-     */
     protected $signature = 'stats';
 
-    /**
-     * @var string
-     */
     protected $description = 'Display analytics dashboard for knowledge entries';
 
-    public function __construct(
-        private readonly ConfidenceService $confidenceService
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
-        $this->info('Knowledge Base Analytics');
-        $this->newLine();
+        $total = spin(
+            fn () => $qdrant->count(),
+            'Loading knowledge base...'
+        );
 
-        $this->displayOverview();
-        $this->newLine();
+        // Get a sample of entries for category/status breakdown (limit to 1000 for performance)
+        $entries = $qdrant->scroll([], min($total, 1000));
 
-        $this->displayStatusBreakdown();
-        $this->newLine();
-
-        $this->displayCategoryBreakdown();
-        $this->newLine();
-
-        $this->displayUsageStatistics();
-        $this->newLine();
-
-        $this->displayStaleEntries();
+        $this->renderDashboard($entries, $total);
 
         return self::SUCCESS;
     }
 
-    /**
-     * Display total entries count overview.
-     */
-    private function displayOverview(): void
+    private function renderDashboard(Collection $entries, int $total): void
     {
-        /** @phpstan-ignore-next-line */
-        $total = Entry::query()->count();
-        $this->line("Total Entries: {$total}");
-    }
+        info("Knowledge Base: {$total} entries");
+        $this->newLine();
 
-    /**
-     * Display breakdown of entries by status.
-     */
-    private function displayStatusBreakdown(): void
-    {
-        $this->comment('Entries by Status:');
+        // Overview metrics
+        $totalUsage = $entries->sum('usage_count');
+        $avgUsage = round($entries->avg('usage_count') ?? 0);
 
-        /** @phpstan-ignore-next-line */
-        $statuses = Entry::query()
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->get();
+        $this->line('<fg=gray>Overview</>');
+        table(
+            ['Metric', 'Value'],
+            [
+                ['Total Entries', (string) $total],
+                ['Total Usage', (string) $totalUsage],
+                ['Avg Usage', (string) $avgUsage],
+            ]
+        );
 
-        if ($statuses->isEmpty()) {
-            $this->line('  No entries found');
-
-            return;
+        // Status breakdown
+        $statusGroups = $entries->groupBy('status');
+        if ($statusGroups->isNotEmpty()) {
+            $this->newLine();
+            $this->line('<fg=gray>By Status</>');
+            $statusRows = [];
+            foreach ($statusGroups as $status => $group) {
+                $count = $group->count();
+                $pct = $total > 0 ? round(($count / $total) * 100) : 0;
+                $color = match ($status) {
+                    'validated' => 'green',
+                    'deprecated' => 'red',
+                    default => 'yellow',
+                };
+                $statusRows[] = ["<fg={$color}>{$status}</>", "{$count} ({$pct}%)"];
+            }
+            table(['Status', 'Count'], $statusRows);
         }
 
-        foreach ($statuses as $status) {
-            $this->line("  {$status->status}: {$status->count}");
-        }
-    }
-
-    /**
-     * Display breakdown of entries by category.
-     */
-    private function displayCategoryBreakdown(): void
-    {
-        $this->comment('Entries by Category:');
-
-        /** @phpstan-ignore-next-line */
-        $categories = Entry::query()
-            ->selectRaw('category, count(*) as count')
-            ->whereNotNull('category')
-            ->groupBy('category')
-            ->get();
-
-        if ($categories->isEmpty()) {
-            $this->line('  No categorized entries found');
-
-            return;
+        // Category breakdown
+        $categoryGroups = $entries->whereNotNull('category')->groupBy('category');
+        if ($categoryGroups->isNotEmpty()) {
+            $this->newLine();
+            $this->line('<fg=gray>By Category</>');
+            $categoryRows = [];
+            foreach ($categoryGroups as $category => $group) {
+                $categoryRows[] = [$category, (string) $group->count()];
+            }
+            $uncategorized = $entries->whereNull('category')->count();
+            if ($uncategorized > 0) {
+                $categoryRows[] = ['<fg=gray>(none)</>', (string) $uncategorized];
+            }
+            table(['Category', 'Count'], $categoryRows);
         }
 
-        foreach ($categories as $category) {
-            $this->line("  {$category->category}: {$category->count}");
-        }
-
-        /** @phpstan-ignore-next-line */
-        $uncategorized = Entry::query()->whereNull('category')->count();
-        if ($uncategorized > 0) {
-            $this->line("  (uncategorized): {$uncategorized}");
-        }
-    }
-
-    /**
-     * Display usage statistics for knowledge entries.
-     */
-    private function displayUsageStatistics(): void
-    {
-        $this->comment('Usage Statistics:');
-
-        /** @phpstan-ignore-next-line */
-        $totalUsage = Entry::query()->sum('usage_count');
-        $this->line("  Total Usage: {$totalUsage}");
-
-        /** @phpstan-ignore-next-line */
-        $avgUsage = Entry::query()->avg('usage_count');
-        $this->line('  Average Usage: '.round($avgUsage ?? 0));
-
-        /** @phpstan-ignore-next-line */
-        $mostUsed = Entry::query()->orderBy('usage_count', 'desc')->first();
-        if ($mostUsed !== null && $mostUsed->usage_count > 0) { // @phpstan-ignore-line
-            $this->line("  Most Used: \"{$mostUsed->title}\" ({$mostUsed->usage_count} times)"); // @phpstan-ignore-line
-        }
-
-        /** @phpstan-ignore-next-line */
-        $recentlyUsed = Entry::query()->whereNotNull('last_used')
-            ->orderBy('last_used', 'desc')
-            ->first();
-
-        if ($recentlyUsed !== null && $recentlyUsed->last_used !== null) {
-            $daysAgo = $recentlyUsed->last_used->diffInDays(now());
-            $this->line("  Last Used: \"{$recentlyUsed->title}\" ({$daysAgo} days ago)");
-        }
-    }
-
-    /**
-     * Display stale entries requiring maintenance.
-     */
-    private function displayStaleEntries(): void
-    {
-        $this->comment('Maintenance:');
-
-        $staleCount = $this->confidenceService->getStaleEntries()->count();
-        $this->line("  Stale Entries (90+ days): {$staleCount}");
-
-        if ($staleCount > 0) {
-            $this->line('  Tip: Run "knowledge:stale" to review and validate them');
+        // Most used
+        $mostUsed = $entries->sortByDesc('usage_count')->first();
+        if ($mostUsed && $mostUsed['usage_count'] > 0) {
+            $this->newLine();
+            $this->line('<fg=gray>Most Used</>');
+            $this->line("  <fg=cyan>\"{$mostUsed['title']}\"</> ({$mostUsed['usage_count']} uses)");
         }
     }
 }
