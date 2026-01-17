@@ -17,6 +17,8 @@ use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 use App\Services\TestExecutorService;
+use App\Contracts\HealthCheckInterface;
+use App\Services\HealthCheckService;
 use App\Services\TodoExecutorService;
 
 describe('AppServiceProvider', function () {
@@ -168,6 +170,12 @@ describe('AppServiceProvider', function () {
         $service = app(PullRequestService::class);
 
         expect($service)->toBeInstanceOf(PullRequestService::class);
+    });
+
+    it('registers HealthCheckService', function () {
+        $service = app(HealthCheckInterface::class);
+
+        expect($service)->toBeInstanceOf(HealthCheckService::class);
     });
 
     it('uses custom ChromaDB host and port configuration', function () {
