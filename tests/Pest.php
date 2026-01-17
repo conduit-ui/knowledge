@@ -11,14 +11,11 @@
 |
 */
 
-uses(
-    Tests\TestCase::class,
-    Illuminate\Foundation\Testing\LazilyRefreshDatabase::class,
-)->in('Feature');
+// Feature tests use TestCase for artisan command testing
+uses(Tests\TestCase::class)->in('Feature');
 
-uses(
-    Tests\TestCase::class,
-)->in('Unit');
+// Unit tests need app context for facades/services but NOT RefreshDatabase
+uses(Tests\TestCase::class)->in('Unit');
 
 /*
 |--------------------------------------------------------------------------
