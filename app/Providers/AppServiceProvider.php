@@ -6,10 +6,12 @@ use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\DockerServiceInterface;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\FullTextSearchInterface;
+use App\Contracts\HealthCheckInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
 use App\Services\ChromaDBIndexService;
 use App\Services\DockerService;
+use App\Services\HealthCheckService;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
 use App\Services\OllamaService;
@@ -175,6 +177,11 @@ class AppServiceProvider extends ServiceProvider
         // Register pull request service
         $this->app->singleton(PullRequestService::class, function () {
             return new PullRequestService;
+        });
+
+        // Register health check service
+        $this->app->singleton(HealthCheckInterface::class, function () {
+            return new HealthCheckService;
         });
     }
 }

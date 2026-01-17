@@ -2,14 +2,32 @@
 
 declare(strict_types=1);
 
+use App\Contracts\HealthCheckInterface;
+
 beforeEach(function () {
-    Config::set('search.qdrant.host', 'localhost');
-    Config::set('search.qdrant.port', 6333);
-    Config::set('database.redis.default.host', '127.0.0.1');
-    Config::set('database.redis.default.port', 6380);
-    Config::set('search.qdrant.embedding_server', 'http://localhost:8001');
-    Config::set('search.ollama.host', 'localhost');
-    Config::set('search.ollama.port', 11434);
+    // Create a mock that returns fast, predictable responses
+    $healthCheck = mock(HealthCheckInterface::class);
+
+    $healthCheck->shouldReceive('checkAll')
+        ->andReturn([
+            ['name' => 'Qdrant', 'healthy' => true, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
+            ['name' => 'Redis', 'healthy' => false, 'endpoint' => '127.0.0.1:6380', 'type' => 'Cache'],
+            ['name' => 'Embeddings', 'healthy' => true, 'endpoint' => 'http://localhost:8001', 'type' => 'ML Service'],
+            ['name' => 'Ollama', 'healthy' => false, 'endpoint' => 'localhost:11434', 'type' => 'LLM Engine'],
+        ]);
+
+    $healthCheck->shouldReceive('getServices')
+        ->andReturn(['qdrant', 'redis', 'embeddings', 'ollama']);
+
+    $healthCheck->shouldReceive('check')
+        ->with('qdrant')
+        ->andReturn(['name' => 'Qdrant', 'healthy' => true, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database']);
+
+    $healthCheck->shouldReceive('check')
+        ->with('redis')
+        ->andReturn(['name' => 'Redis', 'healthy' => false, 'endpoint' => '127.0.0.1:6380', 'type' => 'Cache']);
+
+    app()->instance(HealthCheckInterface::class, $healthCheck);
 });
 
 afterEach(function () {
@@ -39,28 +57,65 @@ describe('service:status command', function () {
         });
     });
 
-    describe('health checks', function () {
-        it('checks qdrant service health', function () {
+    describe('health checks via injected service', function () {
+        it('uses HealthCheckInterface for all service checks', function () {
+            // The beforeEach mock already covers this - verify command runs successfully
+            // and uses the injected interface (which is mocked in beforeEach)
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
 
-        it('checks redis service health', function () {
+        it('displays healthy services correctly', function () {
+            $healthCheck = mock(HealthCheckInterface::class);
+            $healthCheck->shouldReceive('checkAll')
+                ->andReturn([
+                    ['name' => 'Qdrant', 'healthy' => true, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
+                    ['name' => 'Redis', 'healthy' => true, 'endpoint' => 'localhost:6380', 'type' => 'Cache'],
+                ]);
+
+            app()->instance(HealthCheckInterface::class, $healthCheck);
+
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
 
-        it('checks embeddings service health', function () {
+        it('displays unhealthy services correctly', function () {
+            $healthCheck = mock(HealthCheckInterface::class);
+            $healthCheck->shouldReceive('checkAll')
+                ->andReturn([
+                    ['name' => 'Qdrant', 'healthy' => false, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
+                ]);
+
+            app()->instance(HealthCheckInterface::class, $healthCheck);
+
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
 
-        it('checks ollama service health', function () {
+        it('handles partial outage scenario', function () {
+            $healthCheck = mock(HealthCheckInterface::class);
+            $healthCheck->shouldReceive('checkAll')
+                ->andReturn([
+                    ['name' => 'Qdrant', 'healthy' => true, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
+                    ['name' => 'Redis', 'healthy' => false, 'endpoint' => 'localhost:6380', 'type' => 'Cache'],
+                ]);
+
+            app()->instance(HealthCheckInterface::class, $healthCheck);
+
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
 
-        it('displays endpoint information for each service', function () {
+        it('handles major outage scenario', function () {
+            $healthCheck = mock(HealthCheckInterface::class);
+            $healthCheck->shouldReceive('checkAll')
+                ->andReturn([
+                    ['name' => 'Qdrant', 'healthy' => false, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
+                    ['name' => 'Redis', 'healthy' => false, 'endpoint' => 'localhost:6380', 'type' => 'Cache'],
+                ]);
+
+            app()->instance(HealthCheckInterface::class, $healthCheck);
+
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
@@ -68,7 +123,7 @@ describe('service:status command', function () {
 
     describe('command signature', function () {
         it('has correct command signature', function () {
-            $command = new \App\Commands\Service\StatusCommand;
+            $command = app(\App\Commands\Service\StatusCommand::class);
             $reflection = new ReflectionClass($command);
             $signatureProperty = $reflection->getProperty('signature');
             $signatureProperty->setAccessible(true);
@@ -79,39 +134,13 @@ describe('service:status command', function () {
         });
 
         it('has correct description', function () {
-            $command = new \App\Commands\Service\StatusCommand;
+            $command = app(\App\Commands\Service\StatusCommand::class);
             $reflection = new ReflectionClass($command);
             $descProperty = $reflection->getProperty('description');
             $descProperty->setAccessible(true);
             $description = $descProperty->getValue($command);
 
             expect($description)->toBe('Check service health status');
-        });
-    });
-
-    describe('health check methods', function () {
-        it('has checkQdrant method', function () {
-            $command = new \App\Commands\Service\StatusCommand;
-
-            expect(method_exists($command, 'checkQdrant'))->toBeTrue();
-        });
-
-        it('has checkRedis method', function () {
-            $command = new \App\Commands\Service\StatusCommand;
-
-            expect(method_exists($command, 'checkRedis'))->toBeTrue();
-        });
-
-        it('has checkEmbeddings method', function () {
-            $command = new \App\Commands\Service\StatusCommand;
-
-            expect(method_exists($command, 'checkEmbeddings'))->toBeTrue();
-        });
-
-        it('has checkOllama method', function () {
-            $command = new \App\Commands\Service\StatusCommand;
-
-            expect(method_exists($command, 'checkOllama'))->toBeTrue();
         });
     });
 
@@ -132,33 +161,15 @@ describe('service:status command', function () {
         });
     });
 
-    describe('environment configuration', function () {
-        it('reads service endpoints from config', function () {
-            Config::set('search.qdrant.host', 'custom-host');
-            Config::set('search.qdrant.port', 9999);
-
-            $this->artisan('service:status')
-                ->assertSuccessful();
-        });
-
-        it('uses default values when config is not set', function () {
-            Config::set('search.qdrant.host', null);
-            Config::set('search.qdrant.port', null);
-
-            $this->artisan('service:status')
-                ->assertSuccessful();
-        });
-    });
-
     describe('process execution', function () {
         it('is instance of Laravel Zero Command', function () {
-            $command = new \App\Commands\Service\StatusCommand;
+            $command = app(\App\Commands\Service\StatusCommand::class);
 
             expect($command)->toBeInstanceOf(\LaravelZero\Framework\Commands\Command::class);
         });
 
         it('uses Process class for docker compose ps', function () {
-            $command = new \App\Commands\Service\StatusCommand;
+            $command = app(\App\Commands\Service\StatusCommand::class);
 
             $reflection = new ReflectionMethod($command, 'getContainerStatus');
             $source = file_get_contents($reflection->getFileName());
@@ -174,8 +185,8 @@ describe('service:status command', function () {
                 ->assertSuccessful();
         });
 
-        it('parses container json output', function () {
-            $command = new \App\Commands\Service\StatusCommand;
+        it('has getContainerStatus method', function () {
+            $command = app(\App\Commands\Service\StatusCommand::class);
 
             expect(method_exists($command, 'getContainerStatus'))->toBeTrue();
         });

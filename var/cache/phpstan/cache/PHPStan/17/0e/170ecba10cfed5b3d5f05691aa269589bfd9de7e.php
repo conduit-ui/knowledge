@@ -66,7 +66,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Providers/AppServiceProvider.php' => [
-            0 => '24be9efec91045346c4f8136992f8da66ca69392',
+            0 => '269b8df1997b095a41ad9cc39855ea55eebe5ef3',
             1 => [
                 0 => 'app\\providers\\appserviceprovider',
             ],
@@ -454,19 +454,15 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/Service/StatusCommand.php' => [
-            0 => '6884f7b0e6ae94bf82c2dd5c79a49bd698d595dc',
+            0 => '16da4890c1110f36cd7a1c29581c2e7960a1f720',
             1 => [
                 0 => 'app\\commands\\service\\statuscommand',
             ],
             2 => [
-                0 => 'app\\commands\\service\\handle',
-                1 => 'app\\commands\\service\\performhealthchecks',
+                0 => 'app\\commands\\service\\__construct',
+                1 => 'app\\commands\\service\\handle',
                 2 => 'app\\commands\\service\\getcontainerstatus',
                 3 => 'app\\commands\\service\\renderdashboard',
-                4 => 'app\\commands\\service\\checkqdrant',
-                5 => 'app\\commands\\service\\checkredis',
-                6 => 'app\\commands\\service\\checkembeddings',
-                7 => 'app\\commands\\service\\checkollama',
             ],
             3 => [
             ],
@@ -808,6 +804,39 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
             2 => [
                 0 => 'app\\commands\\handle',
+            ],
+            3 => [
+            ],
+        ],
+        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Contracts/HealthCheckInterface.php' => [
+            0 => 'dedc1f04e6f70dfa5d740821f86f1f6ef3cf4a01',
+            1 => [
+                0 => 'app\\contracts\\healthcheckinterface',
+            ],
+            2 => [
+                0 => 'app\\contracts\\check',
+                1 => 'app\\contracts\\checkall',
+                2 => 'app\\contracts\\getservices',
+            ],
+            3 => [
+            ],
+        ],
+        '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Services/HealthCheckService.php' => [
+            0 => 'e4d3ce864534802b3eb0bdc969ddd48f954952a1',
+            1 => [
+                0 => 'app\\services\\healthcheckservice',
+            ],
+            2 => [
+                0 => 'app\\services\\__construct',
+                1 => 'app\\services\\check',
+                2 => 'app\\services\\checkall',
+                3 => 'app\\services\\getservices',
+                4 => 'app\\services\\getendpoint',
+                5 => 'app\\services\\checkqdrant',
+                6 => 'app\\services\\checkredis',
+                7 => 'app\\services\\checkembeddings',
+                8 => 'app\\services\\checkollama',
+                9 => 'app\\services\\httpcheck',
             ],
             3 => [
             ],

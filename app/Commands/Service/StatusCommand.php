@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands\Service;
 
+use App\Contracts\HealthCheckInterface;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Process\Process;
 
@@ -17,6 +18,12 @@ class StatusCommand extends Command
 
     protected $description = 'Check service health status';
 
+    public function __construct(
+        private readonly HealthCheckInterface $healthCheck
+    ) {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
         $composeFile = $this->option('odin') === true
@@ -27,7 +34,7 @@ class StatusCommand extends Command
 
         // Perform health checks with spinner
         $healthData = spin(
-            fn () => $this->performHealthChecks(),
+            fn () => $this->healthCheck->checkAll(),
             'Checking service health...'
         );
 
@@ -38,36 +45,6 @@ class StatusCommand extends Command
         $this->renderDashboard($environment, $healthData, $containerStatus);
 
         return self::SUCCESS;
-    }
-
-    private function performHealthChecks(): array
-    {
-        return [
-            [
-                'name' => 'Qdrant',
-                'healthy' => $this->checkQdrant(),
-                'endpoint' => config('search.qdrant.host', 'localhost').':'.config('search.qdrant.port', 6333),
-                'type' => 'Vector Database',
-            ],
-            [
-                'name' => 'Redis',
-                'healthy' => $this->checkRedis(),
-                'endpoint' => config('database.redis.default.host', '127.0.0.1').':'.config('database.redis.default.port', 6380),
-                'type' => 'Cache',
-            ],
-            [
-                'name' => 'Embeddings',
-                'healthy' => $this->checkEmbeddings(),
-                'endpoint' => config('search.qdrant.embedding_server', 'http://localhost:8001'),
-                'type' => 'ML Service',
-            ],
-            [
-                'name' => 'Ollama',
-                'healthy' => $this->checkOllama(),
-                'endpoint' => config('search.ollama.host', 'localhost').':'.config('search.ollama.port', 11434),
-                'type' => 'LLM Engine',
-            ],
-        ];
     }
 
     private function getContainerStatus(string $composeFile): array
@@ -221,45 +198,5 @@ class StatusCommand extends Command
                 </div>
             </div>
         HTML);
-    }
-
-    private function checkQdrant(): bool
-    {
-        $host = config('search.qdrant.host', 'localhost');
-        $port = config('search.qdrant.port', 6333);
-
-        return @file_get_contents("http://{$host}:{$port}/healthz") !== false;
-    }
-
-    private function checkRedis(): bool
-    {
-        if (! extension_loaded('redis')) {
-            return false;
-        }
-
-        try {
-            $redis = new \Redis;
-            $host = config('database.redis.default.host', '127.0.0.1');
-            $port = (int) config('database.redis.default.port', 6380);
-
-            return $redis->connect($host, $port, 1);
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    private function checkEmbeddings(): bool
-    {
-        $server = config('search.qdrant.embedding_server', 'http://localhost:8001');
-
-        return @file_get_contents("{$server}/health") !== false;
-    }
-
-    private function checkOllama(): bool
-    {
-        $host = config('search.ollama.host', 'localhost');
-        $port = config('search.ollama.port', 11434);
-
-        return @file_get_contents("http://{$host}:{$port}/api/tags") !== false;
     }
 }
