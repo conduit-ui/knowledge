@@ -24,7 +24,7 @@ class SyncCommand extends Command
      */
     protected $description = 'Synchronize knowledge entries with prefrontal-cortex cloud';
 
-    private string $baseUrl = 'https://prefrontal-cortex-master-iw3xyv.laravel.cloud';
+    private string $baseUrl = '';
 
     protected ?Client $client = null;
 
@@ -34,12 +34,21 @@ class SyncCommand extends Command
         $push = $this->option('push');
 
         // Validate API token
-        $token = env('PREFRONTAL_API_TOKEN');
+        $token = config('services.prefrontal.token');
         if (! is_string($token) || $token === '') {
             $this->error('PREFRONTAL_API_TOKEN environment variable is not set.');
 
             return self::FAILURE;
         }
+
+        // Get API URL from config
+        $baseUrl = config('services.prefrontal.url');
+        if (! is_string($baseUrl) || $baseUrl === '') {
+            $this->error('PREFRONTAL_API_URL environment variable is not set.');
+
+            return self::FAILURE;
+        }
+        $this->baseUrl = $baseUrl;
 
         // Default behavior: two-way sync (pull then push)
         if (! $pull && ! $push) {

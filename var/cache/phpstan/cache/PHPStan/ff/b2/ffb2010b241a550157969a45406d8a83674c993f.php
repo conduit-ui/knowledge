@@ -42,5 +42,14 @@ return \PHPStan\Cache\CacheItem::__set_state([
             3 => [
             ],
         ],
+        '/Users/jordanpartridge/packages/conduit-ui/knowledge/config/services.php' => [
+            0 => '5bac4fb4d0c8709298006e2f49b69328aa3311c3',
+            1 => [
+            ],
+            2 => [
+            ],
+            3 => [
+            ],
+        ],
     ],
 ]);

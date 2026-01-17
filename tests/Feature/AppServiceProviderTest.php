@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\FullTextSearchInterface;
+use App\Contracts\HealthCheckInterface;
 use App\Services\ChromaDBClient;
 use App\Services\ChromaDBEmbeddingService;
+use App\Services\HealthCheckService;
 use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
 use App\Services\OllamaService;
@@ -17,8 +19,6 @@ use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
 use App\Services\StubFtsService;
 use App\Services\TestExecutorService;
-use App\Contracts\HealthCheckInterface;
-use App\Services\HealthCheckService;
 use App\Services\TodoExecutorService;
 
 describe('AppServiceProvider', function () {

@@ -256,7 +256,7 @@ return \PHPStan\Cache\CacheItem::__set_state([
             ],
         ],
         '/Users/jordanpartridge/packages/conduit-ui/knowledge/app/Commands/SyncCommand.php' => [
-            0 => '78a47f116766edc483835df7a62c71befc53d11b',
+            0 => '4168d2864643c58e894ce975a5147576224fadd8',
             1 => [
                 0 => 'app\\commands\\synccommand',
             ],
