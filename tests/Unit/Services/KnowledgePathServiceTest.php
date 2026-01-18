@@ -68,46 +68,7 @@ describe('KnowledgePathService', function (): void {
         });
     });
 
-    describe('getDatabasePath', function (): void {
-        it('returns database path within knowledge directory', function (): void {
-            $originalHome = getenv('HOME');
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv('HOME=/Users/testuser');
-            putenv('KNOWLEDGE_DB_PATH');
-
-            $runtime = new RuntimeEnvironment;
-            $service = new KnowledgePathService($runtime);
-            $path = $service->getDatabasePath();
-
-            expect($path)->toContain('knowledge.sqlite');
-
-            // Restore
-            if ($originalHome !== false) {
-                putenv("HOME={$originalHome}");
-            }
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            }
-        });
-
-        it('respects KNOWLEDGE_DB_PATH environment variable override', function (): void {
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv('KNOWLEDGE_DB_PATH=/custom/path/mydb.sqlite');
-
-            $runtime = new RuntimeEnvironment;
-            $service = new KnowledgePathService($runtime);
-            $path = $service->getDatabasePath();
-
-            expect($path)->toBe('/custom/path/mydb.sqlite');
-
-            // Restore
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            } else {
-                putenv('KNOWLEDGE_DB_PATH');
-            }
-        });
-    });
+    // Note: getDatabasePath() method was removed when migrating from SQLite to Qdrant
 
     describe('ensureDirectoryExists', function (): void {
         it('creates directory if it does not exist', function (): void {
@@ -157,45 +118,5 @@ describe('KnowledgePathService', function (): void {
         });
     });
 
-    describe('databaseExists', function (): void {
-        it('returns true when database file exists', function (): void {
-            $testDb = sys_get_temp_dir().'/knowledge-test-'.uniqid().'.sqlite';
-            touch($testDb);
-
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv("KNOWLEDGE_DB_PATH={$testDb}");
-
-            $runtime = new RuntimeEnvironment;
-            $service = new KnowledgePathService($runtime);
-
-            expect($service->databaseExists())->toBeTrue();
-
-            // Cleanup
-            unlink($testDb);
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            } else {
-                putenv('KNOWLEDGE_DB_PATH');
-            }
-        });
-
-        it('returns false when database file does not exist', function (): void {
-            $testDb = sys_get_temp_dir().'/knowledge-test-'.uniqid().'.sqlite';
-
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv("KNOWLEDGE_DB_PATH={$testDb}");
-
-            $runtime = new RuntimeEnvironment;
-            $service = new KnowledgePathService($runtime);
-
-            expect($service->databaseExists())->toBeFalse();
-
-            // Restore
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            } else {
-                putenv('KNOWLEDGE_DB_PATH');
-            }
-        });
-    });
+    // Note: databaseExists() method was removed when migrating from SQLite to Qdrant
 });

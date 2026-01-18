@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands\Service;
 
+use Illuminate\Support\Facades\Process;
 use LaravelZero\Framework\Commands\Command;
-use Symfony\Component\Process\Process;
 
 use function Laravel\Prompts\confirm;
 use function Termwind\render;
@@ -96,12 +96,11 @@ class DownCommand extends Command
             $args[] = '-v';
         }
 
-        $process = new Process($args, base_path());
-        $process->setTimeout(null);
+        $result = Process::forever()
+            ->path(base_path())
+            ->run($args);
 
-        $exitCode = $process->run(function ($type, $buffer): void {
-            echo $buffer;
-        });
+        $exitCode = $result->exitCode();
 
         if ($exitCode === 0) {
             $volumeText = $this->option('volumes') === true ? ' and volumes removed' : '';

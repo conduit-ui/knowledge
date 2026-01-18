@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands\Service;
 
+use Illuminate\Support\Facades\Process;
 use LaravelZero\Framework\Commands\Command;
-use Symfony\Component\Process\Process;
 
 use function Termwind\render;
 
@@ -62,13 +62,11 @@ class UpCommand extends Command
             $args[] = '-d';
         }
 
-        $process = new Process($args, base_path());
-        $process->setTimeout(null);
-        $process->setTty(Process::isTtySupported());
+        $result = Process::forever()
+            ->path(base_path())
+            ->run($args);
 
-        $exitCode = $process->run(function ($type, $buffer): void {
-            echo $buffer;
-        });
+        $exitCode = $result->exitCode();
 
         if ($exitCode === 0) {
             if ($this->option('detach') === true) {

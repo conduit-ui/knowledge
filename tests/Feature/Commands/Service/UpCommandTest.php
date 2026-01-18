@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
-afterEach(function () {
-    Mockery::close();
-});
+use Illuminate\Support\Facades\Process;
 
 describe('service:up command', function () {
+    beforeEach(function () {
+        // Fake all docker commands by default
+        Process::fake([
+            '*docker*' => Process::result(output: 'OK', exitCode: 0),
+        ]);
+    });
+
     describe('configuration file validation', function () {
         it('fails when local docker-compose file does not exist', function () {
             $composeFile = getcwd().'/docker-compose.yml';
@@ -43,23 +48,50 @@ describe('service:up command', function () {
                 }
             }
         });
+    });
 
-        it('suggests initialization when compose file is missing', function () {
-            $composeFile = getcwd().'/docker-compose.yml';
-            $tempFile = getcwd().'/docker-compose.yml.backup-test';
+    describe('docker compose execution', function () {
+        it('runs docker compose up successfully', function () {
+            $this->artisan('service:up')
+                ->assertSuccessful();
 
-            if (file_exists($composeFile)) {
-                rename($composeFile, $tempFile);
-            }
+            Process::assertRan(fn ($process) => in_array('docker', $process->command)
+                && in_array('up', $process->command));
+        });
 
-            try {
-                $this->artisan('service:up')
-                    ->assertFailed();
-            } finally {
-                if (file_exists($tempFile)) {
-                    rename($tempFile, $composeFile);
-                }
-            }
+        it('runs docker compose up with detach flag', function () {
+            $this->artisan('service:up', ['--detach' => true])
+                ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker', $process->command)
+                && in_array('-d', $process->command));
+        });
+
+        it('uses odin compose file when odin flag is set', function () {
+            $this->artisan('service:up', ['--odin' => true])
+                ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+        });
+
+        it('returns failure when docker compose fails', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    errorOutput: 'Docker daemon not running',
+                    exitCode: 1,
+                ),
+            ]);
+
+            $this->artisan('service:up')
+                ->assertFailed();
+        });
+
+        it('combines odin and detach flags correctly', function () {
+            $this->artisan('service:up', ['--odin' => true, '--detach' => true])
+                ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command)
+                && in_array('-d', $process->command));
         });
     });
 
@@ -84,98 +116,6 @@ describe('service:up command', function () {
             $description = $descProperty->getValue($command);
 
             expect($description)->toContain('Start knowledge services');
-        });
-    });
-
-    describe('process execution', function () {
-        it('is instance of Laravel Zero Command', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            expect($command)->toBeInstanceOf(\LaravelZero\Framework\Commands\Command::class);
-        });
-
-        it('uses Process class for execution', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('Process');
-            expect($source)->toContain('docker');
-            expect($source)->toContain('compose');
-        });
-
-        it('sets unlimited timeout for process', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('setTimeout(null)');
-        });
-
-        it('enables TTY when supported', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('setTty');
-        });
-    });
-
-    describe('exit codes', function () {
-        it('returns failure code when compose file is missing', function () {
-            $composeFile = getcwd().'/docker-compose.yml';
-            $tempFile = getcwd().'/docker-compose.yml.backup-test';
-
-            if (file_exists($composeFile)) {
-                rename($composeFile, $tempFile);
-            }
-
-            try {
-                $this->artisan('service:up')
-                    ->assertExitCode(\LaravelZero\Framework\Commands\Command::FAILURE);
-            } finally {
-                if (file_exists($tempFile)) {
-                    rename($tempFile, $composeFile);
-                }
-            }
-        });
-    });
-
-    describe('output formatting', function () {
-        it('uses termwind for styled output', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('render');
-            expect($source)->toContain('Termwind');
-        });
-    });
-
-    describe('docker compose arguments', function () {
-        it('constructs basic up command', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain("'docker'");
-            expect($source)->toContain("'compose'");
-            expect($source)->toContain("'up'");
-        });
-
-        it('adds detach flag when option provided', function () {
-            $command = new \App\Commands\Service\UpCommand;
-
-            $reflection = new ReflectionMethod($command, 'handle');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('detach');
-            expect($source)->toContain("'-d'");
         });
     });
 });

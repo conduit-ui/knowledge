@@ -3,8 +3,14 @@
 declare(strict_types=1);
 
 use App\Contracts\HealthCheckInterface;
+use Illuminate\Support\Facades\Process;
 
 beforeEach(function () {
+    // Fake all docker commands by default
+    Process::fake([
+        '*docker*' => Process::result(output: '', exitCode: 0),
+    ]);
+
     // Create a mock that returns fast, predictable responses
     $healthCheck = mock(HealthCheckInterface::class);
 
@@ -54,13 +60,13 @@ describe('service:status command', function () {
         it('shows odin environment with --odin flag', function () {
             $this->artisan('service:status', ['--odin' => true])
                 ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
         });
     });
 
     describe('health checks via injected service', function () {
         it('uses HealthCheckInterface for all service checks', function () {
-            // The beforeEach mock already covers this - verify command runs successfully
-            // and uses the injected interface (which is mocked in beforeEach)
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
@@ -121,6 +127,66 @@ describe('service:status command', function () {
         });
     });
 
+    describe('container status via process', function () {
+        it('runs docker compose ps to get container status', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    output: '{"Service":"qdrant","State":"running"}',
+                    exitCode: 0,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker', $process->command)
+                && in_array('ps', $process->command));
+        });
+
+        it('uses odin compose file with --odin flag', function () {
+            $this->artisan('service:status', ['--odin' => true])
+                ->assertSuccessful();
+
+            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+        });
+
+        it('handles docker compose failure gracefully', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    errorOutput: 'Docker daemon not running',
+                    exitCode: 1,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful(); // Command still succeeds, just no container info
+        });
+
+        it('displays running containers', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    output: '{"Service":"qdrant","State":"running"}'."\n".'{"Service":"redis","State":"running"}',
+                    exitCode: 0,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful();
+        });
+
+        it('displays container states correctly', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    output: '{"Service":"qdrant","State":"running"}'."\n".'{"Service":"redis","State":"exited"}'."\n".'{"Service":"ollama","State":"paused"}',
+                    exitCode: 0,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful();
+        });
+    });
+
     describe('command signature', function () {
         it('has correct command signature', function () {
             $command = app(\App\Commands\Service\StatusCommand::class);
@@ -167,28 +233,16 @@ describe('service:status command', function () {
 
             expect($command)->toBeInstanceOf(\LaravelZero\Framework\Commands\Command::class);
         });
-
-        it('uses Process class for docker compose ps', function () {
-            $command = app(\App\Commands\Service\StatusCommand::class);
-
-            $reflection = new ReflectionMethod($command, 'getContainerStatus');
-            $source = file_get_contents($reflection->getFileName());
-
-            expect($source)->toContain('Process');
-            expect($source)->toContain('docker');
-        });
     });
 
     describe('container status handling', function () {
         it('handles empty container list gracefully', function () {
+            Process::fake([
+                '*docker*' => Process::result(output: '', exitCode: 0),
+            ]);
+
             $this->artisan('service:status')
                 ->assertSuccessful();
-        });
-
-        it('has getContainerStatus method', function () {
-            $command = app(\App\Commands\Service\StatusCommand::class);
-
-            expect(method_exists($command, 'getContainerStatus'))->toBeTrue();
         });
     });
 });

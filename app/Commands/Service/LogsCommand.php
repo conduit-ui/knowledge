@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands\Service;
 
+use Illuminate\Support\Facades\Process;
 use LaravelZero\Framework\Commands\Command;
-use Symfony\Component\Process\Process;
 
 use function Laravel\Prompts\select;
 use function Termwind\render;
@@ -117,13 +117,11 @@ class LogsCommand extends Command
             $args[] = $service;
         }
 
-        $process = new Process($args, base_path());
-        $process->setTimeout(null);
-        $process->setTty(Process::isTtySupported());
+        $result = Process::forever()
+            ->path(base_path())
+            ->run($args);
 
-        $exitCode = $process->run(function ($type, $buffer): void {
-            echo $buffer;
-        });
+        $exitCode = $result->exitCode();
 
         // Only show footer if not following (Ctrl+C will interrupt)
         if ($this->option('follow') !== true) {

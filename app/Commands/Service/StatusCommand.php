@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Commands\Service;
 
 use App\Contracts\HealthCheckInterface;
+use Illuminate\Support\Facades\Process;
 use LaravelZero\Framework\Commands\Command;
-use Symfony\Component\Process\Process;
 
 use function Laravel\Prompts\spin;
 use function Termwind\render;
@@ -49,17 +49,14 @@ class StatusCommand extends Command
 
     private function getContainerStatus(string $composeFile): array
     {
-        $process = new Process([
-            'docker', 'compose', '-f', $composeFile, 'ps', '--format', 'json',
-        ], base_path());
+        $result = Process::path(base_path())
+            ->run(['docker', 'compose', '-f', $composeFile, 'ps', '--format', 'json']);
 
-        $process->run();
-
-        if ($process->getExitCode() !== 0) {
+        if (! $result->successful()) {
             return [];
         }
 
-        $output = $process->getOutput();
+        $output = $result->output();
         if ($output === '') {
             return [];
         }
