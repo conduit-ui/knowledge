@@ -12,12 +12,12 @@ abstract class TestCase extends BaseTestCase
 
         // Reset search configuration to test defaults
         // This ensures tests use stubs for embedding services
-        // but real SQLite FTS for observation search tests
+        // Qdrant handles all vector search (migrated from SQLite)
         config([
             'search.semantic_enabled' => false,
-            'search.embedding_provider' => null,
+            'search.embedding_provider' => 'stub',
             'search.chromadb.enabled' => false,
-            'search.fts_provider' => 'sqlite', // Use SQLite FTS for tests
+            'search.fts_provider' => 'stub', // Use stub since we migrated to Qdrant
         ]);
     }
 }

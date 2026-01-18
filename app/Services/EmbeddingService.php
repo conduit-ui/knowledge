@@ -51,4 +51,30 @@ class EmbeddingService implements EmbeddingServiceInterface
             return [];
         }
     }
+
+    public function similarity(array $a, array $b): float
+    {
+        if (empty($a) || empty($b) || count($a) !== count($b)) {
+            return 0.0;
+        }
+
+        $dotProduct = 0.0;
+        $magnitudeA = 0.0;
+        $magnitudeB = 0.0;
+
+        for ($i = 0; $i < count($a); $i++) {
+            $dotProduct += $a[$i] * $b[$i];
+            $magnitudeA += $a[$i] ** 2;
+            $magnitudeB += $b[$i] ** 2;
+        }
+
+        $magnitudeA = sqrt($magnitudeA);
+        $magnitudeB = sqrt($magnitudeB);
+
+        if ($magnitudeA == 0 || $magnitudeB == 0) {
+            return 0.0;
+        }
+
+        return $dotProduct / ($magnitudeA * $magnitudeB);
+    }
 }
