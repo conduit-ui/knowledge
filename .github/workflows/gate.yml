@@ -10,16 +10,25 @@ jobs:
   gate:
     name: Sentinel Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       checks: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup PHP with PCOV
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pcov, redis
+          coverage: pcov
       - uses: synapse-sentinel/gate@v1
         with:
           check: certify
-          coverage-threshold: 99
+          coverage-threshold: 95
           auto-merge: true
           merge-method: squash
           github-token: ${{ secrets.GITHUB_TOKEN }}

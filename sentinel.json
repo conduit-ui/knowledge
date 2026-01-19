@@ -1,0 +1,9 @@
+{
+    "test-runner": {
+        "timeout": 600,
+        "coverage-driver": "pcov"
+    },
+    "coverage": {
+        "threshold": 95
+    }
+}

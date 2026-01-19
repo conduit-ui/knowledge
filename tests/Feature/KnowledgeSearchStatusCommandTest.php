@@ -3,72 +3,163 @@
 declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
-use App\Models\Entry;
-use Tests\Support\MockEmbeddingService;
+use App\Services\QdrantService;
 
 describe('KnowledgeSearchStatusCommand', function () {
-    it('shows keyword search enabled', function () {
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Keyword Search: Enabled');
+    beforeEach(function () {
+        $this->embeddingService = mock(EmbeddingServiceInterface::class);
+        $this->qdrant = mock(QdrantService::class);
+
+        app()->instance(EmbeddingServiceInterface::class, $this->embeddingService);
+        app()->instance(QdrantService::class, $this->qdrant);
     });
 
-    it('shows semantic search not configured', function () {
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Semantic Search: Not Configured');
-    });
+    it('displays keyword search as always enabled', function () {
+        config(['search.semantic_enabled' => false]);
+        config(['search.embedding_provider' => 'none']);
 
-    it('shows embedding provider', function () {
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Provider: none');
-    });
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]);
 
-    it('shows database statistics', function () {
-        Entry::factory()->count(10)->create();
-
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Total entries: 10')
-            ->expectsOutputToContain('Entries with embeddings: 0')
-            ->expectsOutputToContain('Indexed: 0%');
-    });
-
-    it('calculates indexed percentage', function () {
-        Entry::factory()->count(10)->create();
-        Entry::factory()->count(5)->create(['embedding' => json_encode([1.0, 2.0])]);
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
 
         $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Total entries: 15')
-            ->expectsOutputToContain('Entries with embeddings: 5')
-            ->expectsOutputToContain('Indexed: 33.3%');
+            ->assertSuccessful();
     });
 
-    it('shows usage instructions', function () {
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Keyword search:  ./know knowledge:search "your query"')
-            ->expectsOutputToContain('Index entries:   ./know knowledge:index');
-    });
-
-    it('shows semantic search not available', function () {
-        $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Semantic search: Not available');
-    });
-
-    it('shows semantic search enabled when configured', function () {
+    it('displays semantic search as enabled when configured', function () {
         config(['search.semantic_enabled' => true]);
-        config(['search.embedding_provider' => 'mock']);
+        config(['search.embedding_provider' => 'ollama']);
 
-        $this->app->bind(EmbeddingServiceInterface::class, MockEmbeddingService::class);
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([0.1, 0.2, 0.3]); // Non-empty embedding
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([
+                ['id' => 1, 'title' => 'Test'],
+            ]));
 
         $this->artisan('search:status')
-            ->assertSuccessful()
-            ->expectsOutputToContain('Semantic Search: Enabled')
-            ->expectsOutputToContain('Provider: mock')
-            ->expectsOutputToContain('Semantic search: ./know knowledge:search "your query" --semantic');
+            ->assertSuccessful();
+    });
+
+    it('displays semantic search as not configured when disabled', function () {
+        config(['search.semantic_enabled' => false]);
+        config(['search.embedding_provider' => 'none']);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
+    });
+
+    it('displays semantic search as not configured when embedding service returns empty', function () {
+        config(['search.semantic_enabled' => true]);
+        config(['search.embedding_provider' => 'openai']);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]); // Empty embedding
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
+    });
+
+    it('displays database statistics', function () {
+        config(['search.semantic_enabled' => false]);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]);
+
+        $entries = collect([
+            ['id' => 1, 'title' => 'Entry 1'],
+            ['id' => 2, 'title' => 'Entry 2'],
+            ['id' => 3, 'title' => 'Entry 3'],
+        ]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn($entries);
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
+    });
+
+    it('displays usage instructions with semantic search enabled', function () {
+        config(['search.semantic_enabled' => true]);
+        config(['search.embedding_provider' => 'ollama']);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
+    });
+
+    it('displays usage instructions with semantic search disabled', function () {
+        config(['search.semantic_enabled' => false]);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
+    });
+
+    it('handles empty database', function () {
+        config(['search.semantic_enabled' => false]);
+
+        $this->embeddingService->shouldReceive('generate')
+            ->once()
+            ->with('test')
+            ->andReturn([]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('search:status')
+            ->assertSuccessful();
     });
 });

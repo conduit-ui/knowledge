@@ -2,25 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Models\Entry;
+use App\Services\QdrantService;
 
 describe('KnowledgeSearchCommand', function () {
     beforeEach(function () {
-        Entry::factory()->create([
-            'title' => 'Laravel Testing',
-            'content' => 'How to test Laravel applications',
-            'tags' => ['laravel', 'testing'],
-            'category' => 'tutorial',
-            'confidence' => 95,
-        ]);
+        $this->qdrantService = mock(QdrantService::class);
 
-        Entry::factory()->create([
-            'title' => 'PHP Standards',
-            'content' => 'PHP coding standards and PSR guidelines',
-            'tags' => ['php', 'standards'],
-            'category' => 'guide',
-            'confidence' => 90,
-        ]);
+        app()->instance(QdrantService::class, $this->qdrantService);
     });
 
     it('requires at least one parameter', function () {
@@ -30,6 +18,24 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('finds entries by keyword', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('Laravel', [], 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+            ]));
+
         $this->artisan('search', ['query' => 'Laravel'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
@@ -37,6 +43,24 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('filters by tag', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('', ['tag' => 'php'], 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-2',
+                    'title' => 'PHP Standards',
+                    'content' => 'PHP coding standards and PSR guidelines',
+                    'tags' => ['php', 'standards'],
+                    'category' => 'guide',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 90,
+                    'score' => 0.90,
+                ],
+            ]));
+
         $this->artisan('search', ['--tag' => 'php'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
@@ -44,6 +68,24 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('filters by category', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('', ['category' => 'tutorial'], 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+            ]));
+
         $this->artisan('search', ['--category' => 'tutorial'])
             ->assertSuccessful()
             ->expectsOutputToContain('Found 1 entry')
@@ -51,12 +93,34 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('shows no results message', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([]));
+
         $this->artisan('search', ['query' => 'nonexistent'])
             ->assertSuccessful()
             ->expectsOutput('No entries found.');
     });
 
     it('supports semantic flag', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('Laravel', [], 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+            ]));
+
         $this->artisan('search', [
             'query' => 'Laravel',
             '--semantic' => true,
@@ -67,6 +131,24 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('combines query and filters', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('Laravel', ['category' => 'tutorial'], 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+            ]));
+
         $this->artisan('search', [
             'query' => 'Laravel',
             '--category' => 'tutorial',
@@ -77,21 +159,156 @@ describe('KnowledgeSearchCommand', function () {
     });
 
     it('shows entry details', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => 'TestModule',
+                    'priority' => 'high',
+                    'status' => 'validated',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+            ]));
+
         $this->artisan('search', ['query' => 'Laravel'])
             ->assertSuccessful()
             ->expectsOutputToContain('Laravel Testing')
-            ->expectsOutputToContain('Category: tutorial');
+            ->expectsOutputToContain('Category: tutorial | Priority: high | Confidence: 95%')
+            ->expectsOutputToContain('Module: TestModule');
     });
 
     it('truncates long content', function () {
-        Entry::factory()->create([
-            'title' => 'Long Content',
-            'content' => str_repeat('a', 150),
-            'confidence' => 100,
-        ]);
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-3',
+                    'title' => 'Long Content',
+                    'content' => str_repeat('a', 150),
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 100,
+                    'score' => 0.85,
+                ],
+            ]));
 
         $this->artisan('search', ['query' => 'Long'])
             ->assertSuccessful()
             ->expectsOutputToContain('...');
+    });
+
+    it('displays multiple search results', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Laravel Testing',
+                    'content' => 'How to test Laravel applications',
+                    'tags' => ['laravel', 'testing'],
+                    'category' => 'tutorial',
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 95,
+                    'score' => 0.95,
+                ],
+                [
+                    'id' => 'uuid-2',
+                    'title' => 'PHP Standards',
+                    'content' => 'PHP coding standards',
+                    'tags' => ['php'],
+                    'category' => 'guide',
+                    'module' => null,
+                    'priority' => 'low',
+                    'status' => 'draft',
+                    'confidence' => 90,
+                    'score' => 0.85,
+                ],
+            ]));
+
+        $this->artisan('search', ['query' => 'test'])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Found 2 entries')
+            ->expectsOutputToContain('Laravel Testing')
+            ->expectsOutputToContain('PHP Standards');
+    });
+
+    it('supports multiple filters simultaneously', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('', [
+                'category' => 'testing',
+                'module' => 'Core',
+                'priority' => 'high',
+                'status' => 'validated',
+                'tag' => 'laravel',
+            ], 20)
+            ->andReturn(collect([]));
+
+        $this->artisan('search', [
+            '--category' => 'testing',
+            '--module' => 'Core',
+            '--priority' => 'high',
+            '--status' => 'validated',
+            '--tag' => 'laravel',
+        ])
+            ->assertSuccessful()
+            ->expectsOutput('No entries found.');
+    });
+
+    it('handles empty tags array gracefully', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-4',
+                    'title' => 'Untagged Entry',
+                    'content' => 'This entry has no tags',
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 50,
+                    'score' => 0.75,
+                ],
+            ]));
+
+        $this->artisan('search', ['query' => 'Untagged'])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Untagged Entry');
+    });
+
+    it('displays score in results', function () {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Test Entry',
+                    'content' => 'Content',
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 80,
+                    'score' => 0.92,
+                ],
+            ]));
+
+        $this->artisan('search', ['query' => 'test'])
+            ->assertSuccessful()
+            ->expectsOutputToContain('score: 0.92');
     });
 });

@@ -11,7 +11,7 @@ class KnowledgeConfigCommand extends Command
 {
     protected $signature = 'config
                             {action=list : Action to perform (list, get, set)}
-                            {key? : Configuration key (e.g., chromadb.enabled)}
+                            {key? : Configuration key (e.g., qdrant.url)}
                             {value? : Configuration value}';
 
     protected $description = 'Manage Knowledge configuration settings';
@@ -19,9 +19,9 @@ class KnowledgeConfigCommand extends Command
     private const CONFIG_FILE = 'config.json';
 
     private const DEFAULTS = [
-        'chromadb' => [
-            'enabled' => false,
-            'url' => 'http://localhost:8000',
+        'qdrant' => [
+            'url' => 'http://localhost:6333',
+            'collection' => 'knowledge',
         ],
         'embeddings' => [
             'url' => 'http://localhost:8001',
@@ -29,17 +29,13 @@ class KnowledgeConfigCommand extends Command
     ];
 
     private const VALID_KEYS = [
-        'chromadb.enabled',
-        'chromadb.url',
+        'qdrant.url',
+        'qdrant.collection',
         'embeddings.url',
     ];
 
-    private const BOOLEAN_KEYS = [
-        'chromadb.enabled',
-    ];
-
     private const URL_KEYS = [
-        'chromadb.url',
+        'qdrant.url',
         'embeddings.url',
     ];
 
@@ -244,23 +240,14 @@ class KnowledgeConfigCommand extends Command
         }
     }
 
-    private function parseValue(string $key, string $value): mixed
+    private function parseValue(string $key, string $value): string
     {
-        if (in_array($key, self::BOOLEAN_KEYS, true)) {
-            return $value === 'true';
-        }
-
+        // All current config values are strings (URLs or collection names)
         return $value;
     }
 
     private function validateValue(string $key, string $value): ?string
     {
-        if (in_array($key, self::BOOLEAN_KEYS, true)) {
-            if ($value !== 'true' && $value !== 'false') {
-                return "Value for {$key} must be a boolean (true or false).";
-            }
-        }
-
         if (in_array($key, self::URL_KEYS, true)) {
             if (! $this->isValidUrl($value)) {
                 return "Value for {$key} must be a valid URL.";
@@ -278,16 +265,12 @@ class KnowledgeConfigCommand extends Command
 
     private function formatValue(mixed $value): string
     {
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-
         if (is_string($value)) {
             return $value;
         }
 
         // @codeCoverageIgnoreStart
-        // Defensive: config values should always be bool or string
+        // Defensive: config values should always be strings
         if ($value === null) {
             return 'null';
         }

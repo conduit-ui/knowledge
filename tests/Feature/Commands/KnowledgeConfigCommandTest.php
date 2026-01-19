@@ -46,9 +46,9 @@ describe('knowledge:config list', function () {
         // Create config file
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
-            'chromadb' => [
-                'enabled' => true,
-                'url' => 'http://localhost:8000',
+            'qdrant' => [
+                'url' => 'http://localhost:6333',
+                'collection' => 'knowledge',
             ],
             'embeddings' => [
                 'url' => 'http://localhost:8001',
@@ -57,23 +57,23 @@ describe('knowledge:config list', function () {
         file_put_contents($configPath, json_encode($config, JSON_PRETTY_PRINT));
 
         $this->artisan('config')
-            ->expectsOutputToContain('chromadb.enabled: true')
-            ->expectsOutputToContain('chromadb.url: http://localhost:8000')
+            ->expectsOutputToContain('qdrant.url: http://localhost:6333')
+            ->expectsOutputToContain('qdrant.collection: knowledge')
             ->expectsOutputToContain('embeddings.url: http://localhost:8001')
             ->assertSuccessful();
     });
 
     it('shows default values when config file does not exist', function () {
         $this->artisan('config')
-            ->expectsOutputToContain('chromadb.enabled: false')
-            ->expectsOutputToContain('chromadb.url: http://localhost:8000')
+            ->expectsOutputToContain('qdrant.url: http://localhost:6333')
+            ->expectsOutputToContain('qdrant.collection: knowledge')
             ->expectsOutputToContain('embeddings.url: http://localhost:8001')
             ->assertSuccessful();
     });
 
     it('lists config with list action explicitly', function () {
         $this->artisan('config', ['action' => 'list'])
-            ->expectsOutputToContain('chromadb.enabled')
+            ->expectsOutputToContain('qdrant.url')
             ->assertSuccessful();
     });
 });
@@ -82,25 +82,25 @@ describe('knowledge:config get', function () {
     it('gets a specific config value', function () {
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
-            'chromadb' => [
-                'enabled' => true,
-                'url' => 'http://localhost:8000',
+            'qdrant' => [
+                'url' => 'http://localhost:6333',
+                'collection' => 'test-collection',
             ],
         ];
         file_put_contents($configPath, json_encode($config));
 
         $this->artisan('config', [
             'action' => 'get',
-            'key' => 'chromadb.enabled',
+            'key' => 'qdrant.collection',
         ])
-            ->expectsOutputToContain('true')
+            ->expectsOutputToContain('test-collection')
             ->assertSuccessful();
     });
 
     it('gets nested config value', function () {
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
-            'chromadb' => [
+            'qdrant' => [
                 'url' => 'http://custom:9000',
             ],
         ];
@@ -108,7 +108,7 @@ describe('knowledge:config get', function () {
 
         $this->artisan('config', [
             'action' => 'get',
-            'key' => 'chromadb.url',
+            'key' => 'qdrant.url',
         ])
             ->expectsOutputToContain('http://custom:9000')
             ->assertSuccessful();
@@ -117,9 +117,9 @@ describe('knowledge:config get', function () {
     it('gets default value when key does not exist', function () {
         $this->artisan('config', [
             'action' => 'get',
-            'key' => 'chromadb.enabled',
+            'key' => 'qdrant.url',
         ])
-            ->expectsOutputToContain('false')
+            ->expectsOutputToContain('http://localhost:6333')
             ->assertSuccessful();
     });
 
@@ -142,47 +142,30 @@ describe('knowledge:config get', function () {
 });
 
 describe('knowledge:config set', function () {
-    it('sets a boolean config value to true', function () {
-        $this->artisan('config', [
-            'action' => 'set',
-            'key' => 'chromadb.enabled',
-            'value' => 'true',
-        ])
-            ->expectsOutputToContain('Configuration updated')
-            ->assertSuccessful();
-
-        // Verify the value was set
-        $configPath = $this->testConfigDir.'/config.json';
-        expect(file_exists($configPath))->toBeTrue();
-
-        $config = json_decode(file_get_contents($configPath), true);
-        expect($config['chromadb']['enabled'])->toBe(true);
-    });
-
-    it('sets a boolean config value to false', function () {
-        $this->artisan('config', [
-            'action' => 'set',
-            'key' => 'chromadb.enabled',
-            'value' => 'false',
-        ])
-            ->assertSuccessful();
-
-        $configPath = $this->testConfigDir.'/config.json';
-        $config = json_decode(file_get_contents($configPath), true);
-        expect($config['chromadb']['enabled'])->toBe(false);
-    });
-
     it('sets a string config value', function () {
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.url',
+            'key' => 'qdrant.url',
             'value' => 'http://custom:9000',
         ])
             ->assertSuccessful();
 
         $configPath = $this->testConfigDir.'/config.json';
         $config = json_decode(file_get_contents($configPath), true);
-        expect($config['chromadb']['url'])->toBe('http://custom:9000');
+        expect($config['qdrant']['url'])->toBe('http://custom:9000');
+    });
+
+    it('sets collection name', function () {
+        $this->artisan('config', [
+            'action' => 'set',
+            'key' => 'qdrant.collection',
+            'value' => 'my-collection',
+        ])
+            ->assertSuccessful();
+
+        $configPath = $this->testConfigDir.'/config.json';
+        $config = json_decode(file_get_contents($configPath), true);
+        expect($config['qdrant']['collection'])->toBe('my-collection');
     });
 
     it('sets embeddings url', function () {
@@ -202,9 +185,9 @@ describe('knowledge:config set', function () {
         // Set initial value
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
-            'chromadb' => [
-                'enabled' => true,
-                'url' => 'http://localhost:8000',
+            'qdrant' => [
+                'url' => 'http://localhost:6333',
+                'collection' => 'knowledge',
             ],
         ];
         file_put_contents($configPath, json_encode($config));
@@ -219,8 +202,8 @@ describe('knowledge:config set', function () {
 
         // Verify both values exist
         $config = json_decode(file_get_contents($configPath), true);
-        expect($config['chromadb']['enabled'])->toBe(true);
-        expect($config['chromadb']['url'])->toBe('http://localhost:8000');
+        expect($config['qdrant']['url'])->toBe('http://localhost:6333');
+        expect($config['qdrant']['collection'])->toBe('knowledge');
         expect($config['embeddings']['url'])->toBe('http://new:8001');
     });
 
@@ -228,8 +211,8 @@ describe('knowledge:config set', function () {
         // Set initial value
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
-            'chromadb' => [
-                'enabled' => false,
+            'qdrant' => [
+                'url' => 'http://old:6333',
             ],
         ];
         file_put_contents($configPath, json_encode($config));
@@ -237,14 +220,14 @@ describe('knowledge:config set', function () {
         // Update value
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.enabled',
-            'value' => 'true',
+            'key' => 'qdrant.url',
+            'value' => 'http://new:6333',
         ])
             ->assertSuccessful();
 
         // Verify update
         $config = json_decode(file_get_contents($configPath), true);
-        expect($config['chromadb']['enabled'])->toBe(true);
+        expect($config['qdrant']['url'])->toBe('http://new:6333');
     });
 
     it('fails when key is not provided for set action', function () {
@@ -258,7 +241,7 @@ describe('knowledge:config set', function () {
     it('fails when value is not provided for set action', function () {
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.enabled',
+            'key' => 'qdrant.url',
         ])
             ->expectsOutputToContain('Key and value are required for set action')
             ->assertFailed();
@@ -280,8 +263,8 @@ describe('knowledge:config set', function () {
 
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.enabled',
-            'value' => 'true',
+            'key' => 'qdrant.url',
+            'value' => 'http://localhost:6333',
         ])
             ->assertSuccessful();
 
@@ -308,7 +291,7 @@ describe('knowledge:config edge cases', function () {
 
         // Should use defaults when JSON is invalid
         $this->artisan('config')
-            ->expectsOutputToContain('chromadb.enabled: false')
+            ->expectsOutputToContain('qdrant.url: http://localhost:6333')
             ->assertSuccessful();
     });
 
@@ -318,7 +301,7 @@ describe('knowledge:config edge cases', function () {
 
         // Should use defaults when JSON is not an array
         $this->artisan('config')
-            ->expectsOutputToContain('chromadb.enabled: false')
+            ->expectsOutputToContain('qdrant.url: http://localhost:6333')
             ->assertSuccessful();
     });
 
@@ -340,20 +323,10 @@ describe('knowledge:config edge cases', function () {
 });
 
 describe('knowledge:config validation', function () {
-    it('validates boolean values for chromadb.enabled', function () {
+    it('validates url format for qdrant.url', function () {
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.enabled',
-            'value' => 'invalid',
-        ])
-            ->expectsOutputToContain('must be a boolean')
-            ->assertFailed();
-    });
-
-    it('validates url format for chromadb.url', function () {
-        $this->artisan('config', [
-            'action' => 'set',
-            'key' => 'chromadb.url',
+            'key' => 'qdrant.url',
             'value' => 'not-a-url',
         ])
             ->expectsOutputToContain('must be a valid URL')
@@ -373,8 +346,8 @@ describe('knowledge:config validation', function () {
     it('accepts valid http url', function () {
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.url',
-            'value' => 'http://localhost:8000',
+            'key' => 'qdrant.url',
+            'value' => 'http://localhost:6333',
         ])
             ->assertSuccessful();
     });
@@ -382,9 +355,22 @@ describe('knowledge:config validation', function () {
     it('accepts valid https url', function () {
         $this->artisan('config', [
             'action' => 'set',
-            'key' => 'chromadb.url',
-            'value' => 'https://chromadb.example.com',
+            'key' => 'qdrant.url',
+            'value' => 'https://qdrant.example.com',
         ])
             ->assertSuccessful();
+    });
+
+    it('allows any string for collection name', function () {
+        $this->artisan('config', [
+            'action' => 'set',
+            'key' => 'qdrant.collection',
+            'value' => 'my-custom-collection',
+        ])
+            ->assertSuccessful();
+
+        $configPath = $this->testConfigDir.'/config.json';
+        $config = json_decode(file_get_contents($configPath), true);
+        expect($config['qdrant']['collection'])->toBe('my-custom-collection');
     });
 });

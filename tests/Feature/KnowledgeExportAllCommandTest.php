@@ -2,236 +2,294 @@
 
 declare(strict_types=1);
 
-use App\Models\Collection;
-use App\Models\Entry;
+use App\Services\MarkdownExporter;
+use App\Services\QdrantService;
 
-beforeEach(function () {
-    Entry::query()->delete();
-    Collection::query()->delete();
-});
+describe('KnowledgeExportAllCommand', function () {
+    beforeEach(function () {
+        $this->qdrant = mock(QdrantService::class);
+        $this->markdownExporter = mock(MarkdownExporter::class);
 
-describe('knowledge:export:all command', function () {
-    it('exports all entries to markdown files', function () {
-        Entry::factory()->count(3)->create();
+        app()->instance(QdrantService::class, $this->qdrant);
+        app()->instance(MarkdownExporter::class, $this->markdownExporter);
 
-        $outputDir = sys_get_temp_dir().'/export-all-'.time();
-
-        $this->artisan('export:all', [
-            '--format' => 'markdown',
-            '--output' => $outputDir,
-        ])->assertSuccessful();
-
-        expect(is_dir($outputDir))->toBeTrue();
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(3);
-
-        // Cleanup
-        array_map('unlink', $files);
-        rmdir($outputDir);
+        // Clean and recreate temp directory for tests
+        if (is_dir('/tmp/export-all-tests')) {
+            array_map('unlink', glob('/tmp/export-all-tests/*') ?: []);
+            rmdir('/tmp/export-all-tests');
+        }
+        mkdir('/tmp/export-all-tests', 0755, true);
     });
 
-    it('exports all entries to json files', function () {
-        Entry::factory()->count(2)->create();
+    afterEach(function () {
+        // Clean up test files
+        if (is_dir('/tmp/export-all-tests')) {
+            array_map('unlink', glob('/tmp/export-all-tests/*'));
+            rmdir('/tmp/export-all-tests');
+        }
+    });
 
-        $outputDir = sys_get_temp_dir().'/export-json-'.time();
+    it('exports all entries as markdown', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'First Entry',
+                'content' => 'First content',
+                'category' => 'tutorial',
+                'tags' => ['laravel'],
+                'module' => null,
+                'priority' => 'high',
+                'confidence' => 95,
+                'status' => 'validated',
+            ],
+            [
+                'id' => 2,
+                'title' => 'Second Entry',
+                'content' => 'Second content',
+                'category' => 'guide',
+                'tags' => ['php'],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 80,
+                'status' => 'draft',
+            ],
+        ]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn($entries);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->twice()
+            ->andReturnUsing(function ($entry) {
+                return "# {$entry['title']}";
+            });
+
+        $this->artisan('export:all', [
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->expectsOutputToContain('Exporting 2 entries to: /tmp/export-all-tests')
+            ->expectsOutputToContain('Export completed successfully!')
+            ->assertSuccessful();
+
+        expect(file_exists('/tmp/export-all-tests/1-first-entry.md'))->toBeTrue();
+        expect(file_exists('/tmp/export-all-tests/2-second-entry.md'))->toBeTrue();
+    });
+
+    it('exports all entries as json', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'JSON Entry',
+                'content' => 'JSON content',
+                'category' => null,
+                'tags' => [],
+                'module' => null,
+                'priority' => 'low',
+                'confidence' => 50,
+                'status' => 'draft',
+            ],
+        ]);
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn($entries);
 
         $this->artisan('export:all', [
             '--format' => 'json',
-            '--output' => $outputDir,
-        ])->assertSuccessful();
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->expectsOutputToContain('Exporting 1 entries to: /tmp/export-all-tests')
+            ->expectsOutputToContain('Export completed successfully!')
+            ->assertSuccessful();
 
-        $files = glob("{$outputDir}/*.json");
-        expect(count($files))->toBe(2);
-
-        // Validate JSON
-        $json = json_decode(file_get_contents($files[0]), true);
-        expect($json)->not->toBeNull();
-        expect($json)->toHaveKey('title');
-
-        // Cleanup
-        array_map('unlink', $files);
-        rmdir($outputDir);
+        expect(file_exists('/tmp/export-all-tests/1-json-entry.json'))->toBeTrue();
     });
 
-    it('creates output directory if it does not exist', function () {
-        Entry::factory()->create();
+    it('filters by category when specified', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'Tutorial Entry',
+                'content' => 'Tutorial content',
+                'category' => 'tutorial',
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 70,
+                'status' => 'draft',
+            ],
+        ]);
 
-        $outputDir = sys_get_temp_dir().'/new-dir-'.time();
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', ['category' => 'tutorial'], 10000)
+            ->andReturn($entries);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->andReturn('# Tutorial Entry');
+
+        $this->artisan('export:all', [
+            '--category' => 'tutorial',
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->expectsOutputToContain('Exporting 1 entries to: /tmp/export-all-tests')
+            ->assertSuccessful();
+    });
+
+    it('warns when no entries found', function () {
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->with('', [], 10000)
+            ->andReturn(collect([]));
+
+        $this->artisan('export:all', [
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->expectsOutput('No entries found to export.')
+            ->assertSuccessful();
+    });
+
+    it('creates output directory if not exists', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'Test Entry',
+                'content' => 'Content',
+                'category' => null,
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 60,
+                'status' => 'draft',
+            ],
+        ]);
+
+        $outputDir = '/tmp/export-all-tests/new-dir';
+
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->andReturn($entries);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->andReturn('# Test Entry');
 
         $this->artisan('export:all', [
             '--output' => $outputDir,
-        ])->assertSuccessful();
+        ])
+            ->assertSuccessful();
 
         expect(is_dir($outputDir))->toBeTrue();
 
-        // Cleanup
-        $files = glob("{$outputDir}/*");
-        array_map('unlink', $files);
+        // Clean up
+        unlink($outputDir.'/1-test-entry.md');
         rmdir($outputDir);
     });
 
-    it('generates proper filenames with slugs', function () {
-        Entry::factory()->create([
-            'title' => 'Test Entry with Spaces',
+    it('uses default output directory when not specified', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'Default Dir Test',
+                'content' => 'Content',
+                'category' => null,
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 50,
+                'status' => 'draft',
+            ],
         ]);
 
-        $outputDir = sys_get_temp_dir().'/export-slugs-'.time();
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->andReturn($entries);
 
-        $this->artisan('export:all', [
-            '--output' => $outputDir,
-        ])->assertSuccessful();
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->andReturn('# Default Dir Test');
 
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(1);
-
-        $filename = basename($files[0]);
-        expect($filename)->toMatch('/^\d+-test-entry-with-spaces\.md$/');
-
-        // Cleanup
-        unlink($files[0]);
-        rmdir($outputDir);
-    });
-
-    it('filters entries by collection', function () {
-        $collection = Collection::factory()->create(['name' => 'Test Collection']);
-
-        $entry1 = Entry::factory()->create(['title' => 'In Collection']);
-        $entry2 = Entry::factory()->create(['title' => 'Not In Collection']);
-
-        $collection->entries()->attach($entry1->id);
-
-        $outputDir = sys_get_temp_dir().'/export-collection-'.time();
-
-        $this->artisan('export:all', [
-            '--collection' => 'Test Collection',
-            '--output' => $outputDir,
-        ])->assertSuccessful();
-
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(1);
-
-        $content = file_get_contents($files[0]);
-        expect($content)->toContain('In Collection');
-
-        // Cleanup
-        unlink($files[0]);
-        rmdir($outputDir);
-    });
-
-    it('filters entries by category', function () {
-        Entry::factory()->create([
-            'title' => 'Category A',
-            'category' => 'testing',
-        ]);
-
-        Entry::factory()->create([
-            'title' => 'Category B',
-            'category' => 'production',
-        ]);
-
-        $outputDir = sys_get_temp_dir().'/export-category-'.time();
-
-        $this->artisan('export:all', [
-            '--category' => 'testing',
-            '--output' => $outputDir,
-        ])->assertSuccessful();
-
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(1);
-
-        $content = file_get_contents($files[0]);
-        expect($content)->toContain('Category A');
-
-        // Cleanup
-        unlink($files[0]);
-        rmdir($outputDir);
-    });
-
-    it('fails when collection does not exist', function () {
-        Entry::factory()->create();
-
-        $this->artisan('export:all', [
-            '--collection' => 'Nonexistent Collection',
-            '--output' => sys_get_temp_dir().'/test',
-        ])->assertFailed();
-    });
-
-    it('handles empty result set gracefully', function () {
-        $outputDir = sys_get_temp_dir().'/export-empty-'.time();
-
-        $this->artisan('export:all', [
-            '--output' => $outputDir,
-        ])->assertSuccessful();
-
-        // Should not create directory if no entries
-        expect(is_dir($outputDir))->toBeFalse();
-    });
-
-    it('displays progress bar during export', function () {
-        Entry::factory()->count(5)->create();
-
-        $outputDir = sys_get_temp_dir().'/export-progress-'.time();
-
-        $this->artisan('export:all', [
-            '--output' => $outputDir,
-        ])->expectsOutput('Export completed successfully!')
+        $this->artisan('export:all')
+            ->expectsOutputToContain('Exporting 1 entries to: ./docs')
             ->assertSuccessful();
 
-        // Verify files were created
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(5);
-
-        // Cleanup
-        array_map('unlink', $files);
-        rmdir($outputDir);
+        // Clean up if created
+        if (file_exists('./docs/1-default-dir-test.md')) {
+            unlink('./docs/1-default-dir-test.md');
+            if (is_dir('./docs') && count(scandir('./docs')) === 2) {
+                rmdir('./docs');
+            }
+        }
     });
 
-    it('handles special characters in filenames', function () {
-        Entry::factory()->create([
-            'title' => 'Title/with\\special:characters?',
+    it('generates proper filename slug', function () {
+        $entries = collect([
+            [
+                'id' => 123,
+                'title' => 'Complex Title With Spaces & Special-Characters!',
+                'content' => 'Content',
+                'category' => null,
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 50,
+                'status' => 'draft',
+            ],
         ]);
 
-        $outputDir = sys_get_temp_dir().'/export-special-'.time();
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->andReturn($entries);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->andReturn('# Test');
 
         $this->artisan('export:all', [
-            '--output' => $outputDir,
-        ])->assertSuccessful();
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->assertSuccessful();
 
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(1);
-
-        // Filename should be sanitized
-        $filename = basename($files[0]);
-        expect($filename)->not->toContain('/');
-        expect($filename)->not->toContain('\\');
-        expect($filename)->not->toContain(':');
-        expect($filename)->not->toContain('?');
-
-        // Cleanup
-        unlink($files[0]);
-        rmdir($outputDir);
+        // Should create a slugified filename
+        $files = glob('/tmp/export-all-tests/*.md');
+        expect($files)->toHaveCount(1);
+        expect(basename($files[0]))->toContain('123-');
     });
 
-    it('truncates long filenames', function () {
-        Entry::factory()->create([
-            'title' => str_repeat('Very Long Title ', 20),
+    it('handles entries with empty title', function () {
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => '',
+                'content' => 'Content without title',
+                'category' => null,
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'confidence' => 50,
+                'status' => 'draft',
+            ],
         ]);
 
-        $outputDir = sys_get_temp_dir().'/export-long-'.time();
+        $this->qdrant->shouldReceive('search')
+            ->once()
+            ->andReturn($entries);
+
+        $this->markdownExporter->shouldReceive('exportArray')
+            ->once()
+            ->andReturn('# Untitled');
 
         $this->artisan('export:all', [
-            '--output' => $outputDir,
-        ])->assertSuccessful();
+            '--output' => '/tmp/export-all-tests',
+        ])
+            ->assertSuccessful();
 
-        $files = glob("{$outputDir}/*.md");
-        expect(count($files))->toBe(1);
-
-        $filename = basename($files[0], '.md');
-        $slug = substr($filename, strpos($filename, '-') + 1);
-        expect(strlen($slug))->toBeLessThanOrEqual(50);
-
-        // Cleanup
-        unlink($files[0]);
-        rmdir($outputDir);
+        // Should handle empty title gracefully
+        $files = glob('/tmp/export-all-tests/*.md');
+        expect($files)->toHaveCount(1);
     });
 });

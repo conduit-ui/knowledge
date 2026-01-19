@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Collection;
-use App\Models\Entry;
 use App\Services\MarkdownExporter;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeExportAllCommand extends Command
@@ -17,7 +16,6 @@ class KnowledgeExportAllCommand extends Command
     protected $signature = 'export:all
                             {--format=markdown : Export format (markdown, json)}
                             {--output=./docs : Output directory path}
-                            {--collection= : Export only entries from a specific collection}
                             {--category= : Export only entries from a specific category}';
 
     /**
@@ -25,38 +23,23 @@ class KnowledgeExportAllCommand extends Command
      */
     protected $description = 'Export all knowledge entries';
 
-    public function handle(MarkdownExporter $markdownExporter): int
+    public function handle(MarkdownExporter $markdownExporter, QdrantService $qdrant): int
     {
         /** @var string $format */
         $format = $this->option('format') ?? 'markdown';
         /** @var string $output */
         $output = $this->option('output') ?? './docs';
-        /** @var string|null $collectionName */
-        $collectionName = $this->option('collection');
         /** @var string|null $category */
         $category = $this->option('category');
 
-        // Build query
-        $query = Entry::query();
-
-        if ($collectionName !== null) {
-            /** @var Collection|null $collection */
-            $collection = Collection::query()->where('name', $collectionName)->first();
-            if ($collection === null) {
-                $this->error("Collection '{$collectionName}' not found.");
-
-                return self::FAILURE;
-            }
-            $query->whereHas('collections', function ($q) use ($collection): void {
-                $q->where('collections.id', $collection->id);
-            });
-        }
-
+        // Build filters for Qdrant
+        $filters = [];
         if ($category !== null) {
-            $query->where('category', $category);
+            $filters['category'] = $category;
         }
 
-        $entries = $query->get();
+        // Get all entries (use high limit)
+        $entries = $qdrant->search('', $filters, 10000);
 
         if ($entries->isEmpty()) {
             $this->warn('No entries found to export.');
@@ -79,8 +62,8 @@ class KnowledgeExportAllCommand extends Command
             $filepath = "{$output}/{$filename}";
 
             $content = match ($format) {
-                'markdown' => $markdownExporter->export($entry),
-                'json' => json_encode($entry->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+                'markdown' => $markdownExporter->exportArray($entry),
+                'json' => json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
                 // @codeCoverageIgnoreStart
                 default => throw new \InvalidArgumentException("Unsupported format: {$format}"),
                 // @codeCoverageIgnoreEnd
@@ -99,13 +82,15 @@ class KnowledgeExportAllCommand extends Command
 
     /**
      * Generate a filename for an entry.
+     *
+     * @param  array<string, mixed>  $entry
      */
-    private function generateFilename(Entry $entry, string $format): string
+    private function generateFilename(array $entry, string $format): string
     {
         $extension = $format === 'json' ? 'json' : 'md';
-        $slug = $this->slugify($entry->title);
+        $slug = $this->slugify($entry['title']);
 
-        return "{$entry->id}-{$slug}.{$extension}";
+        return "{$entry['id']}-{$slug}.{$extension}";
     }
 
     /**

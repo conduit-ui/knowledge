@@ -2,93 +2,152 @@
 
 declare(strict_types=1);
 
-use App\Models\Entry;
+use App\Services\QdrantService;
 
-describe('KnowledgeArchiveCommand', function (): void {
-    describe('archiving entries', function (): void {
-        it('archives an entry', function (): void {
-            $entry = Entry::factory()->create([
-                'status' => 'draft',
-                'confidence' => 80,
-            ]);
-
-            $this->artisan('archive', ['id' => $entry->id])
-                ->expectsOutputToContain("Entry #{$entry->id} has been archived")
-                ->expectsOutputToContain('Status: draft -> deprecated')
-                ->expectsOutputToContain('--restore')
-                ->assertSuccessful();
-
-            $entry->refresh();
-            expect($entry->status)->toBe('deprecated');
-            expect($entry->confidence)->toBe(0);
-        });
-
-        it('warns when entry is already archived', function (): void {
-            $entry = Entry::factory()->create(['status' => 'deprecated']);
-
-            $this->artisan('archive', ['id' => $entry->id])
-                ->expectsOutputToContain("Entry #{$entry->id} is already archived")
-                ->assertSuccessful();
-        });
+describe('KnowledgeArchiveCommand', function () {
+    beforeEach(function () {
+        $this->qdrant = mock(QdrantService::class);
+        app()->instance(QdrantService::class, $this->qdrant);
     });
 
-    describe('restoring entries', function (): void {
-        it('restores an archived entry', function (): void {
-            $entry = Entry::factory()->create([
+    it('validates entry ID is numeric', function () {
+        $this->artisan('archive', ['id' => 'not-numeric'])
+            ->expectsOutput('Entry ID must be a number.')
+            ->assertFailed();
+    });
+
+    it('fails when entry not found', function () {
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(999)
+            ->andReturn(null);
+
+        $this->artisan('archive', ['id' => '999'])
+            ->expectsOutput('Entry not found with ID: 999')
+            ->assertFailed();
+    });
+
+    it('archives an active entry', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Test Entry',
+            'content' => 'Test content',
+            'status' => 'validated',
+            'confidence' => 95,
+        ];
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $this->qdrant->shouldReceive('updateFields')
+            ->once()
+            ->with(1, [
                 'status' => 'deprecated',
                 'confidence' => 0,
             ]);
 
-            $this->artisan('archive', [
-                'id' => $entry->id,
-                '--restore' => true,
-            ])
-                ->expectsOutputToContain("Entry #{$entry->id} has been restored")
-                ->expectsOutputToContain('Status: deprecated -> draft')
-                ->expectsOutputToContain('Confidence: 50%')
-                ->assertSuccessful();
-
-            $entry->refresh();
-            expect($entry->status)->toBe('draft');
-            expect($entry->confidence)->toBe(50);
-        });
-
-        it('warns when entry is not archived', function (): void {
-            $entry = Entry::factory()->create(['status' => 'validated']);
-
-            $this->artisan('archive', [
-                'id' => $entry->id,
-                '--restore' => true,
-            ])
-                ->expectsOutputToContain('is not archived')
-                ->assertSuccessful();
-        });
+        $this->artisan('archive', ['id' => '1'])
+            ->expectsOutputToContain('Entry #1 has been archived.')
+            ->expectsOutputToContain('Title: Test Entry')
+            ->expectsOutputToContain('Status: validated -> deprecated')
+            ->expectsOutputToContain('Restore with: knowledge:archive 1 --restore')
+            ->assertSuccessful();
     });
 
-    describe('validation', function (): void {
-        it('fails with non-numeric id', function (): void {
-            $this->artisan('archive', ['id' => 'abc'])
-                ->expectsOutputToContain('Entry ID must be a number')
-                ->assertFailed();
-        });
+    it('warns when archiving already archived entry', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Archived Entry',
+            'content' => 'Test content',
+            'status' => 'deprecated',
+            'confidence' => 0,
+        ];
 
-        it('fails when entry not found', function (): void {
-            $this->artisan('archive', ['id' => 99999])
-                ->expectsOutputToContain('Entry not found')
-                ->assertFailed();
-        });
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $this->artisan('archive', ['id' => '1'])
+            ->expectsOutputToContain('Entry #1 is already archived.')
+            ->assertSuccessful();
     });
 
-    describe('command signature', function (): void {
-        it('has the correct signature', function (): void {
-            $command = $this->app->make(\App\Commands\KnowledgeArchiveCommand::class);
-            expect($command->getName())->toBe('archive');
-        });
+    it('restores archived entry', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Archived Entry',
+            'content' => 'Test content',
+            'status' => 'deprecated',
+            'confidence' => 0,
+        ];
 
-        it('has restore option', function (): void {
-            $command = $this->app->make(\App\Commands\KnowledgeArchiveCommand::class);
-            $definition = $command->getDefinition();
-            expect($definition->hasOption('restore'))->toBeTrue();
-        });
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $this->qdrant->shouldReceive('updateFields')
+            ->once()
+            ->with(1, [
+                'status' => 'draft',
+                'confidence' => 50,
+            ]);
+
+        $this->artisan('archive', ['id' => '1', '--restore' => true])
+            ->expectsOutputToContain('Entry #1 has been restored.')
+            ->expectsOutputToContain('Title: Archived Entry')
+            ->expectsOutputToContain('Status: deprecated -> draft')
+            ->expectsOutputToContain('Confidence: 50%')
+            ->expectsOutputToContain('Validate with: knowledge:validate 1')
+            ->assertSuccessful();
+    });
+
+    it('warns when restoring non-archived entry', function () {
+        $entry = [
+            'id' => 1,
+            'title' => 'Active Entry',
+            'content' => 'Test content',
+            'status' => 'validated',
+            'confidence' => 95,
+        ];
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(1)
+            ->andReturn($entry);
+
+        $this->artisan('archive', ['id' => '1', '--restore' => true])
+            ->expectsOutputToContain('Entry #1 is not archived (status: validated).')
+            ->assertSuccessful();
+    });
+
+    it('archives draft entry', function () {
+        $entry = [
+            'id' => 2,
+            'title' => 'Draft Entry',
+            'content' => 'Draft content',
+            'status' => 'draft',
+            'confidence' => 50,
+        ];
+
+        $this->qdrant->shouldReceive('getById')
+            ->once()
+            ->with(2)
+            ->andReturn($entry);
+
+        $this->qdrant->shouldReceive('updateFields')
+            ->once()
+            ->with(2, [
+                'status' => 'deprecated',
+                'confidence' => 0,
+            ]);
+
+        $this->artisan('archive', ['id' => '2'])
+            ->expectsOutputToContain('Entry #2 has been archived.')
+            ->expectsOutputToContain('Status: draft -> deprecated')
+            ->assertSuccessful();
     });
 });

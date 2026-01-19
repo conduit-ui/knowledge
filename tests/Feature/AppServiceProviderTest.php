@@ -2,49 +2,29 @@
 
 declare(strict_types=1);
 
-use App\Contracts\ChromaDBClientInterface;
 use App\Contracts\EmbeddingServiceInterface;
-use App\Contracts\FullTextSearchInterface;
-use App\Services\ChromaDBClient;
-use App\Services\ChromaDBEmbeddingService;
-use App\Services\ChromaDBIndexService;
-use App\Services\DatabaseInitializer;
+use App\Services\EmbeddingService;
 use App\Services\KnowledgePathService;
+use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
-use App\Services\SemanticSearchService;
-use App\Services\SQLiteFtsService;
 use App\Services\StubEmbeddingService;
-use App\Services\StubFtsService;
 
-describe('AppServiceProvider', function () {
-    it('registers RuntimeEnvironment', function () {
+describe('AppServiceProvider', function (): void {
+    it('registers RuntimeEnvironment', function (): void {
         $service = app(RuntimeEnvironment::class);
 
         expect($service)->toBeInstanceOf(RuntimeEnvironment::class);
     });
 
-    it('registers KnowledgePathService', function () {
+    it('registers KnowledgePathService', function (): void {
         $service = app(KnowledgePathService::class);
 
         expect($service)->toBeInstanceOf(KnowledgePathService::class);
     });
 
-    it('registers DatabaseInitializer', function () {
-        $service = app(DatabaseInitializer::class);
-
-        expect($service)->toBeInstanceOf(DatabaseInitializer::class);
-    });
-
-    it('registers ChromaDBClient', function () {
-        $client = app(ChromaDBClientInterface::class);
-
-        expect($client)->toBeInstanceOf(ChromaDBClient::class);
-    });
-
-    it('registers StubEmbeddingService by default', function () {
+    it('registers StubEmbeddingService by default', function (): void {
         config(['search.embedding_provider' => 'none']);
 
-        // Force rebinding
         app()->forgetInstance(EmbeddingServiceInterface::class);
 
         $service = app(EmbeddingServiceInterface::class);
@@ -52,76 +32,82 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(StubEmbeddingService::class);
     });
 
-    it('registers ChromaDBEmbeddingService when provider is chromadb', function () {
+    it('registers EmbeddingService when provider is chromadb', function (): void {
         config(['search.embedding_provider' => 'chromadb']);
 
-        // Force rebinding
         app()->forgetInstance(EmbeddingServiceInterface::class);
 
         $service = app(EmbeddingServiceInterface::class);
 
-        expect($service)->toBeInstanceOf(ChromaDBEmbeddingService::class);
+        expect($service)->toBeInstanceOf(EmbeddingService::class);
     });
 
-    it('registers ChromaDBIndexService', function () {
-        $service = app(ChromaDBIndexService::class);
+    it('registers EmbeddingService when provider is qdrant', function (): void {
+        config(['search.embedding_provider' => 'qdrant']);
 
-        expect($service)->toBeInstanceOf(ChromaDBIndexService::class);
+        app()->forgetInstance(EmbeddingServiceInterface::class);
+
+        $service = app(EmbeddingServiceInterface::class);
+
+        expect($service)->toBeInstanceOf(EmbeddingService::class);
     });
 
-    it('registers SemanticSearchService without ChromaDB when disabled', function () {
-        config(['search.chromadb.enabled' => false]);
+    it('registers QdrantService with mocked embedding service', function (): void {
+        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
 
-        // Force rebinding
-        app()->forgetInstance(SemanticSearchService::class);
+        config([
+            'search.embedding_dimension' => 384,
+            'search.minimum_similarity' => 0.7,
+            'search.qdrant.cache_ttl' => 604800,
+            'search.qdrant.secure' => false,
+        ]);
 
-        $service = app(SemanticSearchService::class);
+        app()->forgetInstance(QdrantService::class);
 
-        expect($service)->toBeInstanceOf(SemanticSearchService::class)
-            ->and($service->hasChromaDBSupport())->toBeFalse();
+        $service = app(QdrantService::class);
+
+        expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-    it('registers SemanticSearchService with ChromaDB when enabled', function () {
-        config(['search.chromadb.enabled' => true, 'search.semantic_enabled' => true]);
+    it('registers QdrantService with secure connection configuration', function (): void {
+        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
 
-        // Force rebinding
-        app()->forgetInstance(SemanticSearchService::class);
+        config([
+            'search.embedding_dimension' => 1536,
+            'search.minimum_similarity' => 0.8,
+            'search.qdrant.cache_ttl' => 86400,
+            'search.qdrant.secure' => true,
+        ]);
 
-        $service = app(SemanticSearchService::class);
+        app()->forgetInstance(QdrantService::class);
 
-        expect($service)->toBeInstanceOf(SemanticSearchService::class);
+        $service = app(QdrantService::class);
+
+        expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-    it('registers SQLiteFtsService by default', function () {
-        config(['search.fts_provider' => 'sqlite']);
 
-        // Force rebinding
-        app()->forgetInstance(FullTextSearchInterface::class);
 
-        $service = app(FullTextSearchInterface::class);
 
-        expect($service)->toBeInstanceOf(SQLiteFtsService::class);
+
+
+    it('uses custom embedding server configuration for qdrant provider', function (): void {
+        config([
+            'search.embedding_provider' => 'qdrant',
+            'search.qdrant.embedding_server' => 'http://custom-server:8001',
+            'search.qdrant.model' => 'custom-model',
+        ]);
+
+        app()->forgetInstance(EmbeddingServiceInterface::class);
+
+        $service = app(EmbeddingServiceInterface::class);
+
+        expect($service)->toBeInstanceOf(EmbeddingService::class);
     });
+});
 
-    it('registers StubFtsService when provider is stub', function () {
-        config(['search.fts_provider' => 'stub']);
-
-        // Force rebinding
-        app()->forgetInstance(FullTextSearchInterface::class);
-
-        $service = app(FullTextSearchInterface::class);
-
-        expect($service)->toBeInstanceOf(StubFtsService::class);
-    });
-
-    it('registers StubFtsService for unknown provider', function () {
-        config(['search.fts_provider' => 'unknown']);
-
-        // Force rebinding
-        app()->forgetInstance(FullTextSearchInterface::class);
-
-        $service = app(FullTextSearchInterface::class);
-
-        expect($service)->toBeInstanceOf(StubFtsService::class);
-    });
+afterEach(function (): void {
+    Mockery::close();
 });

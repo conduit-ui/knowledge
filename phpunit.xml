@@ -1,35 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
-         colors="true"
->
-    <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="EMBEDDING_PROVIDER" value="none"/>
-        <env name="CHROMADB_ENABLED" value="false"/>
-        <env name="SEMANTIC_SEARCH_ENABLED" value="false"/>
-    </php>
-    <testsuites>
-        <testsuite name="Feature">
-            <directory>./tests/Feature</directory>
-        </testsuite>
-        <testsuite name="Unit">
-            <directory>./tests/Unit</directory>
-        </testsuite>
-    </testsuites>
-    <source>
-        <include>
-            <directory>./app</directory>
-        </include>
-    </source>
-    <coverage>
-        <report>
-            <clover outputFile="build/logs/clover.xml"/>
-            <html outputDirectory="build/coverage"/>
-            <text outputFile="build/coverage.txt"/>
-        </report>
-    </coverage>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true">
+  <php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="EMBEDDING_PROVIDER" value="none"/>
+  </php>
+  <testsuites>
+    <testsuite name="Feature">
+      <directory>./tests/Feature</directory>
+    </testsuite>
+    <testsuite name="Unit">
+      <directory>./tests/Unit</directory>
+    </testsuite>
+  </testsuites>
+  <source>
+    <include>
+      <directory>./app</directory>
+    </include>
+  </source>
+  <coverage>
+    <report>
+      <clover outputFile="build/logs/clover.xml"/>
+      <html outputDirectory="build/coverage"/>
+      <text outputFile="build/coverage.txt"/>
+    </report>
+  </coverage>
 </phpunit>

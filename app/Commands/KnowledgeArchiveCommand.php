@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Models\Entry;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeArchiveCommand extends Command
@@ -21,7 +21,7 @@ class KnowledgeArchiveCommand extends Command
      */
     protected $description = 'Archive an entry (soft delete) or restore an archived entry';
 
-    public function handle(): int
+    public function handle(QdrantService $qdrant): int
     {
         $id = $this->argument('id');
 
@@ -34,8 +34,7 @@ class KnowledgeArchiveCommand extends Command
             return self::FAILURE;
         }
 
-        /** @var Entry|null $entry */
-        $entry = Entry::query()->find((int) $id);
+        $entry = $qdrant->getById((int) $id);
 
         if ($entry === null) {
             $this->error("Entry not found with ID: {$id}");
@@ -44,63 +43,67 @@ class KnowledgeArchiveCommand extends Command
         }
 
         if ($restore) {
-            return $this->restoreEntry($entry);
+            return $this->restoreEntry($qdrant, $entry);
         }
 
-        return $this->archiveEntry($entry);
+        return $this->archiveEntry($qdrant, $entry);
     }
 
     /**
      * Archive an entry.
+     *
+     * @param  array<string, mixed>  $entry
      */
-    private function archiveEntry(Entry $entry): int
+    private function archiveEntry(QdrantService $qdrant, array $entry): int
     {
-        if ($entry->status === 'deprecated') {
-            $this->warn("Entry #{$entry->id} is already archived.");
+        if ($entry['status'] === 'deprecated') {
+            $this->warn("Entry #{$entry['id']} is already archived.");
 
             return self::SUCCESS;
         }
 
-        $oldStatus = $entry->status;
+        $oldStatus = $entry['status'];
 
-        $entry->update([
+        $qdrant->updateFields((int) $entry['id'], [
             'status' => 'deprecated',
             'confidence' => 0,
         ]);
 
-        $this->info("Entry #{$entry->id} has been archived.");
+        $this->info("Entry #{$entry['id']} has been archived.");
         $this->newLine();
-        $this->line("Title: {$entry->title}");
+        $this->line("Title: {$entry['title']}");
         $this->line("Status: {$oldStatus} -> deprecated");
         $this->newLine();
-        $this->comment('Restore with: knowledge:archive '.$entry->id.' --restore');
+        $this->comment('Restore with: knowledge:archive '.$entry['id'].' --restore');
 
         return self::SUCCESS;
     }
 
     /**
      * Restore an archived entry.
+     *
+     * @param  array<string, mixed>  $entry
      */
-    private function restoreEntry(Entry $entry): int
+    private function restoreEntry(QdrantService $qdrant, array $entry): int
     {
-        if ($entry->status !== 'deprecated') {
-            $this->warn("Entry #{$entry->id} is not archived (status: {$entry->status}).");
+        if ($entry['status'] !== 'deprecated') {
+            $this->warn("Entry #{$entry['id']} is not archived (status: {$entry['status']}).");
 
             return self::SUCCESS;
         }
 
-        $entry->update([
+        $qdrant->updateFields((int) $entry['id'], [
             'status' => 'draft',
             'confidence' => 50,
         ]);
 
-        $this->info("Entry #{$entry->id} has been restored.");
+        $this->info("Entry #{$entry['id']} has been restored.");
         $this->newLine();
-        $this->line("Title: {$entry->title}");
+        $this->line("Title: {$entry['title']}");
         $this->line('Status: deprecated -> draft');
         $this->line('Confidence: 50%');
         $this->newLine();
-        $this->comment('Validate with: knowledge:validate '.$entry->id);
+        $this->comment('Validate with: knowledge:validate '.$entry['id']);
 
         return self::SUCCESS;
     }

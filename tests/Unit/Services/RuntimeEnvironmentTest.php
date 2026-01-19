@@ -22,39 +22,6 @@ describe('RuntimeEnvironment', function (): void {
         });
     });
 
-    describe('databasePath', function (): void {
-        it('returns database path in dev mode', function (): void {
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv('KNOWLEDGE_DB_PATH');
-
-            $runtime = new RuntimeEnvironment;
-            $expectedPath = dirname(__DIR__, 3).'/knowledge.sqlite';
-
-            expect($runtime->databasePath())->toBe($expectedPath);
-
-            // Restore
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            }
-        });
-
-        it('respects KNOWLEDGE_DB_PATH environment variable', function (): void {
-            $originalDbPath = getenv('KNOWLEDGE_DB_PATH');
-            putenv('KNOWLEDGE_DB_PATH=/custom/path/mydb.sqlite');
-
-            $runtime = new RuntimeEnvironment;
-
-            expect($runtime->databasePath())->toBe('/custom/path/mydb.sqlite');
-
-            // Restore
-            if ($originalDbPath !== false) {
-                putenv("KNOWLEDGE_DB_PATH={$originalDbPath}");
-            } else {
-                putenv('KNOWLEDGE_DB_PATH');
-            }
-        });
-    });
-
     describe('cachePath', function (): void {
         it('returns storage/framework cache path in dev mode', function (): void {
             $runtime = new RuntimeEnvironment;
@@ -89,7 +56,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
         });
 
@@ -102,7 +68,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
         });
 
@@ -116,7 +81,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
             rmdir(dirname($testDir));
             rmdir(dirname(dirname($testDir)));

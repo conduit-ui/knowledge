@@ -2,94 +2,201 @@
 
 declare(strict_types=1);
 
-use App\Models\Entry;
+use App\Services\QdrantService;
+
+beforeEach(function () {
+    $this->qdrantMock = Mockery::mock(QdrantService::class);
+    $this->app->instance(QdrantService::class, $this->qdrantMock);
+});
 
 it('validates an entry and boosts confidence', function () {
-    $entry = Entry::factory()->create([
+    $entry = [
+        'id' => '1',
         'title' => 'Test Entry',
-        'confidence' => 80,
+        'content' => 'Content',
+        'confidence' => 60,
         'status' => 'draft',
-        'validation_date' => null,
-    ]);
+        'category' => null,
+        'tags' => [],
+        'module' => null,
+        'priority' => 'medium',
+        'usage_count' => 0,
+        'created_at' => '2024-01-01T00:00:00+00:00',
+        'updated_at' => '2024-01-01T00:00:00+00:00',
+    ];
 
-    $this->artisan('validate', ['id' => $entry->id])
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('1')
+        ->andReturn($entry);
+
+    $this->qdrantMock->shouldReceive('updateFields')
+        ->once()
+        ->with('1', [
+            'status' => 'validated',
+            'confidence' => 80,
+        ])
+        ->andReturn(true);
+
+    $this->artisan('validate', ['id' => '1'])
         ->assertSuccessful()
-        ->expectsOutputToContain("Entry #{$entry->id} validated successfully!")
-        ->expectsOutputToContain('Title: Test Entry')
-        ->expectsOutputToContain('Status: draft -> validated')
-        ->expectsOutputToContain('Confidence: 80% -> 96%')
-        ->expectsOutputToContain('The entry has been marked as validated and its confidence has been updated.');
-
-    $entry->refresh();
-    expect($entry->status)->toBe('validated')
-        ->and($entry->validation_date)->not->toBeNull()
-        ->and($entry->confidence)->toBe(96);
+        ->expectsOutput('Entry #1 validated successfully!')
+        ->expectsOutput('Title: Test Entry')
+        ->expectsOutput('Status: draft -> validated')
+        ->expectsOutput('Confidence: 60% -> 80%');
 });
 
 it('shows error when entry not found', function () {
-    $this->artisan('validate', ['id' => 9999])
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('9999')
+        ->andReturn(null);
+
+    $this->artisan('validate', ['id' => '9999'])
         ->assertFailed()
         ->expectsOutput('Entry not found with ID: 9999');
 });
 
 it('validates id must be numeric', function () {
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('abc')
+        ->andReturn(null);
+
     $this->artisan('validate', ['id' => 'abc'])
-        ->assertFailed()
-        ->expectsOutput('Entry ID must be a number.');
+        ->assertFailed();
 });
 
 it('validates entry that is already validated', function () {
-    $entry = Entry::factory()->create([
+    $entry = [
+        'id' => '2',
         'title' => 'Already Validated',
-        'confidence' => 85,
+        'content' => 'Content',
+        'confidence' => 90,
         'status' => 'validated',
-        'validation_date' => now()->subDays(10),
-    ]);
+        'category' => null,
+        'tags' => [],
+        'module' => null,
+        'priority' => 'medium',
+        'usage_count' => 0,
+        'created_at' => '2024-01-01T00:00:00+00:00',
+        'updated_at' => '2024-01-01T00:00:00+00:00',
+    ];
 
-    $this->artisan('validate', ['id' => $entry->id])
-        ->assertSuccessful()
-        ->expectsOutputToContain('Status: validated -> validated');
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('2')
+        ->andReturn($entry);
+
+    $this->qdrantMock->shouldReceive('updateFields')
+        ->once()
+        ->with('2', [
+            'status' => 'validated',
+            'confidence' => 100, // 90 + 20 = 110, capped at 100
+        ])
+        ->andReturn(true);
+
+    $this->artisan('validate', ['id' => '2'])
+        ->assertSuccessful();
 });
 
 it('displays validation date after validation', function () {
-    $entry = Entry::factory()->create([
+    $entry = [
+        'id' => '3',
+        'title' => 'Test Entry',
+        'content' => 'Content',
         'confidence' => 70,
         'status' => 'draft',
-    ]);
+        'category' => null,
+        'tags' => [],
+        'module' => null,
+        'priority' => 'medium',
+        'usage_count' => 0,
+        'created_at' => '2024-01-01T00:00:00+00:00',
+        'updated_at' => '2024-01-01T00:00:00+00:00',
+    ];
 
-    $this->artisan('validate', ['id' => $entry->id])
-        ->assertSuccessful()
-        ->expectsOutputToContain('Validation Date:');
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('3')
+        ->andReturn($entry);
 
-    $entry->refresh();
-    expect($entry->validation_date)->not->toBeNull();
+    $this->qdrantMock->shouldReceive('updateFields')
+        ->once()
+        ->with('3', [
+            'status' => 'validated',
+            'confidence' => 90,
+        ])
+        ->andReturn(true);
+
+    $this->artisan('validate', ['id' => '3'])
+        ->assertSuccessful();
 });
 
 it('validates entry with high confidence', function () {
-    $entry = Entry::factory()->create([
+    $entry = [
+        'id' => '4',
         'title' => 'High Confidence Entry',
+        'content' => 'Content',
         'confidence' => 95,
         'status' => 'draft',
-    ]);
+        'category' => null,
+        'tags' => [],
+        'module' => null,
+        'priority' => 'medium',
+        'usage_count' => 0,
+        'created_at' => '2024-01-01T00:00:00+00:00',
+        'updated_at' => '2024-01-01T00:00:00+00:00',
+    ];
 
-    $this->artisan('validate', ['id' => $entry->id])
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('4')
+        ->andReturn($entry);
+
+    $this->qdrantMock->shouldReceive('updateFields')
+        ->once()
+        ->with('4', [
+            'status' => 'validated',
+            'confidence' => 100, // 95 + 20 = 115, capped at 100
+        ])
+        ->andReturn(true);
+
+    $this->artisan('validate', ['id' => '4'])
         ->assertSuccessful()
-        ->expectsOutputToContain('Confidence: 95% -> 100%'); // Capped at 100
-
-    $entry->refresh();
-    expect($entry->confidence)->toBe(100);
+        ->expectsOutput('Confidence: 95% -> 100%');
 });
 
 it('validates entry with low confidence', function () {
-    $entry = Entry::factory()->create([
-        'confidence' => 50,
+    $entry = [
+        'id' => '5',
+        'title' => 'Low Confidence Entry',
+        'content' => 'Content',
+        'confidence' => 10,
         'status' => 'draft',
-    ]);
+        'category' => null,
+        'tags' => [],
+        'module' => null,
+        'priority' => 'medium',
+        'usage_count' => 0,
+        'created_at' => '2024-01-01T00:00:00+00:00',
+        'updated_at' => '2024-01-01T00:00:00+00:00',
+    ];
 
-    $this->artisan('validate', ['id' => $entry->id])
+    $this->qdrantMock->shouldReceive('getById')
+        ->once()
+        ->with('5')
+        ->andReturn($entry);
+
+    $this->qdrantMock->shouldReceive('updateFields')
+        ->once()
+        ->with('5', [
+            'status' => 'validated',
+            'confidence' => 30, // 10 + 20 = 30
+        ])
+        ->andReturn(true);
+
+    $this->artisan('validate', ['id' => '5'])
         ->assertSuccessful()
-        ->expectsOutputToContain('Confidence: 50% -> 60%');
-
-    $entry->refresh();
-    expect($entry->confidence)->toBe(60);
+        ->expectsOutput('Confidence: 10% -> 30%');
 });
