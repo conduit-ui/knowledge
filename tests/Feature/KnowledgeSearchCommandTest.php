@@ -2,16 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Contracts\FullTextSearchInterface;
 use App\Services\QdrantService;
 
 describe('KnowledgeSearchCommand', function () {
     beforeEach(function () {
         $this->qdrantService = mock(QdrantService::class);
-        $this->ftsService = mock(FullTextSearchInterface::class);
 
         app()->instance(QdrantService::class, $this->qdrantService);
-        app()->instance(FullTextSearchInterface::class, $this->ftsService);
     });
 
     it('requires at least one parameter', function () {

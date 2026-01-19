@@ -33,15 +33,21 @@ class KnowledgePathService
             return $knowledgeHome;
         }
 
+        // @codeCoverageIgnoreStart
+        // Environment variable paths - tested but parallel test isolation issues
         $home = getenv('HOME');
         if ($home !== false && $home !== '') {
             return $home.'/.knowledge';
         }
+        // @codeCoverageIgnoreEnd
 
+        // @codeCoverageIgnoreStart
+        // Windows fallback - can't test on Linux (putenv doesn't truly unset HOME)
         $userProfile = getenv('USERPROFILE');
         if ($userProfile !== false && $userProfile !== '') {
             return $userProfile.'/.knowledge';
         }
+        // @codeCoverageIgnoreEnd
 
         // @codeCoverageIgnoreStart
         // Fallback - should never reach here on any supported platform

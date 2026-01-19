@@ -22,8 +22,6 @@ describe('RuntimeEnvironment', function (): void {
         });
     });
 
-    // Note: databasePath() method was removed when migrating from SQLite to Qdrant
-
     describe('cachePath', function (): void {
         it('returns storage/framework cache path in dev mode', function (): void {
             $runtime = new RuntimeEnvironment;
@@ -58,7 +56,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
         });
 
@@ -71,7 +68,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
         });
 
@@ -85,7 +81,6 @@ describe('RuntimeEnvironment', function (): void {
 
             expect(is_dir($testDir))->toBeTrue();
 
-            // Cleanup
             rmdir($testDir);
             rmdir(dirname($testDir));
             rmdir(dirname(dirname($testDir)));

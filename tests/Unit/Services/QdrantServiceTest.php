@@ -7,6 +7,7 @@ use App\Integrations\Qdrant\QdrantConnector;
 use App\Integrations\Qdrant\Requests\CreateCollection;
 use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
+use App\Integrations\Qdrant\Requests\GetPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
 use App\Services\QdrantService;
@@ -16,169 +17,138 @@ use Saloon\Http\Response;
 
 uses()->group('qdrant-unit');
 
-beforeEach(function () {
+beforeEach(function (): void {
     Cache::flush();
 
     $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+    $this->mockConnector = Mockery::mock(QdrantConnector::class);
     $this->service = new QdrantService($this->mockEmbedding);
+
+    // Inject mock connector via reflection
+    $reflection = new ReflectionClass($this->service);
+    $property = $reflection->getProperty('connector');
+    $property->setAccessible(true);
+    $property->setValue($this->service, $this->mockConnector);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 
-describe('ensureCollection', function () {
-    it('returns true when collection already exists', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-        $response = Mockery::mock(Response::class);
+/**
+ * Create a mock Response object with common configuration.
+ */
+function createMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
+{
+    $response = Mockery::mock(Response::class);
+    $response->shouldReceive('successful')->andReturn($successful);
 
-        $response->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($response);
+    if (! $successful || $status !== 200) {
+        $response->shouldReceive('status')->andReturn($status);
+    }
 
-        // Inject connector via reflection
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
+    if ($json !== null) {
+        $response->shouldReceive('json')->andReturn($json);
+    }
 
-        expect($this->service->ensureCollection('test-project'))->toBeTrue();
-    });
+    return $response;
+}
 
-    it('creates collection when it does not exist (404)', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-        $getResponse = Mockery::mock(Response::class);
-        $createResponse = Mockery::mock(Response::class);
+/**
+ * Set up mock for ensureCollection to return success (collection exists).
+ */
+function mockCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
+{
+    $response = createMockResponse(true);
+    $connector->shouldReceive('send')
+        ->with(Mockery::type(GetCollectionInfo::class))
+        ->times($times)
+        ->andReturn($response);
+}
 
-        $getResponse->shouldReceive('successful')->andReturn(false);
-        $getResponse->shouldReceive('status')->andReturn(404);
-
-        $createResponse->shouldReceive('successful')->andReturn(true);
-
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(CreateCollection::class))
-            ->once()
-            ->andReturn($createResponse);
-
-        // Inject connector
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
+describe('ensureCollection', function (): void {
+    it('returns true when collection already exists', function (): void {
+        mockCollectionExists($this->mockConnector);
 
         expect($this->service->ensureCollection('test-project'))->toBeTrue();
     });
 
-    it('throws exception when collection creation fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-        $getResponse = Mockery::mock(Response::class);
-        $createResponse = Mockery::mock(Response::class);
+    it('creates collection when it does not exist (404)', function (): void {
+        $getResponse = createMockResponse(false, 404);
+        $createResponse = createMockResponse(true);
 
-        $getResponse->shouldReceive('successful')->andReturn(false);
-        $getResponse->shouldReceive('status')->andReturn(404);
-
-        $createResponse->shouldReceive('successful')->andReturn(false);
-        $createResponse->shouldReceive('json')->andReturn(['error' => 'Failed to create']);
-
-        $connector->shouldReceive('send')
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(GetCollectionInfo::class))
             ->once()
             ->andReturn($getResponse);
 
-        $connector->shouldReceive('send')
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(CreateCollection::class))
             ->once()
             ->andReturn($createResponse);
 
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
-
-        expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(\RuntimeException::class, 'Failed to create collection');
+        expect($this->service->ensureCollection('test-project'))->toBeTrue();
     });
 
-    it('throws exception on unexpected response status', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-        $response = Mockery::mock(Response::class);
+    it('throws exception when collection creation fails', function (): void {
+        $getResponse = createMockResponse(false, 404);
+        $createResponse = createMockResponse(false, 500, ['error' => 'Failed to create']);
 
-        $response->shouldReceive('successful')->andReturn(false);
-        $response->shouldReceive('status')->andReturn(500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetCollectionInfo::class))
+            ->once()
+            ->andReturn($getResponse);
 
-        $connector->shouldReceive('send')
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(CreateCollection::class))
+            ->once()
+            ->andReturn($createResponse);
+
+        expect(fn () => $this->service->ensureCollection('test-project'))
+            ->toThrow(RuntimeException::class, 'Failed to create collection');
+    });
+
+    it('throws exception on unexpected response status', function (): void {
+        $response = createMockResponse(false, 500);
+
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(GetCollectionInfo::class))
             ->once()
             ->andReturn($response);
 
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
-
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(\RuntimeException::class, 'Unexpected response: 500');
+            ->toThrow(RuntimeException::class, 'Unexpected response: 500');
     });
 
-    it('throws exception when Qdrant connection fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-
-        // Create a mock response for ClientException
+    it('throws exception when Qdrant connection fails', function (): void {
         $response = Mockery::mock(Response::class);
         $response->shouldReceive('status')->andReturn(500);
         $response->shouldReceive('body')->andReturn('Connection failed');
 
-        $connector->shouldReceive('send')
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(GetCollectionInfo::class))
             ->once()
             ->andThrow(new ClientException($response, 'Connection failed'));
 
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
-
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(\RuntimeException::class, 'Qdrant connection failed: Connection failed');
+            ->toThrow(RuntimeException::class, 'Qdrant connection failed: Connection failed');
     });
 });
 
-describe('upsert', function () {
-    it('successfully upserts an entry with all fields', function () {
+describe('upsert', function (): void {
+    it('successfully upserts an entry with all fields', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Title Test content here')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        // Mock collection check
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        // Mock upsert
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $entry = [
             'id' => '123',
@@ -196,32 +166,19 @@ describe('upsert', function () {
         expect($this->service->upsert($entry))->toBeTrue();
     });
 
-    it('successfully upserts an entry with minimal fields', function () {
+    it('successfully upserts an entry with minimal fields', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Minimal Title Minimal content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $entry = [
             'id' => '456',
@@ -232,25 +189,13 @@ describe('upsert', function () {
         expect($this->service->upsert($entry))->toBeTrue();
     });
 
-    it('throws exception when embedding generation fails', function () {
+    it('throws exception when embedding generation fails', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
-
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
+        mockCollectionExists($this->mockConnector);
 
         $entry = [
             'id' => '789',
@@ -259,36 +204,22 @@ describe('upsert', function () {
         ];
 
         expect(fn () => $this->service->upsert($entry))
-            ->toThrow(\RuntimeException::class, 'Failed to generate embedding');
+            ->toThrow(RuntimeException::class, 'Failed to generate embedding');
     });
 
-    it('throws exception when upsert request fails', function () {
+    it('throws exception when upsert request fails', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(false);
-        $upsertResponse->shouldReceive('json')->andReturn(['error' => 'Upsert failed']);
-        $connector->shouldReceive('send')
+        $upsertResponse = createMockResponse(false, 500, ['error' => 'Upsert failed']);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $entry = [
             'id' => '999',
@@ -297,10 +228,10 @@ describe('upsert', function () {
         ];
 
         expect(fn () => $this->service->upsert($entry))
-            ->toThrow(\RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
+            ->toThrow(RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
     });
 
-    it('uses cached embeddings when caching is enabled', function () {
+    it('uses cached embeddings when caching is enabled', function (): void {
         config(['search.qdrant.cache_embeddings' => true]);
 
         $this->mockEmbedding->shouldReceive('generate')
@@ -308,26 +239,13 @@ describe('upsert', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getResponse);
-
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(UpsertPoints::class))
             ->twice()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $entry = [
             'id' => '111',
@@ -335,14 +253,14 @@ describe('upsert', function () {
             'content' => 'Test content',
         ];
 
-        // First call - should generate embedding
+        // First call - generates embedding
         $this->service->upsert($entry);
 
-        // Second call - should use cached embedding
+        // Second call - uses cached embedding
         $this->service->upsert($entry);
     });
 
-    it('does not cache embeddings when caching is disabled', function () {
+    it('does not cache embeddings when caching is disabled', function (): void {
         config(['search.qdrant.cache_embeddings' => false]);
 
         $this->mockEmbedding->shouldReceive('generate')
@@ -350,26 +268,13 @@ describe('upsert', function () {
             ->twice()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getResponse);
-
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(UpsertPoints::class))
             ->twice()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $entry = [
             'id' => '222',
@@ -377,33 +282,24 @@ describe('upsert', function () {
             'content' => 'Test content',
         ];
 
-        // First call - should generate embedding
+        // First call - generates embedding
         $this->service->upsert($entry);
 
-        // Second call - should generate embedding again (not cached)
+        // Second call - generates embedding again (not cached)
         $this->service->upsert($entry);
     });
 });
 
-describe('search', function () {
-    it('successfully searches entries with query and filters', function () {
+describe('search', function (): void {
+    it('successfully searches entries with query and filters', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('laravel testing')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $searchResponse = Mockery::mock(Response::class);
-        $searchResponse->shouldReceive('successful')->andReturn(true);
-        $searchResponse->shouldReceive('json')->andReturn([
+        $searchResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-1',
@@ -424,15 +320,10 @@ describe('search', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
             ->once()
             ->andReturn($searchResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $filters = [
             'category' => 'testing',
@@ -451,90 +342,51 @@ describe('search', function () {
         ]);
     });
 
-    it('returns empty collection when search fails', function () {
+    it('returns empty collection when search fails', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('query')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $searchResponse = Mockery::mock(Response::class);
-        $searchResponse->shouldReceive('successful')->andReturn(false);
-        $connector->shouldReceive('send')
+        $searchResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
             ->once()
             ->andReturn($searchResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $results = $this->service->search('query');
 
         expect($results)->toBeEmpty();
     });
 
-    it('returns empty collection when embedding generation fails', function () {
+    it('returns empty collection when embedding generation fails', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('query')
             ->once()
             ->andReturn([]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
-
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
+        mockCollectionExists($this->mockConnector);
 
         $results = $this->service->search('query');
 
         expect($results)->toBeEmpty();
     });
 
-    it('handles search with tag filter', function () {
+    it('handles search with tag filter', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $searchResponse = Mockery::mock(Response::class);
-        $searchResponse->shouldReceive('successful')->andReturn(true);
-        $searchResponse->shouldReceive('json')->andReturn(['result' => []]);
-        $connector->shouldReceive('send')
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
             ->once()
             ->andReturn($searchResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $filters = ['tag' => 'laravel'];
 
@@ -543,66 +395,38 @@ describe('search', function () {
         expect($results)->toBeEmpty();
     });
 
-    it('handles search with custom limit', function () {
+    it('handles search with custom limit', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $searchResponse = Mockery::mock(Response::class);
-        $searchResponse->shouldReceive('successful')->andReturn(true);
-        $searchResponse->shouldReceive('json')->andReturn(['result' => []]);
-        $connector->shouldReceive('send')
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
             ->once()
             ->andReturn($searchResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $results = $this->service->search('test', [], 50);
 
         expect($results)->toBeEmpty();
     });
 
-    it('handles search with custom project', function () {
+    it('handles search with custom project', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $connector = Mockery::mock(QdrantConnector::class);
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $searchResponse = Mockery::mock(Response::class);
-        $searchResponse->shouldReceive('successful')->andReturn(true);
-        $searchResponse->shouldReceive('json')->andReturn(['result' => []]);
-        $connector->shouldReceive('send')
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
             ->once()
             ->andReturn($searchResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $results = $this->service->search('test', [], 20, 'custom-project');
 
@@ -610,82 +434,43 @@ describe('search', function () {
     });
 });
 
-describe('delete', function () {
-    it('successfully deletes entries by ID', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+describe('delete', function (): void {
+    it('successfully deletes entries by ID', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $deleteResponse = Mockery::mock(Response::class);
-        $deleteResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $deleteResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(DeletePoints::class))
             ->once()
             ->andReturn($deleteResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $ids = ['id-1', 'id-2', 'id-3'];
 
         expect($this->service->delete($ids))->toBeTrue();
     });
 
-    it('returns false when delete request fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns false when delete request fails', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $deleteResponse = Mockery::mock(Response::class);
-        $deleteResponse->shouldReceive('successful')->andReturn(false);
-        $connector->shouldReceive('send')
+        $deleteResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(DeletePoints::class))
             ->once()
             ->andReturn($deleteResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $ids = ['id-1'];
 
         expect($this->service->delete($ids))->toBeFalse();
     });
 
-    it('handles delete with custom project', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('handles delete with custom project', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getResponse = Mockery::mock(Response::class);
-        $getResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getResponse);
-
-        $deleteResponse = Mockery::mock(Response::class);
-        $deleteResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
+        $deleteResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(DeletePoints::class))
             ->once()
             ->andReturn($deleteResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $ids = ['id-1'];
 
@@ -693,20 +478,11 @@ describe('delete', function () {
     });
 });
 
-describe('getById', function () {
-    it('successfully retrieves entry by ID with all fields', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+describe('getById', function (): void {
+    it('successfully retrieves entry by ID with all fields', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-123',
@@ -726,17 +502,10 @@ describe('getById', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById('test-123');
 
@@ -757,19 +526,10 @@ describe('getById', function () {
         ]);
     });
 
-    it('successfully retrieves entry with minimal payload fields', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('successfully retrieves entry with minimal payload fields', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'minimal-456',
@@ -780,17 +540,10 @@ describe('getById', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById('minimal-456');
 
@@ -811,80 +564,38 @@ describe('getById', function () {
         ]);
     });
 
-    it('returns null when request fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns null when request fails', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(false);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById('nonexistent');
 
         expect($result)->toBeNull();
     });
 
-    it('returns null when no points found in response', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns null when no points found in response', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
-            'result' => [],
-        ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById('nonexistent');
 
         expect($result)->toBeNull();
     });
 
-    it('handles integer ID', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('handles integer ID', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 123,
@@ -895,17 +606,10 @@ describe('getById', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById(123);
 
@@ -913,19 +617,10 @@ describe('getById', function () {
         expect($result['id'])->toBe(123);
     });
 
-    it('handles custom project namespace', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('handles custom project namespace', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-id',
@@ -936,17 +631,10 @@ describe('getById', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->getById('test-id', 'custom-project');
 
@@ -954,22 +642,13 @@ describe('getById', function () {
     });
 });
 
-describe('incrementUsage', function () {
-    it('successfully increments usage count for existing entry', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
-
-        // Mock ensureCollection for getById
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice() // Once for getById, once for upsert
-            ->andReturn($getCollectionResponse);
+describe('incrementUsage', function (): void {
+    it('successfully increments usage count for existing entry', function (): void {
+        // Mock ensureCollection for getById and upsert
+        mockCollectionExists($this->mockConnector, 2);
 
         // Mock getById response
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-123',
@@ -989,10 +668,8 @@ describe('incrementUsage', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1003,99 +680,49 @@ describe('incrementUsage', function () {
             ->andReturn([0.1, 0.2, 0.3]);
 
         // Mock upsert response
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->incrementUsage('test-123');
 
         expect($result)->toBeTrue();
     });
 
-    it('returns false when entry does not exist', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns false when entry does not exist', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
-            'result' => [],
-        ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->incrementUsage('nonexistent');
 
         expect($result)->toBeFalse();
     });
 
-    it('returns false when getById fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns false when getById fails', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(false);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->incrementUsage('test-id');
 
         expect($result)->toBeFalse();
     });
 
-    it('handles custom project namespace', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('handles custom project namespace', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-id',
@@ -1108,10 +735,8 @@ describe('incrementUsage', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1119,38 +744,21 @@ describe('incrementUsage', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->incrementUsage('test-id', 'custom-project');
 
         expect($result)->toBeTrue();
     });
 
-    it('increments from zero when usage_count is not set', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('increments from zero when usage_count is not set', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-id',
@@ -1161,10 +769,8 @@ describe('incrementUsage', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1172,19 +778,11 @@ describe('incrementUsage', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->incrementUsage('test-id');
 
@@ -1192,20 +790,11 @@ describe('incrementUsage', function () {
     });
 });
 
-describe('updateFields', function () {
-    it('successfully updates multiple fields', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+describe('updateFields', function (): void {
+    it('successfully updates multiple fields', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-123',
@@ -1224,10 +813,8 @@ describe('updateFields', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1236,19 +823,11 @@ describe('updateFields', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $fieldsToUpdate = [
             'title' => 'Updated Title',
@@ -1261,19 +840,10 @@ describe('updateFields', function () {
         expect($result)->toBeTrue();
     });
 
-    it('successfully updates single field', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('successfully updates single field', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-456',
@@ -1285,10 +855,8 @@ describe('updateFields', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1296,99 +864,49 @@ describe('updateFields', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('test-456', ['status' => 'validated']);
 
         expect($result)->toBeTrue();
     });
 
-    it('returns false when entry does not exist', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns false when entry does not exist', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
-            'result' => [],
-        ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('nonexistent', ['status' => 'validated']);
 
         expect($result)->toBeFalse();
     });
 
-    it('returns false when getById fails', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('returns false when getById fails', function (): void {
+        mockCollectionExists($this->mockConnector);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->once()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(false);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $getPointsResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('test-id', ['status' => 'validated']);
 
         expect($result)->toBeFalse();
     });
 
-    it('handles custom project namespace', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('handles custom project namespace', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-id',
@@ -1400,10 +918,8 @@ describe('updateFields', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1411,38 +927,21 @@ describe('updateFields', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('test-id', ['status' => 'validated'], 'custom-project');
 
         expect($result)->toBeTrue();
     });
 
-    it('merges updated fields with existing entry data', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('merges updated fields with existing entry data', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-789',
@@ -1456,10 +955,8 @@ describe('updateFields', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1468,19 +965,11 @@ describe('updateFields', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('test-789', [
             'priority' => 'high',
@@ -1490,19 +979,10 @@ describe('updateFields', function () {
         expect($result)->toBeTrue();
     });
 
-    it('updates empty fields array does not fail', function () {
-        $connector = Mockery::mock(QdrantConnector::class);
+    it('updates empty fields array does not fail', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
 
-        $getCollectionResponse = Mockery::mock(Response::class);
-        $getCollectionResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->twice()
-            ->andReturn($getCollectionResponse);
-
-        $getPointsResponse = Mockery::mock(Response::class);
-        $getPointsResponse->shouldReceive('successful')->andReturn(true);
-        $getPointsResponse->shouldReceive('json')->andReturn([
+        $getPointsResponse = createMockResponse(true, 200, [
             'result' => [
                 [
                     'id' => 'test-id',
@@ -1513,10 +993,8 @@ describe('updateFields', function () {
                 ],
             ],
         ]);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof \App\Integrations\Qdrant\Requests\GetPoints;
-            }))
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
             ->once()
             ->andReturn($getPointsResponse);
 
@@ -1524,19 +1002,11 @@ describe('updateFields', function () {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = Mockery::mock(Response::class);
-        $upsertResponse->shouldReceive('successful')->andReturn(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                return $request instanceof UpsertPoints;
-            }))
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
             ->once()
             ->andReturn($upsertResponse);
-
-        $reflection = new \ReflectionClass($this->service);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $connector);
 
         $result = $this->service->updateFields('test-id', []);
 

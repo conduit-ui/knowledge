@@ -15,17 +15,28 @@ describe('SyncCommand', function () {
         $this->qdrant = mock(QdrantService::class);
         app()->instance(QdrantService::class, $this->qdrant);
 
-        // Set environment variable for API token
+        // Set environment variable for API token in all places env() checks
         putenv('PREFRONTAL_API_TOKEN=test-token-12345');
+        $_ENV['PREFRONTAL_API_TOKEN'] = 'test-token-12345';
+        $_SERVER['PREFRONTAL_API_TOKEN'] = 'test-token-12345';
     });
 
     afterEach(function () {
-        // Clean up environment
+        // Clean up environment from all sources
         putenv('PREFRONTAL_API_TOKEN');
+        unset($_ENV['PREFRONTAL_API_TOKEN']);
+        unset($_SERVER['PREFRONTAL_API_TOKEN']);
     });
 
     it('fails when PREFRONTAL_API_TOKEN is not set', function () {
-        putenv('PREFRONTAL_API_TOKEN=');
+        // Clear from all sources to ensure env() returns empty/null
+        putenv('PREFRONTAL_API_TOKEN');
+        unset($_ENV['PREFRONTAL_API_TOKEN']);
+        unset($_SERVER['PREFRONTAL_API_TOKEN']);
+
+        // Mock should not receive any calls since command fails early
+        $this->qdrant->shouldNotReceive('search');
+        $this->qdrant->shouldNotReceive('upsert');
 
         $this->artisan('sync')
             ->expectsOutput('PREFRONTAL_API_TOKEN environment variable is not set.')

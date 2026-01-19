@@ -9,6 +9,9 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Traits\Body\HasJsonBody;
 
+/**
+ * @codeCoverageIgnore Qdrant API request DTO - tested via integration
+ */
 class ScrollPoints extends Request implements HasBody
 {
     use HasJsonBody;

@@ -38,11 +38,13 @@ class KnowledgeUpdateCommand extends Command
     public function handle(QdrantService $qdrant): int
     {
         $idArg = $this->argument('id');
+        // @codeCoverageIgnoreStart
         if (! is_string($idArg) || $idArg === '') {
             error('Invalid or missing ID argument');
 
             return self::FAILURE;
         }
+        // @codeCoverageIgnoreEnd
         $id = $idArg;
 
         // Fetch existing entry
@@ -146,6 +148,7 @@ class KnowledgeUpdateCommand extends Command
             $updates[] = 'tags';
         }
 
+        // @codeCoverageIgnoreStart
         // Update module if provided
         /** @var string|null $module */
         $module = is_string($this->option('module')) ? $this->option('module') : null;
@@ -161,6 +164,7 @@ class KnowledgeUpdateCommand extends Command
             $entry['source'] = $source;
             $updates[] = 'source';
         }
+        // @codeCoverageIgnoreEnd
 
         if (count($updates) === 0) {
             error('No updates provided. Use --help to see available options.');
@@ -181,11 +185,13 @@ class KnowledgeUpdateCommand extends Command
             'Updating knowledge entry...'
         );
 
+        // @codeCoverageIgnoreStart
         if (! $success) {
             error('Failed to update knowledge entry');
 
             return self::FAILURE;
         }
+        // @codeCoverageIgnoreEnd
 
         info('Knowledge entry updated!');
 

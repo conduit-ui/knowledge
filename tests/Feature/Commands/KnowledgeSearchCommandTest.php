@@ -2,21 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Contracts\FullTextSearchInterface;
-use App\Enums\ObservationType;
-use App\Models\Observation;
-use App\Models\Session;
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->mockQdrant = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->mockQdrant);
-
-    $this->mockFts = Mockery::mock(FullTextSearchInterface::class);
-    $this->app->instance(FullTextSearchInterface::class, $this->mockFts);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 

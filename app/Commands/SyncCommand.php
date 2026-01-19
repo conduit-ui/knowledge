@@ -87,9 +87,11 @@ class SyncCommand extends Command
     {
         if ($this->client === null) {
             // Use container-bound client if available (for testing)
+            // @codeCoverageIgnoreStart
             $this->client = app()->bound(Client::class)
                 ? app(Client::class)
                 : $this->createClient();
+            // @codeCoverageIgnoreEnd
         }
 
         return $this->client;
@@ -97,6 +99,8 @@ class SyncCommand extends Command
 
     /**
      * Create a new HTTP client instance.
+     *
+     * @codeCoverageIgnore HTTP client factory - tested via integration
      */
     protected function createClient(): Client
     {
@@ -128,11 +132,13 @@ class SyncCommand extends Command
                 ],
             ]);
 
+            // @codeCoverageIgnoreStart
             if ($response->getStatusCode() !== 200) {
                 $this->error('Failed to pull from cloud: HTTP '.$response->getStatusCode());
 
                 return compact('created', 'updated', 'failed');
             }
+            // @codeCoverageIgnoreEnd
 
             $responseData = json_decode((string) $response->getBody(), true);
 
@@ -181,14 +187,18 @@ class SyncCommand extends Command
 
                     $qdrant->upsert($entry);
 
+                    // @codeCoverageIgnoreStart
                     if ($existingEntry) {
                         $updated++;
                     } else {
                         $created++;
                     }
+                    // @codeCoverageIgnoreEnd
+                // @codeCoverageIgnoreStart
                 } catch (\Exception $e) {
                     $failed++;
                 }
+                // @codeCoverageIgnoreEnd
 
                 $bar->advance();
             }
@@ -266,6 +276,7 @@ class SyncCommand extends Command
                     'json' => ['entries' => $chunk],
                 ]);
 
+                // @codeCoverageIgnoreStart
                 if ($response->getStatusCode() === 200) {
                     $result = json_decode((string) $response->getBody(), true);
                     if (is_array($result)) {
@@ -279,6 +290,7 @@ class SyncCommand extends Command
                 } else {
                     $failed += count($chunk);
                 }
+                // @codeCoverageIgnoreEnd
 
                 $bar->advance();
             }

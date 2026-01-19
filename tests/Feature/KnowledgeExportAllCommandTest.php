@@ -13,10 +13,12 @@ describe('KnowledgeExportAllCommand', function () {
         app()->instance(QdrantService::class, $this->qdrant);
         app()->instance(MarkdownExporter::class, $this->markdownExporter);
 
-        // Create temp directory for tests
-        if (! is_dir('/tmp/export-all-tests')) {
-            mkdir('/tmp/export-all-tests', 0755, true);
+        // Clean and recreate temp directory for tests
+        if (is_dir('/tmp/export-all-tests')) {
+            array_map('unlink', glob('/tmp/export-all-tests/*') ?: []);
+            rmdir('/tmp/export-all-tests');
         }
+        mkdir('/tmp/export-all-tests', 0755, true);
     });
 
     afterEach(function () {

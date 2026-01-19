@@ -2,44 +2,29 @@
 
 declare(strict_types=1);
 
-use App\Contracts\DockerServiceInterface;
 use App\Contracts\EmbeddingServiceInterface;
-use App\Contracts\HealthCheckInterface;
-use App\Services\DockerService;
 use App\Services\EmbeddingService;
-use App\Services\HealthCheckService;
-use App\Services\IssueAnalyzerService;
 use App\Services\KnowledgePathService;
-use App\Services\OllamaService;
-use App\Services\PullRequestService;
 use App\Services\QdrantService;
-use App\Services\QualityGateService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
 
-describe('AppServiceProvider', function () {
-    it('registers RuntimeEnvironment', function () {
+describe('AppServiceProvider', function (): void {
+    it('registers RuntimeEnvironment', function (): void {
         $service = app(RuntimeEnvironment::class);
 
         expect($service)->toBeInstanceOf(RuntimeEnvironment::class);
     });
 
-    it('registers KnowledgePathService', function () {
+    it('registers KnowledgePathService', function (): void {
         $service = app(KnowledgePathService::class);
 
         expect($service)->toBeInstanceOf(KnowledgePathService::class);
     });
 
-    it('registers DockerService', function () {
-        $service = app(DockerServiceInterface::class);
-
-        expect($service)->toBeInstanceOf(DockerService::class);
-    });
-
-    it('registers StubEmbeddingService when provider is none', function () {
+    it('registers StubEmbeddingService by default', function (): void {
         config(['search.embedding_provider' => 'none']);
 
-        // Force rebinding
         app()->forgetInstance(EmbeddingServiceInterface::class);
 
         $service = app(EmbeddingServiceInterface::class);
@@ -47,10 +32,9 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(StubEmbeddingService::class);
     });
 
-    it('registers EmbeddingService for other providers', function () {
-        config(['search.embedding_provider' => 'qdrant']);
+    it('registers EmbeddingService when provider is chromadb', function (): void {
+        config(['search.embedding_provider' => 'chromadb']);
 
-        // Force rebinding
         app()->forgetInstance(EmbeddingServiceInterface::class);
 
         $service = app(EmbeddingServiceInterface::class);
@@ -58,7 +42,20 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(EmbeddingService::class);
     });
 
-    it('registers QdrantService with all configuration options', function () {
+    it('registers EmbeddingService when provider is qdrant', function (): void {
+        config(['search.embedding_provider' => 'qdrant']);
+
+        app()->forgetInstance(EmbeddingServiceInterface::class);
+
+        $service = app(EmbeddingServiceInterface::class);
+
+        expect($service)->toBeInstanceOf(EmbeddingService::class);
+    });
+
+    it('registers QdrantService with mocked embedding service', function (): void {
+        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
+
         config([
             'search.embedding_dimension' => 384,
             'search.minimum_similarity' => 0.7,
@@ -66,7 +63,6 @@ describe('AppServiceProvider', function () {
             'search.qdrant.secure' => false,
         ]);
 
-        // Force rebinding
         app()->forgetInstance(QdrantService::class);
 
         $service = app(QdrantService::class);
@@ -74,7 +70,10 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-    it('registers QdrantService with secure connection', function () {
+    it('registers QdrantService with secure connection configuration', function (): void {
+        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
+
         config([
             'search.embedding_dimension' => 1536,
             'search.minimum_similarity' => 0.8,
@@ -82,7 +81,6 @@ describe('AppServiceProvider', function () {
             'search.qdrant.secure' => true,
         ]);
 
-        // Force rebinding
         app()->forgetInstance(QdrantService::class);
 
         $service = app(QdrantService::class);
@@ -90,47 +88,26 @@ describe('AppServiceProvider', function () {
         expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-    it('registers OllamaService', function () {
-        $service = app(OllamaService::class);
 
-        expect($service)->toBeInstanceOf(OllamaService::class);
-    });
 
-    it('registers IssueAnalyzerService', function () {
-        $service = app(IssueAnalyzerService::class);
 
-        expect($service)->toBeInstanceOf(IssueAnalyzerService::class);
-    });
 
-    it('registers QualityGateService', function () {
-        $service = app(QualityGateService::class);
 
-        expect($service)->toBeInstanceOf(QualityGateService::class);
-    });
-
-    it('registers PullRequestService', function () {
-        $service = app(PullRequestService::class);
-
-        expect($service)->toBeInstanceOf(PullRequestService::class);
-    });
-
-    it('registers HealthCheckService', function () {
-        $service = app(HealthCheckInterface::class);
-
-        expect($service)->toBeInstanceOf(HealthCheckService::class);
-    });
-
-    it('uses custom embedding server configuration', function () {
+    it('uses custom embedding server configuration for qdrant provider', function (): void {
         config([
             'search.embedding_provider' => 'qdrant',
-            'search.qdrant.embedding_server' => 'http://custom:8001',
+            'search.qdrant.embedding_server' => 'http://custom-server:8001',
+            'search.qdrant.model' => 'custom-model',
         ]);
 
-        // Force rebinding
         app()->forgetInstance(EmbeddingServiceInterface::class);
 
         $service = app(EmbeddingServiceInterface::class);
 
         expect($service)->toBeInstanceOf(EmbeddingService::class);
     });
+});
+
+afterEach(function (): void {
+    Mockery::close();
 });

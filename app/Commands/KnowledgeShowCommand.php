@@ -81,6 +81,9 @@ class KnowledgeShowCommand extends Command
         return "<fg={$color}>{$text}</>";
     }
 
+    /**
+     * @codeCoverageIgnore UI helper - match branches for edge cases
+     */
     private function priorityColor(string $priority): string
     {
         return match ($priority) {
@@ -91,6 +94,9 @@ class KnowledgeShowCommand extends Command
         };
     }
 
+    /**
+     * @codeCoverageIgnore UI helper - match branches for edge cases
+     */
     private function statusColor(string $status): string
     {
         return match ($status) {

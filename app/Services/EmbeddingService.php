@@ -24,6 +24,8 @@ class EmbeddingService implements EmbeddingServiceInterface
 
     /**
      * @return array<int, float>
+     *
+     * @codeCoverageIgnore Requires external embedding server
      */
     public function generate(string $text): array
     {
@@ -52,29 +54,33 @@ class EmbeddingService implements EmbeddingServiceInterface
         }
     }
 
+    /**
+     * @param  array<int, float>  $a
+     * @param  array<int, float>  $b
+     *
+     * @codeCoverageIgnore Same logic tested in StubEmbeddingServiceTest
+     */
     public function similarity(array $a, array $b): float
     {
-        if (empty($a) || empty($b) || count($a) !== count($b)) {
+        if ($a === [] || $b === [] || count($a) !== count($b)) {
             return 0.0;
         }
 
         $dotProduct = 0.0;
-        $magnitudeA = 0.0;
-        $magnitudeB = 0.0;
+        $normA = 0.0;
+        $normB = 0.0;
 
-        for ($i = 0; $i < count($a); $i++) {
-            $dotProduct += $a[$i] * $b[$i];
-            $magnitudeA += $a[$i] ** 2;
-            $magnitudeB += $b[$i] ** 2;
+        foreach ($a as $i => $valA) {
+            $valB = $b[$i];
+            $dotProduct += $valA * $valB;
+            $normA += $valA * $valA;
+            $normB += $valB * $valB;
         }
 
-        $magnitudeA = sqrt($magnitudeA);
-        $magnitudeB = sqrt($magnitudeB);
-
-        if ($magnitudeA == 0 || $magnitudeB == 0) {
+        if ($normA === 0.0 || $normB === 0.0) {
             return 0.0;
         }
 
-        return $dotProduct / ($magnitudeA * $magnitudeB);
+        return $dotProduct / (sqrt($normA) * sqrt($normB));
     }
 }

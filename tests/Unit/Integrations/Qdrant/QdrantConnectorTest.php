@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Integrations\Qdrant\QdrantConnector;
+use App\Integrations\Qdrant\Requests\GetCollectionInfo;
+use Saloon\Http\Faking\MockClient;
+use Saloon\Http\Faking\MockResponse;
 
 uses()->group('qdrant-unit', 'connector');
 
-describe('QdrantConnector', function () {
-    describe('resolveBaseUrl', function () {
-        it('resolves HTTP base URL when secure is false', function () {
+describe('QdrantConnector', function (): void {
+    describe('resolveBaseUrl', function (): void {
+        it('resolves HTTP base URL when secure is false', function (): void {
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333,
@@ -18,7 +21,7 @@ describe('QdrantConnector', function () {
             expect($connector->resolveBaseUrl())->toBe('http://localhost:6333');
         });
 
-        it('resolves HTTPS base URL when secure is true', function () {
+        it('resolves HTTPS base URL when secure is true', function (): void {
             $connector = new QdrantConnector(
                 host: 'qdrant.example.com',
                 port: 6333,
@@ -28,7 +31,7 @@ describe('QdrantConnector', function () {
             expect($connector->resolveBaseUrl())->toBe('https://qdrant.example.com:6333');
         });
 
-        it('handles custom port numbers', function () {
+        it('handles custom port numbers', function (): void {
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 8080,
@@ -38,7 +41,7 @@ describe('QdrantConnector', function () {
             expect($connector->resolveBaseUrl())->toBe('http://localhost:8080');
         });
 
-        it('handles secure connections with custom ports', function () {
+        it('handles secure connections with custom ports', function (): void {
             $connector = new QdrantConnector(
                 host: 'secure.qdrant.io',
                 port: 443,
@@ -49,73 +52,69 @@ describe('QdrantConnector', function () {
         });
     });
 
-    describe('defaultHeaders', function () {
-        it('includes Content-Type header', function () {
+    describe('headers', function (): void {
+        it('includes Content-Type header in requests', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make(['result' => ['status' => 'green']], 200),
+            ]);
+
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333
             );
 
-            $reflection = new ReflectionClass($connector);
-            $method = $reflection->getMethod('defaultHeaders');
-            $method->setAccessible(true);
-            $headers = $method->invoke($connector);
+            $connector->send(new GetCollectionInfo('test-collection'), $mockClient);
 
-            expect($headers)->toHaveKey('Content-Type')
-                ->and($headers['Content-Type'])->toBe('application/json');
+            $mockClient->assertSent(function ($request, $response): bool {
+                $headers = $response->getPendingRequest()->headers();
+
+                return $headers->get('Content-Type') === 'application/json';
+            });
         });
 
-        it('includes API key header when provided', function () {
+        it('includes API key header when provided', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make(['result' => ['status' => 'green']], 200),
+            ]);
+
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333,
                 apiKey: 'test-api-key-123'
             );
 
-            $reflection = new ReflectionClass($connector);
-            $method = $reflection->getMethod('defaultHeaders');
-            $method->setAccessible(true);
-            $headers = $method->invoke($connector);
+            $connector->send(new GetCollectionInfo('test-collection'), $mockClient);
 
-            expect($headers)->toHaveKey('api-key')
-                ->and($headers['api-key'])->toBe('test-api-key-123');
+            $mockClient->assertSent(function ($request, $response): bool {
+                $headers = $response->getPendingRequest()->headers();
+
+                return $headers->get('api-key') === 'test-api-key-123';
+            });
         });
 
-        it('omits API key header when not provided', function () {
+        it('omits API key header when not provided', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make(['result' => ['status' => 'green']], 200),
+            ]);
+
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333,
                 apiKey: null
             );
 
-            $reflection = new ReflectionClass($connector);
-            $method = $reflection->getMethod('defaultHeaders');
-            $method->setAccessible(true);
-            $headers = $method->invoke($connector);
+            $connector->send(new GetCollectionInfo('test-collection'), $mockClient);
 
-            expect($headers)->not->toHaveKey('api-key')
-                ->and($headers)->toHaveKey('Content-Type');
-        });
+            $mockClient->assertSent(function ($request, $response): bool {
+                $headers = $response->getPendingRequest()->headers();
 
-        it('includes both headers when API key is provided', function () {
-            $connector = new QdrantConnector(
-                host: 'localhost',
-                port: 6333,
-                apiKey: 'secret-key'
-            );
-
-            $reflection = new ReflectionClass($connector);
-            $method = $reflection->getMethod('defaultHeaders');
-            $method->setAccessible(true);
-            $headers = $method->invoke($connector);
-
-            expect($headers)->toHaveKeys(['Content-Type', 'api-key'])
-                ->and($headers)->toHaveCount(2);
+                return $headers->get('api-key') === null;
+            });
         });
     });
 
-    describe('defaultConfig', function () {
-        it('sets timeout to 30 seconds', function () {
+    describe('defaultConfig', function (): void {
+        it('sets timeout to 30 seconds', function (): void {
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333
@@ -128,8 +127,8 @@ describe('QdrantConnector', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts all parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts all parameters', function (): void {
             $connector = new QdrantConnector(
                 host: 'test.host',
                 port: 9999,
@@ -140,13 +139,96 @@ describe('QdrantConnector', function () {
             expect($connector)->toBeInstanceOf(QdrantConnector::class);
         });
 
-        it('accepts minimal parameters', function () {
+        it('accepts minimal parameters', function (): void {
             $connector = new QdrantConnector(
                 host: 'localhost',
                 port: 6333
             );
 
             expect($connector)->toBeInstanceOf(QdrantConnector::class);
+        });
+    });
+
+    describe('request sending with mocks', function (): void {
+        it('sends requests to the correct base URL', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make(['result' => ['status' => 'green']], 200),
+            ]);
+
+            $connector = new QdrantConnector(
+                host: 'qdrant.local',
+                port: 6334,
+                secure: false
+            );
+
+            $connector->send(new GetCollectionInfo('my-collection'), $mockClient);
+
+            $mockClient->assertSent(function ($request, $response): bool {
+                $url = $response->getPendingRequest()->getUrl();
+
+                return str_starts_with($url, 'http://qdrant.local:6334/');
+            });
+        });
+
+        it('handles successful responses', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make([
+                    'result' => [
+                        'status' => 'green',
+                        'points_count' => 100,
+                    ],
+                ], 200),
+            ]);
+
+            $connector = new QdrantConnector(
+                host: 'localhost',
+                port: 6333
+            );
+
+            $response = $connector->send(new GetCollectionInfo('test-collection'), $mockClient);
+
+            expect($response->successful())->toBeTrue()
+                ->and($response->json('result.status'))->toBe('green')
+                ->and($response->json('result.points_count'))->toBe(100);
+        });
+
+        it('handles error responses', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make([
+                    'status' => ['error' => 'Collection not found'],
+                ], 404),
+            ]);
+
+            $connector = new QdrantConnector(
+                host: 'localhost',
+                port: 6333
+            );
+
+            $response = $connector->send(new GetCollectionInfo('nonexistent'), $mockClient);
+
+            expect($response->successful())->toBeFalse()
+                ->and($response->status())->toBe(404);
+        });
+
+        it('includes all configured headers in requests', function (): void {
+            $mockClient = new MockClient([
+                GetCollectionInfo::class => MockResponse::make(['result' => []], 200),
+            ]);
+
+            $connector = new QdrantConnector(
+                host: 'localhost',
+                port: 6333,
+                apiKey: 'secret-key'
+            );
+
+            $connector->send(new GetCollectionInfo('test'), $mockClient);
+
+            $mockClient->assertSent(function ($request, $response): bool {
+                $headers = $response->getPendingRequest()->headers();
+
+                return $headers->get('Content-Type') === 'application/json'
+                    && $headers->get('api-key') === 'secret-key';
+            });
         });
     });
 });

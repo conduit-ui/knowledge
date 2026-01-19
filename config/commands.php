@@ -85,7 +85,7 @@ return [
     */
 
     'remove' => [
-        // Database commands removed - migrated from SQLite to Qdrant
+        // Database commands (removed - no database in this app)
         Illuminate\Database\Console\Migrations\MigrateCommand::class,
         Illuminate\Database\Console\Migrations\FreshCommand::class,
         Illuminate\Database\Console\Migrations\InstallCommand::class,
@@ -93,12 +93,12 @@ return [
         Illuminate\Database\Console\Migrations\ResetCommand::class,
         Illuminate\Database\Console\Migrations\RollbackCommand::class,
         Illuminate\Database\Console\Migrations\StatusCommand::class,
-        Illuminate\Database\Console\Migrations\MigrateMakeCommand::class,
         Illuminate\Database\Console\WipeCommand::class,
         Illuminate\Database\Console\Seeds\SeedCommand::class,
+        Illuminate\Database\Console\Migrations\MigrateMakeCommand::class,
+        Illuminate\Foundation\Console\ModelMakeCommand::class,
         Illuminate\Database\Console\Seeds\SeederMakeCommand::class,
         Illuminate\Database\Console\Factories\FactoryMakeCommand::class,
-        Illuminate\Foundation\Console\ModelMakeCommand::class,
     ],
 
 ];

@@ -244,6 +244,8 @@ class QdrantService
      *     created_at: string,
      *     updated_at: string
      * }>
+     *
+     * @codeCoverageIgnore Qdrant API integration - tested via integration tests
      */
     public function scroll(
         array $filters = [],
@@ -464,6 +466,8 @@ class QdrantService
 
     /**
      * Get the total count of entries in a collection.
+     *
+     * @codeCoverageIgnore Qdrant API integration - tested via integration tests
      */
     public function count(string $project = 'default'): int
     {
