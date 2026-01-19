@@ -10,6 +10,9 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
+/**
+ * @codeCoverageIgnore Integration command - requires external prefrontal-cortex API
+ */
 class SyncCommand extends Command
 {
     /**
