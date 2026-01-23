@@ -64,8 +64,9 @@ class KnowledgeListCommand extends Command
         info("Found {$results->count()} ".str('entry')->plural($results->count()));
 
         // Build table data
-        $rows = $results->map(function (array $entry) {
-            $tags = isset($entry['tags']) && count($entry['tags']) > 0
+        /** @var array<int, array<int, string>> $rows */
+        $rows = $results->map(function (array $entry): array {
+            $tags = count($entry['tags']) > 0
                 ? implode(', ', array_slice($entry['tags'], 0, 3)).(count($entry['tags']) > 3 ? '...' : '')
                 : '-';
 

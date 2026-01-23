@@ -88,9 +88,11 @@ class KnowledgeExportAllCommand extends Command
     private function generateFilename(array $entry, string $format): string
     {
         $extension = $format === 'json' ? 'json' : 'md';
-        $slug = $this->slugify($entry['title']);
+        $title = is_scalar($entry['title']) ? (string) $entry['title'] : 'untitled';
+        $slug = $this->slugify($title);
+        $id = is_scalar($entry['id']) ? (string) $entry['id'] : '0';
 
-        return "{$entry['id']}-{$slug}.{$extension}";
+        return "{$id}-{$slug}.{$extension}";
     }
 
     /**

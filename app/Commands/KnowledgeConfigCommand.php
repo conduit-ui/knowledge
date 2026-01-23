@@ -275,7 +275,7 @@ class KnowledgeConfigCommand extends Command
             return 'null';
         }
 
-        return (string) $value;
+        return is_scalar($value) ? (string) $value : 'complex';
         // @codeCoverageIgnoreEnd
     }
 

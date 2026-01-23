@@ -32,10 +32,14 @@ class QdrantService
         private readonly int $cacheTtl = 604800, // 7 days
         private readonly bool $secure = false,
     ) {
+        $host = config('search.qdrant.host', 'localhost');
+        $port = config('search.qdrant.port', 6333);
+        $apiKey = config('search.qdrant.api_key');
+
         $this->connector = new QdrantConnector(
-            host: config('search.qdrant.host', 'localhost'),
-            port: (int) config("search.qdrant.port", 6333),
-            apiKey: config('search.qdrant.api_key'),
+            host: is_string($host) ? $host : 'localhost',
+            port: is_numeric($port) ? (int) $port : 6333,
+            apiKey: is_string($apiKey) ? $apiKey : null,
             secure: $this->secure,
         );
     }
@@ -63,9 +67,12 @@ class QdrantService
 
                 if (! $createResponse->successful()) {
                     $error = $createResponse->json();
+                    $errorMessage = is_array($error) && is_array($error['status'] ?? null) && is_string($error['status']['error'] ?? null)
+                        ? $error['status']['error']
+                        : json_encode($error);
                     throw CollectionCreationException::withReason(
                         $collectionName,
-                        $error['status']['error'] ?? json_encode($error)
+                        is_string($errorMessage) ? $errorMessage : 'Unknown error'
                     );
                 }
 
@@ -138,7 +145,10 @@ class QdrantService
 
         if (! $response->successful()) {
             $error = $response->json();
-            throw UpsertException::withReason($error['status']['error'] ?? json_encode($error));
+            $errorMessage = is_array($error) && is_array($error['status'] ?? null) && is_string($error['status']['error'] ?? null)
+                ? $error['status']['error']
+                : json_encode($error);
+            throw UpsertException::withReason(is_string($errorMessage) ? $errorMessage : 'Unknown error');
         }
 
         return true;
@@ -203,25 +213,27 @@ class QdrantService
         }
 
         $data = $response->json();
-        $results = $data['result'] ?? [];
+        /** @var array<int, array<string, mixed>> $results */
+        $results = is_array($data) && is_array($data['result'] ?? null) ? $data['result'] : [];
 
-        return collect($results)->map(function (array $result) {
-            $payload = $result['payload'] ?? [];
+        return collect($results)->map(function (array $result): array {
+            /** @var array<string, mixed> $payload */
+            $payload = is_array($result['payload'] ?? null) ? $result['payload'] : [];
 
             return [
-                'id' => $result['id'],
-                'score' => $result['score'] ?? 0.0,
-                'title' => $payload['title'] ?? '',
-                'content' => $payload['content'] ?? '',
-                'tags' => $payload['tags'] ?? [],
-                'category' => $payload['category'] ?? null,
-                'module' => $payload['module'] ?? null,
-                'priority' => $payload['priority'] ?? null,
-                'status' => $payload['status'] ?? null,
-                'confidence' => $payload['confidence'] ?? 0,
-                'usage_count' => $payload['usage_count'] ?? 0,
-                'created_at' => $payload['created_at'] ?? '',
-                'updated_at' => $payload['updated_at'] ?? '',
+                'id' => is_string($result['id'] ?? null) || is_int($result['id'] ?? null) ? $result['id'] : '',
+                'score' => is_float($result['score'] ?? null) || is_int($result['score'] ?? null) ? (float) ($result['score'] ?? 0.0) : 0.0,
+                'title' => is_string($payload['title'] ?? null) ? $payload['title'] : '',
+                'content' => is_string($payload['content'] ?? null) ? $payload['content'] : '',
+                'tags' => is_array($payload['tags'] ?? null) ? array_values(array_filter($payload['tags'], fn ($tag): bool => is_string($tag))) : [],
+                'category' => is_string($payload['category'] ?? null) ? $payload['category'] : null,
+                'module' => is_string($payload['module'] ?? null) ? $payload['module'] : null,
+                'priority' => is_string($payload['priority'] ?? null) ? $payload['priority'] : null,
+                'status' => is_string($payload['status'] ?? null) ? $payload['status'] : null,
+                'confidence' => is_int($payload['confidence'] ?? null) ? $payload['confidence'] : 0,
+                'usage_count' => is_int($payload['usage_count'] ?? null) ? $payload['usage_count'] : 0,
+                'created_at' => is_string($payload['created_at'] ?? null) ? $payload['created_at'] : '',
+                'updated_at' => is_string($payload['updated_at'] ?? null) ? $payload['updated_at'] : '',
             ];
         });
     }
@@ -229,7 +241,7 @@ class QdrantService
     /**
      * Scroll/list all entries without requiring a search query.
      *
-     * @param  array<string, mixed>  $filters
+     * @param  array{tag?: string, category?: string, module?: string, priority?: string, status?: string}  $filters
      * @return Collection<int, array{
      *     id: string|int,
      *     title: string,
@@ -255,7 +267,7 @@ class QdrantService
     ): Collection {
         $this->ensureCollection($project);
 
-        $qdrantFilter = ! empty($filters) ? $this->buildFilter($filters) : null;
+        $qdrantFilter = $filters !== [] ? $this->buildFilter($filters) : null;
 
         $response = $this->connector->send(
             new ScrollPoints(
@@ -271,24 +283,28 @@ class QdrantService
         }
 
         $data = $response->json();
-        $points = $data['result']['points'] ?? [];
+        /** @var array<int, array<string, mixed>> $points */
+        $points = is_array($data) && is_array($data['result'] ?? null) && is_array($data['result']['points'] ?? null)
+            ? $data['result']['points']
+            : [];
 
-        return collect($points)->map(function (array $point) {
-            $payload = $point['payload'] ?? [];
+        return collect($points)->map(function (array $point): array {
+            /** @var array<string, mixed> $payload */
+            $payload = is_array($point['payload'] ?? null) ? $point['payload'] : [];
 
             return [
-                'id' => $point['id'],
-                'title' => $payload['title'] ?? '',
-                'content' => $payload['content'] ?? '',
-                'tags' => $payload['tags'] ?? [],
-                'category' => $payload['category'] ?? null,
-                'module' => $payload['module'] ?? null,
-                'priority' => $payload['priority'] ?? null,
-                'status' => $payload['status'] ?? null,
-                'confidence' => $payload['confidence'] ?? 0,
-                'usage_count' => $payload['usage_count'] ?? 0,
-                'created_at' => $payload['created_at'] ?? '',
-                'updated_at' => $payload['updated_at'] ?? '',
+                'id' => is_string($point['id'] ?? null) || is_int($point['id'] ?? null) ? $point['id'] : '',
+                'title' => is_string($payload['title'] ?? null) ? $payload['title'] : '',
+                'content' => is_string($payload['content'] ?? null) ? $payload['content'] : '',
+                'tags' => is_array($payload['tags'] ?? null) ? array_values(array_filter($payload['tags'], fn ($tag): bool => is_string($tag))) : [],
+                'category' => is_string($payload['category'] ?? null) ? $payload['category'] : null,
+                'module' => is_string($payload['module'] ?? null) ? $payload['module'] : null,
+                'priority' => is_string($payload['priority'] ?? null) ? $payload['priority'] : null,
+                'status' => is_string($payload['status'] ?? null) ? $payload['status'] : null,
+                'confidence' => is_int($payload['confidence'] ?? null) ? $payload['confidence'] : 0,
+                'usage_count' => is_int($payload['usage_count'] ?? null) ? $payload['usage_count'] : 0,
+                'created_at' => is_string($payload['created_at'] ?? null) ? $payload['created_at'] : '',
+                'updated_at' => is_string($payload['updated_at'] ?? null) ? $payload['updated_at'] : '',
             ];
         });
     }
@@ -340,28 +356,31 @@ class QdrantService
         }
 
         $data = $response->json();
-        $points = $data['result'] ?? [];
+        /** @var array<int, array<string, mixed>> $points */
+        $points = is_array($data) && is_array($data['result'] ?? null) ? $data['result'] : [];
 
-        if (empty($points)) {
+        if ($points === []) {
             return null;
         }
 
+        /** @var array<string, mixed> $point */
         $point = $points[0];
-        $payload = $point['payload'] ?? [];
+        /** @var array<string, mixed> $payload */
+        $payload = is_array($point['payload'] ?? null) ? $point['payload'] : [];
 
         return [
-            'id' => $point['id'],
-            'title' => $payload['title'] ?? '',
-            'content' => $payload['content'] ?? '',
-            'tags' => $payload['tags'] ?? [],
-            'category' => $payload['category'] ?? null,
-            'module' => $payload['module'] ?? null,
-            'priority' => $payload['priority'] ?? null,
-            'status' => $payload['status'] ?? null,
-            'confidence' => $payload['confidence'] ?? 0,
-            'usage_count' => $payload['usage_count'] ?? 0,
-            'created_at' => $payload['created_at'] ?? '',
-            'updated_at' => $payload['updated_at'] ?? '',
+            'id' => is_string($point['id'] ?? null) || is_int($point['id'] ?? null) ? $point['id'] : '',
+            'title' => is_string($payload['title'] ?? null) ? $payload['title'] : '',
+            'content' => is_string($payload['content'] ?? null) ? $payload['content'] : '',
+            'tags' => is_array($payload['tags'] ?? null) ? $payload['tags'] : [],
+            'category' => is_string($payload['category'] ?? null) ? $payload['category'] : null,
+            'module' => is_string($payload['module'] ?? null) ? $payload['module'] : null,
+            'priority' => is_string($payload['priority'] ?? null) ? $payload['priority'] : null,
+            'status' => is_string($payload['status'] ?? null) ? $payload['status'] : null,
+            'confidence' => is_int($payload['confidence'] ?? null) ? $payload['confidence'] : 0,
+            'usage_count' => is_int($payload['usage_count'] ?? null) ? $payload['usage_count'] : 0,
+            'created_at' => is_string($payload['created_at'] ?? null) ? $payload['created_at'] : '',
+            'updated_at' => is_string($payload['updated_at'] ?? null) ? $payload['updated_at'] : '',
         ];
     }
 
@@ -483,7 +502,13 @@ class QdrantService
 
         $data = $response->json();
 
-        return $data['result']['points_count'] ?? 0;
+        if (! is_array($data) || ! is_array($data['result'] ?? null)) {
+            return 0;
+        }
+
+        $pointsCount = $data['result']['points_count'] ?? 0;
+
+        return is_int($pointsCount) ? $pointsCount : 0;
     }
 
     /**

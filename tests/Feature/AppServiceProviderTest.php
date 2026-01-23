@@ -88,11 +88,6 @@ describe('AppServiceProvider', function (): void {
         expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
-
-
-
-
-
     it('uses custom embedding server configuration for qdrant provider', function (): void {
         config([
             'search.embedding_provider' => 'qdrant',

@@ -33,6 +33,9 @@ class KnowledgeStatsCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param  Collection<int, array<string, mixed>>  $entries
+     */
     private function renderDashboard(Collection $entries, int $total): void
     {
         info("Knowledge Base: {$total} entries");
@@ -40,15 +43,17 @@ class KnowledgeStatsCommand extends Command
 
         // Overview metrics
         $totalUsage = $entries->sum('usage_count');
-        $avgUsage = round($entries->avg('usage_count') ?? 0);
+        $avgUsage = $entries->avg('usage_count');
+        $totalUsageStr = is_numeric($totalUsage) ? (string) (int) $totalUsage : '0';
+        $avgUsageStr = is_numeric($avgUsage) ? (string) (int) round((float) $avgUsage) : '0';
 
         $this->line('<fg=gray>Overview</>');
         table(
             ['Metric', 'Value'],
             [
                 ['Total Entries', (string) $total],
-                ['Total Usage', (string) $totalUsage],
-                ['Avg Usage', (string) $avgUsage],
+                ['Total Usage', $totalUsageStr],
+                ['Avg Usage', $avgUsageStr],
             ]
         );
 
@@ -89,10 +94,15 @@ class KnowledgeStatsCommand extends Command
 
         // Most used
         $mostUsed = $entries->sortByDesc('usage_count')->first();
-        if ($mostUsed && $mostUsed['usage_count'] > 0) {
+        $usageCount = 0;
+        if (is_array($mostUsed) && is_int($mostUsed['usage_count'] ?? null)) {
+            $usageCount = $mostUsed['usage_count'];
+        }
+        if ($usageCount > 0 && is_array($mostUsed)) {
+            $title = is_scalar($mostUsed['title'] ?? null) ? (string) $mostUsed['title'] : 'Unknown';
             $this->newLine();
             $this->line('<fg=gray>Most Used</>');
-            $this->line("  <fg=cyan>\"{$mostUsed['title']}\"</> ({$mostUsed['usage_count']} uses)");
+            $this->line("  <fg=cyan>\"{$title}\"</> ({$usageCount} uses)");
         }
     }
 }

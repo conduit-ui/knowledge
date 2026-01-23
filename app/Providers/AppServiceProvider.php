@@ -49,18 +49,27 @@ class AppServiceProvider extends ServiceProvider
                 return new StubEmbeddingService;
             }
 
+            $serverUrl = config('search.qdrant.embedding_server', 'http://localhost:8001');
+
             return new \App\Services\EmbeddingService(
-                config('search.qdrant.embedding_server', 'http://localhost:8001')
+                is_string($serverUrl) ? $serverUrl : 'http://localhost:8001'
             );
         });
 
         // Qdrant vector database service
-        $this->app->singleton(QdrantService::class, fn ($app) => new QdrantService(
-            $app->make(EmbeddingServiceInterface::class),
-            (int) config('search.embedding_dimension', 1024),
-            (float) config('search.minimum_similarity', 0.7),
-            (int) config('search.qdrant.cache_ttl', 604800),
-            (bool) config('search.qdrant.secure', false)
-        ));
+        $this->app->singleton(QdrantService::class, function ($app) {
+            $dimension = config('search.embedding_dimension', 1024);
+            $similarity = config('search.minimum_similarity', 0.7);
+            $cacheTtl = config('search.qdrant.cache_ttl', 604800);
+            $secure = config('search.qdrant.secure', false);
+
+            return new QdrantService(
+                $app->make(EmbeddingServiceInterface::class),
+                is_numeric($dimension) ? (int) $dimension : 1024,
+                is_numeric($similarity) ? (float) $similarity : 0.7,
+                is_numeric($cacheTtl) ? (int) $cacheTtl : 604800,
+                is_bool($secure) ? $secure : false
+            );
+        });
     }
 }

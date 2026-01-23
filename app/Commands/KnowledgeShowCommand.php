@@ -19,11 +19,16 @@ class KnowledgeShowCommand extends Command
 
     public function handle(QdrantService $qdrant): int
     {
-        $id = $this->argument('id');
+        $rawId = $this->argument('id');
 
-        if (is_numeric($id)) {
-            $id = (int) $id;
+        // Type narrowing for PHPStan
+        if (! is_string($rawId) && ! is_int($rawId)) {
+            error('Invalid ID provided.');
+
+            return self::FAILURE;
         }
+
+        $id = is_numeric($rawId) ? (int) $rawId : $rawId;
 
         $entry = spin(
             fn () => $qdrant->getById($id),
@@ -43,37 +48,55 @@ class KnowledgeShowCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param  array<string, mixed>  $entry
+     */
     private function renderEntry(array $entry): void
     {
+        // Extract and cast values
+        $title = is_scalar($entry['title'] ?? null) ? (string) $entry['title'] : '';
+        $id = is_scalar($entry['id'] ?? null) ? (string) $entry['id'] : '';
+        $content = is_scalar($entry['content'] ?? null) ? (string) $entry['content'] : '';
+        $category = is_scalar($entry['category'] ?? null) ? (string) $entry['category'] : 'N/A';
+        $priority = is_scalar($entry['priority'] ?? null) ? (string) $entry['priority'] : 'medium';
+        $status = is_scalar($entry['status'] ?? null) ? (string) $entry['status'] : 'draft';
+        $confidence = is_int($entry['confidence'] ?? null) ? $entry['confidence'] : 0;
+        $usageCount = is_scalar($entry['usage_count'] ?? null) ? (string) $entry['usage_count'] : '0';
+        $module = is_scalar($entry['module'] ?? null) ? (string) $entry['module'] : null;
+        $createdAt = is_scalar($entry['created_at'] ?? null) ? (string) $entry['created_at'] : '';
+        $updatedAt = is_scalar($entry['updated_at'] ?? null) ? (string) $entry['updated_at'] : '';
+        /** @var array<string> $tags */
+        $tags = is_array($entry['tags'] ?? null) ? $entry['tags'] : [];
+
         $this->newLine();
-        $this->line("<fg=cyan;options=bold>{$entry['title']}</>");
-        $this->line("<fg=gray>ID: {$entry['id']}</>");
+        $this->line("<fg=cyan;options=bold>{$title}</>");
+        $this->line("<fg=gray>ID: {$id}</>");
         $this->newLine();
 
-        $this->line($entry['content']);
+        $this->line($content);
         $this->newLine();
 
         // Metadata table
         $rows = [
-            ['Category', $entry['category'] ?? 'N/A'],
-            ['Priority', $this->colorize($entry['priority'], $this->priorityColor($entry['priority']))],
-            ['Status', $this->colorize($entry['status'], $this->statusColor($entry['status']))],
-            ['Confidence', $this->colorize("{$entry['confidence']}%", $this->confidenceColor($entry['confidence']))],
-            ['Usage', (string) $entry['usage_count']],
+            ['Category', $category],
+            ['Priority', $this->colorize($priority, $this->priorityColor($priority))],
+            ['Status', $this->colorize($status, $this->statusColor($status))],
+            ['Confidence', $this->colorize("{$confidence}%", $this->confidenceColor($confidence))],
+            ['Usage', $usageCount],
         ];
 
-        if ($entry['module']) {
-            $rows[] = ['Module', $entry['module']];
+        if ($module !== null) {
+            $rows[] = ['Module', $module];
         }
 
-        if (! empty($entry['tags'])) {
-            $rows[] = ['Tags', implode(', ', $entry['tags'])];
+        if (count($tags) > 0) {
+            $rows[] = ['Tags', implode(', ', $tags)];
         }
 
         table(['Field', 'Value'], $rows);
 
         $this->newLine();
-        $this->line("<fg=gray>Created: {$entry['created_at']} | Updated: {$entry['updated_at']}</>");
+        $this->line("<fg=gray>Created: {$createdAt} | Updated: {$updatedAt}</>");
     }
 
     private function colorize(string $text, string $color): string
