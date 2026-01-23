@@ -56,25 +56,29 @@ class KnowledgeArchiveCommand extends Command
      */
     private function archiveEntry(QdrantService $qdrant, array $entry): int
     {
-        if ($entry['status'] === 'deprecated') {
-            $this->warn("Entry #{$entry['id']} is already archived.");
+        $entryId = is_scalar($entry['id']) ? (int) $entry['id'] : 0;
+        $entryTitle = is_scalar($entry['title']) ? (string) $entry['title'] : '';
+        $entryStatus = is_scalar($entry['status']) ? (string) $entry['status'] : '';
+
+        if ($entryStatus === 'deprecated') {
+            $this->warn("Entry #{$entryId} is already archived.");
 
             return self::SUCCESS;
         }
 
-        $oldStatus = $entry['status'];
+        $oldStatus = $entryStatus;
 
-        $qdrant->updateFields((int) $entry['id'], [
+        $qdrant->updateFields($entryId, [
             'status' => 'deprecated',
             'confidence' => 0,
         ]);
 
-        $this->info("Entry #{$entry['id']} has been archived.");
+        $this->info("Entry #{$entryId} has been archived.");
         $this->newLine();
-        $this->line("Title: {$entry['title']}");
+        $this->line("Title: {$entryTitle}");
         $this->line("Status: {$oldStatus} -> deprecated");
         $this->newLine();
-        $this->comment('Restore with: knowledge:archive '.$entry['id'].' --restore');
+        $this->comment('Restore with: knowledge:archive '.$entryId.' --restore');
 
         return self::SUCCESS;
     }
@@ -86,24 +90,28 @@ class KnowledgeArchiveCommand extends Command
      */
     private function restoreEntry(QdrantService $qdrant, array $entry): int
     {
-        if ($entry['status'] !== 'deprecated') {
-            $this->warn("Entry #{$entry['id']} is not archived (status: {$entry['status']}).");
+        $entryId = is_scalar($entry['id']) ? (int) $entry['id'] : 0;
+        $entryTitle = is_scalar($entry['title']) ? (string) $entry['title'] : '';
+        $entryStatus = is_scalar($entry['status']) ? (string) $entry['status'] : '';
+
+        if ($entryStatus !== 'deprecated') {
+            $this->warn("Entry #{$entryId} is not archived (status: {$entryStatus}).");
 
             return self::SUCCESS;
         }
 
-        $qdrant->updateFields((int) $entry['id'], [
+        $qdrant->updateFields($entryId, [
             'status' => 'draft',
             'confidence' => 50,
         ]);
 
-        $this->info("Entry #{$entry['id']} has been restored.");
+        $this->info("Entry #{$entryId} has been restored.");
         $this->newLine();
-        $this->line("Title: {$entry['title']}");
+        $this->line("Title: {$entryTitle}");
         $this->line('Status: deprecated -> draft');
         $this->line('Confidence: 50%');
         $this->newLine();
-        $this->comment('Validate with: knowledge:validate '.$entry['id']);
+        $this->comment('Validate with: knowledge:validate '.$entryId);
 
         return self::SUCCESS;
     }

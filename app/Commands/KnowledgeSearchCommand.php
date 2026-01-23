@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\OllamaService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
@@ -20,7 +21,9 @@ class KnowledgeSearchCommand extends Command
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}
                             {--limit=20 : Maximum number of results}
-                            {--semantic : Use semantic search if available}';
+                            {--preview-length=100 : Character limit for content preview (0 for full)}
+                            {--semantic : Use semantic search if available}
+                            {--summarize= : Use Ollama to summarize results (context: blockers, general)}';
 
     /**
      * @var string
@@ -36,7 +39,9 @@ class KnowledgeSearchCommand extends Command
         $priority = $this->option('priority');
         $status = $this->option('status');
         $limit = (int) $this->option('limit');
+        $previewLength = (int) $this->option('preview-length');
         $useSemantic = $this->option('semantic');
+        $summarize = $this->option('summarize');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
@@ -64,6 +69,14 @@ class KnowledgeSearchCommand extends Command
             return self::SUCCESS;
         }
 
+        // If summarize flag is used, pass results through Ollama
+        if (is_string($summarize) && $summarize !== '') {
+            /** @var array<int, array<string, mixed>> $resultsArray */
+            $resultsArray = $results->toArray();
+
+            return $this->outputSummary($resultsArray, $summarize);
+        }
+
         $this->info("Found {$results->count()} ".str('entry')->plural($results->count()));
         $this->newLine();
 
@@ -89,13 +102,51 @@ class KnowledgeSearchCommand extends Command
                 $this->line('Tags: '.implode(', ', $tags));
             }
 
-            $contentPreview = strlen($content) > 100
-                ? substr($content, 0, 100).'...'
+            $contentPreview = $previewLength > 0 && strlen($content) > $previewLength
+                ? substr($content, 0, $previewLength).'...'
                 : $content;
 
             $this->line($contentPreview);
             $this->newLine();
         }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Output summarized results using Ollama.
+     *
+     * @param  array<int, array<string, mixed>>  $results
+     */
+    private function outputSummary(array $results, string $context): int
+    {
+        /** @var array<string, mixed> $config */
+        $config = config('search.ollama', []);
+
+        $ollama = new OllamaService(
+            host: is_string($config['host'] ?? null) ? $config['host'] : 'localhost',
+            port: is_int($config['port'] ?? null) ? $config['port'] : 11434,
+            model: is_string($config['model'] ?? null) ? $config['model'] : 'llama3.2:3b',
+            timeout: is_int($config['timeout'] ?? null) ? $config['timeout'] : 30,
+        );
+
+        $summary = $ollama->summarizeResults($results, $context);
+
+        if ($summary === '') {
+            $this->warn('Could not generate summary (Ollama unavailable). Showing raw results:');
+            $this->newLine();
+
+            foreach ($results as $result) {
+                $title = is_scalar($result['title'] ?? null) ? (string) $result['title'] : 'Unknown';
+                $content = is_scalar($result['content'] ?? null) ? (string) $result['content'] : '';
+                $this->line("- {$title}: {$content}");
+            }
+
+            return self::SUCCESS;
+        }
+
+        $this->info('Summary:');
+        $this->line($summary);
 
         return self::SUCCESS;
     }

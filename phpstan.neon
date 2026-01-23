@@ -15,7 +15,9 @@ parameters:
             message: '#does not specify its types: TFactory#'
             paths:
                 - app/Models/*
+            reportUnmatched: false
         -
             message: '#Only booleans are allowed in (an if condition|&&)#'
             paths:
                 - app/Services/*
+            reportUnmatched: false

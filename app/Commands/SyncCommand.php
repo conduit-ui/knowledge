@@ -197,7 +197,7 @@ class SyncCommand extends Command
                         $created++;
                     }
                     // @codeCoverageIgnoreEnd
-                // @codeCoverageIgnoreStart
+                    // @codeCoverageIgnoreStart
                 } catch (\Exception $e) {
                     $failed++;
                 }
