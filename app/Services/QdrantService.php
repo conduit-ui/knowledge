@@ -34,7 +34,7 @@ class QdrantService
     ) {
         $this->connector = new QdrantConnector(
             host: config('search.qdrant.host', 'localhost'),
-            port: (int) config("search.qdrant.port", 6333),
+            port: (int) config('search.qdrant.port', 6333),
             apiKey: config('search.qdrant.api_key'),
             secure: $this->secure,
         );

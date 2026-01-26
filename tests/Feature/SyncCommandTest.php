@@ -15,17 +15,19 @@ describe('SyncCommand', function () {
         $this->qdrant = mock(QdrantService::class);
         app()->instance(QdrantService::class, $this->qdrant);
 
-        // Set environment variable for API token
-        putenv('PREFRONTAL_API_TOKEN=test-token-12345');
+        // Set config values for API token and URL
+        config(['services.prefrontal.token' => 'test-token-12345']);
+        config(['services.prefrontal.url' => 'http://test-api.local']);
     });
 
     afterEach(function () {
-        // Clean up environment
-        putenv('PREFRONTAL_API_TOKEN');
+        // Clean up config
+        config(['services.prefrontal.token' => null]);
+        config(['services.prefrontal.url' => null]);
     });
 
     it('fails when PREFRONTAL_API_TOKEN is not set', function () {
-        putenv('PREFRONTAL_API_TOKEN=');
+        config(['services.prefrontal.token' => '']);
 
         $this->artisan('sync')
             ->expectsOutput('PREFRONTAL_API_TOKEN environment variable is not set.')
