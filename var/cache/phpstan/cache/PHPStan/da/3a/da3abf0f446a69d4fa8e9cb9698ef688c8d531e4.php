@@ -2,6 +2,6 @@
 
 // variadic-method-App\Services\QdrantService-ensureCollection-/home/jordan/projects/knowledge/app/Services/QdrantService.php
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1768833444-v4',
+   'variableKey' => '1770179076-v4',
    'data' => false,
 ));

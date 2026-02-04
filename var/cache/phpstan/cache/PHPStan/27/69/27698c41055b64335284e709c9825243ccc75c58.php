@@ -2,6 +2,6 @@
 
 // variadic-method-App\Services\MarkdownExporter-exportArray-/home/jordan/projects/knowledge/app/Services/MarkdownExporter.php
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1768694921-v4',
+   'variableKey' => '1770178529-v4',
    'data' => false,
 ));

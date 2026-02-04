@@ -114,6 +114,20 @@ describe('generate', function (): void {
         expect($result['indices'])->not->toBeEmpty();
         expect($result['values'])->not->toBeEmpty();
     });
+
+    it('returns empty arrays when all tokens are stop words', function (): void {
+        // Text containing only stop words and short tokens
+        $result = $this->service->generate('the a an and or but in on at to');
+
+        expect($result)->toBe(['indices' => [], 'values' => []]);
+    });
+
+    it('returns empty arrays when all tokens are too short', function (): void {
+        // Text containing only 2-character tokens (filtered out)
+        $result = $this->service->generate('ab cd ef gh ij kl');
+
+        expect($result)->toBe(['indices' => [], 'values' => []]);
+    });
 });
 
 describe('BM25 parameters', function (): void {

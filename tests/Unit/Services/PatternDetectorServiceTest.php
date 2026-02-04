@@ -103,6 +103,62 @@ describe('detect', function (): void {
         expect($result['frequent_topics'])->not->toHaveKey('the');
         expect($result['frequent_topics'])->not->toHaveKey('this');
     });
+
+    it('detects category imbalance when heavily skewed', function (): void {
+        // Create 11+ entries with heavy skew to one category (max > min * 3)
+        $entries = collect([
+            ['id' => '1', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '2', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '3', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '4', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '5', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '6', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '7', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '8', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '9', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '10', 'title' => 'Entry', 'content' => 'Content', 'category' => 'debugging'],
+            ['id' => '11', 'title' => 'Entry', 'content' => 'Content', 'category' => 'architecture'],
+        ]);
+
+        $result = $this->detector->detect($entries);
+
+        $hasSkewedInsight = collect($result['insights'])
+            ->contains(fn ($i): bool => str_contains($i, "heavily skewed toward 'debugging'"));
+
+        expect($hasSkewedInsight)->toBeTrue();
+    });
+
+    it('generates insights for decision tracking', function (): void {
+        // Need 3+ occurrences to pass MIN_OCCURRENCES filter
+        $entries = collect([
+            ['id' => '1', 'title' => 'Decision 1', 'content' => 'Content', 'tags' => ['decision']],
+            ['id' => '2', 'title' => 'Decision 2', 'content' => 'Content', 'tags' => ['decision']],
+            ['id' => '3', 'title' => 'Decision 3', 'content' => 'Content', 'tags' => ['decision']],
+        ]);
+
+        $result = $this->detector->detect($entries);
+
+        $hasDecisionInsight = collect($result['insights'])
+            ->contains(fn ($i): bool => str_contains($i, 'decisions recorded'));
+
+        expect($hasDecisionInsight)->toBeTrue();
+    });
+
+    it('generates insights for milestone tracking', function (): void {
+        // Need 3+ occurrences to pass MIN_OCCURRENCES filter
+        $entries = collect([
+            ['id' => '1', 'title' => 'Milestone 1', 'content' => 'Content', 'tags' => ['milestone']],
+            ['id' => '2', 'title' => 'Milestone 2', 'content' => 'Content', 'tags' => ['milestone']],
+            ['id' => '3', 'title' => 'Milestone 3', 'content' => 'Content', 'tags' => ['milestone']],
+        ]);
+
+        $result = $this->detector->detect($entries);
+
+        $hasMilestoneInsight = collect($result['insights'])
+            ->contains(fn ($i): bool => str_contains($i, 'milestones captured'));
+
+        expect($hasMilestoneInsight)->toBeTrue();
+    });
 });
 
 describe('findEntriesMatchingPattern', function (): void {

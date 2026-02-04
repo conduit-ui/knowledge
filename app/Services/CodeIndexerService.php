@@ -14,7 +14,7 @@ use Symfony\Component\Finder\Finder;
 
 class CodeIndexerService
 {
-    private readonly QdrantConnector $connector;
+    private QdrantConnector $connector;
 
     private const COLLECTION_NAME = 'code';
 

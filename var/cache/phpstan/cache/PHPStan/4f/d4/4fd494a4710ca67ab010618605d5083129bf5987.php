@@ -41,7 +41,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/CreateCollection.php' => 
     array (
-      0 => '4eb16903318bf987f8dc682b6cf11fe38710df96',
+      0 => '4c4669b1c0fc94471cb8fd4afb6769e08d8a26c3',
       1 => 
       array (
         0 => 'app\\integrations\\qdrant\\requests\\createcollection',
@@ -51,6 +51,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         0 => 'app\\integrations\\qdrant\\requests\\__construct',
         1 => 'app\\integrations\\qdrant\\requests\\resolveendpoint',
         2 => 'app\\integrations\\qdrant\\requests\\defaultbody',
+        3 => 'app\\integrations\\qdrant\\requests\\builddenseonlybody',
+        4 => 'app\\integrations\\qdrant\\requests\\buildhybridbody',
       ),
       3 => 
       array (
@@ -262,7 +264,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Services/MarkdownExporter.php' => 
     array (
-      0 => '29ef5057e089d77ed0f8d22c0c2e006c15b678d5',
+      0 => 'ff366f4d2e3f14aee8298366f8a04fdb2d8ba4b4',
       1 => 
       array (
         0 => 'app\\services\\markdownexporter',
@@ -279,7 +281,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Services/EmbeddingService.php' => 
     array (
-      0 => 'cbc4319f9920844aac598518f3f93ccc8676a366',
+      0 => '771f2cbcedb07af94feb9f1dc22738f271eb2ed1',
       1 => 
       array (
         0 => 'app\\services\\embeddingservice',
@@ -296,7 +298,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Services/KnowledgePathService.php' => 
     array (
-      0 => 'f96cad767fe39741ad7b939b3e764ee4503aae06',
+      0 => 'c18555771386565470630c2bce6c2c47434e2db1',
       1 => 
       array (
         0 => 'app\\services\\knowledgepathservice',
@@ -313,7 +315,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
     array (
-      0 => 'e99145112e79dfa288b46be1f56bcb03231c835e',
+      0 => 'd50fa85c93149b849becad9f49065a0da3112e0a',
       1 => 
       array (
         0 => 'app\\services\\qdrantservice',
@@ -321,18 +323,20 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
       2 => 
       array (
         0 => 'app\\services\\__construct',
-        1 => 'app\\services\\ensurecollection',
-        2 => 'app\\services\\upsert',
-        3 => 'app\\services\\search',
-        4 => 'app\\services\\scroll',
-        5 => 'app\\services\\delete',
-        6 => 'app\\services\\getbyid',
-        7 => 'app\\services\\incrementusage',
-        8 => 'app\\services\\updatefields',
-        9 => 'app\\services\\getcachedembedding',
-        10 => 'app\\services\\buildfilter',
-        11 => 'app\\services\\count',
-        12 => 'app\\services\\getcollectionname',
+        1 => 'app\\services\\setsparseembeddingservice',
+        2 => 'app\\services\\ensurecollection',
+        3 => 'app\\services\\upsert',
+        4 => 'app\\services\\search',
+        5 => 'app\\services\\hybridsearch',
+        6 => 'app\\services\\scroll',
+        7 => 'app\\services\\delete',
+        8 => 'app\\services\\getbyid',
+        9 => 'app\\services\\incrementusage',
+        10 => 'app\\services\\updatefields',
+        11 => 'app\\services\\getcachedembedding',
+        12 => 'app\\services\\buildfilter',
+        13 => 'app\\services\\count',
+        14 => 'app\\services\\getcollectionname',
       ),
       3 => 
       array (
@@ -356,7 +360,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Services/RuntimeEnvironment.php' => 
     array (
-      0 => '27d5db176ba0e2c911b75f4de288303daae4ec02',
+      0 => '3ae17cfcc00e08ca6a67d14a322983fe399a8e7b',
       1 => 
       array (
         0 => 'app\\services\\runtimeenvironment',
@@ -399,7 +403,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeConfigCommand.php' => 
     array (
-      0 => '8fe81d438336962a5c0664587d0920f9690af507',
+      0 => 'd700cbf2101f871f31763385ec223127aa3a4e98',
       1 => 
       array (
         0 => 'app\\commands\\knowledgeconfigcommand',
@@ -429,7 +433,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeShowCommand.php' => 
     array (
-      0 => '568f34ee9c3f4b3c9114bb419f029f6c0f82b07d',
+      0 => '5aa95fa7ab05ac7ea7a258abbf61f59ce84adc7d',
       1 => 
       array (
         0 => 'app\\commands\\knowledgeshowcommand',
@@ -449,7 +453,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php' => 
     array (
-      0 => '2200ae859dd4af61a43ef0273640dc88bb4b68e0',
+      0 => 'bba911c4e0a1739b0ef5b1c62e30e1258a20143b',
       1 => 
       array (
         0 => 'app\\commands\\knowledgeaddcommand',
@@ -464,7 +468,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeListCommand.php' => 
     array (
-      0 => 'c9f1c58d0b14475f69c9d9b5e5beeca13ed0b096',
+      0 => '23c9268cf16b725228b56c9ece8ea7766a15c3f5',
       1 => 
       array (
         0 => 'app\\commands\\knowledgelistcommand',
@@ -479,7 +483,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php' => 
     array (
-      0 => '279779bfd8f27337205ff63d0487faa8309551b7',
+      0 => '2604403d3c79fc0d6e06bdd8cfea63b6b1e32904',
       1 => 
       array (
         0 => 'app\\commands\\installcommand',
@@ -511,7 +515,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchCommand.php' => 
     array (
-      0 => 'ff3736e75e14fb37fedac8ca2ed28ae5f0dfef93',
+      0 => '507b4855effed70e32f7a89fb560a713c27537f6',
       1 => 
       array (
         0 => 'app\\commands\\knowledgesearchcommand',
@@ -526,7 +530,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportAllCommand.php' => 
     array (
-      0 => 'c3bc61342b691a478e79fcb3da33fe707b8e7c78',
+      0 => 'd3e6830cbe8162134f3044b334dc3ca32332b3b8',
       1 => 
       array (
         0 => 'app\\commands\\knowledgeexportallcommand',
@@ -543,7 +547,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php' => 
     array (
-      0 => '76176a0ea5e078e5f1fff8bd082024e9ef7e5bb8',
+      0 => '966b9fe507105331b170a0e0cf5664abb33a0d97',
       1 => 
       array (
         0 => 'app\\commands\\synccommand',
@@ -566,7 +570,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeUpdateCommand.php' => 
     array (
-      0 => '95a556a17b4ade3ad3cc53518d04f1670d1ace9d',
+      0 => '2d58683c969fc1377a9f99cdd6d72129836f97f6',
       1 => 
       array (
         0 => 'app\\commands\\knowledgeupdatecommand',
@@ -581,7 +585,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchStatusCommand.php' => 
     array (
-      0 => 'f8db7c7130edc0c487cc99825afa43f8d59c0dae',
+      0 => '4582141ded7873fb2943b619cc2307cb3a773868',
       1 => 
       array (
         0 => 'app\\commands\\knowledgesearchstatuscommand',
@@ -641,7 +645,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Commands/KnowledgeStatsCommand.php' => 
     array (
-      0 => '291283e895d1dfbd83499830880e805daef4f2f9',
+      0 => '04cef12ab315e21c26dd73351a38c65cebd40cf2',
       1 => 
       array (
         0 => 'app\\commands\\knowledgestatscommand',
@@ -657,7 +661,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php' => 
     array (
-      0 => 'f8dddb08e689019973d5c468638c46fc83962758',
+      0 => 'd28bad87d9ead4c3484c081f1829f5a181da5457',
       1 => 
       array (
         0 => 'app\\providers\\appserviceprovider',
@@ -666,6 +670,207 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
       array (
         0 => 'app\\providers\\boot',
         1 => 'app\\providers\\register',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php' => 
+    array (
+      0 => 'ef69730d2a598260cd8f6ea0b010cf574b3a9b06',
+      1 => 
+      array (
+        0 => 'app\\integrations\\qdrant\\requests\\hybridsearchpoints',
+      ),
+      2 => 
+      array (
+        0 => 'app\\integrations\\qdrant\\requests\\__construct',
+        1 => 'app\\integrations\\qdrant\\requests\\resolveendpoint',
+        2 => 'app\\integrations\\qdrant\\requests\\defaultbody',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/DuplicateEntryException.php' => 
+    array (
+      0 => '71869d3446f4d9e8be7c5d2d9be3b41112783037',
+      1 => 
+      array (
+        0 => 'app\\exceptions\\qdrant\\duplicateentryexception',
+      ),
+      2 => 
+      array (
+        0 => 'app\\exceptions\\qdrant\\__construct',
+        1 => 'app\\exceptions\\qdrant\\hashmatch',
+        2 => 'app\\exceptions\\qdrant\\similaritymatch',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Contracts/SparseEmbeddingServiceInterface.php' => 
+    array (
+      0 => 'df0fcee7a3c7f85a73d650d071fc04ed7b014b35',
+      1 => 
+      array (
+        0 => 'app\\contracts\\sparseembeddingserviceinterface',
+      ),
+      2 => 
+      array (
+        0 => 'app\\contracts\\generate',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php' => 
+    array (
+      0 => '24926bd92f7599a1df32aba9714cf19f974bc9fb',
+      1 => 
+      array (
+        0 => 'app\\services\\codeindexerservice',
+      ),
+      2 => 
+      array (
+        0 => 'app\\services\\__construct',
+        1 => 'app\\services\\ensurecollection',
+        2 => 'app\\services\\findfiles',
+        3 => 'app\\services\\indexfile',
+        4 => 'app\\services\\search',
+        5 => 'app\\services\\chunkcontent',
+        6 => 'app\\services\\detectlanguage',
+        7 => 'app\\services\\extractfunctionnames',
+        8 => 'app\\services\\buildsearchabletext',
+        9 => 'app\\services\\buildfilter',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Services/Bm25SparseEmbeddingService.php' => 
+    array (
+      0 => 'f115e2154b5f27ba34581cfd6e3792dff0ec7415',
+      1 => 
+      array (
+        0 => 'app\\services\\bm25sparseembeddingservice',
+      ),
+      2 => 
+      array (
+        0 => 'app\\services\\__construct',
+        1 => 'app\\services\\generate',
+        2 => 'app\\services\\tokenize',
+        3 => 'app\\services\\hashterm',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php' => 
+    array (
+      0 => '6d90fdd399160de677eec19d741a8977edd06190',
+      1 => 
+      array (
+        0 => 'app\\services\\patterndetectorservice',
+      ),
+      2 => 
+      array (
+        0 => 'app\\services\\detect',
+        1 => 'app\\services\\findentriesmatchingpattern',
+        2 => 'app\\services\\extractsignificantwords',
+        3 => 'app\\services\\extractprojects',
+        4 => 'app\\services\\isdatetag',
+        5 => 'app\\services\\filterbyfrequency',
+        6 => 'app\\services\\generateinsights',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php' => 
+    array (
+      0 => 'fbd80933c787ec0db201981109b883edd376ecd0',
+      1 => 
+      array (
+        0 => 'app\\services\\themeclassifierservice',
+      ),
+      2 => 
+      array (
+        0 => 'app\\services\\classify',
+        1 => 'app\\services\\classifybatch',
+        2 => 'app\\services\\getthemetargets',
+        3 => 'app\\services\\calculatescore',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Commands/IndexCodeCommand.php' => 
+    array (
+      0 => '05bcc48ab16be0cf75dec1d3ef95c25aa3115793',
+      1 => 
+      array (
+        0 => 'app\\commands\\indexcodecommand',
+      ),
+      2 => 
+      array (
+        0 => 'app\\commands\\handle',
+        1 => 'app\\commands\\showstats',
+        2 => 'app\\commands\\exttolang',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php' => 
+    array (
+      0 => 'f0f2804265d41ef8f4229f26f0cfdc5fef65698f',
+      1 => 
+      array (
+        0 => 'app\\commands\\synthesizecommand',
+      ),
+      2 => 
+      array (
+        0 => 'app\\commands\\handle',
+        1 => 'app\\commands\\rundedupe',
+        2 => 'app\\commands\\rundigest',
+        3 => 'app\\commands\\runarchivestale',
+        4 => 'app\\commands\\getrecenthighvalueentries',
+        5 => 'app\\commands\\builddigestcontent',
+        6 => 'app\\commands\\displaysummary',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php' => 
+    array (
+      0 => '49d778791dee2097ae15edec02295d948db237df',
+      1 => 
+      array (
+        0 => 'app\\commands\\insightscommand',
+      ),
+      2 => 
+      array (
+        0 => 'app\\commands\\handle',
+        1 => 'app\\commands\\classifysingleentry',
+        2 => 'app\\commands\\showthemeanalysis',
+        3 => 'app\\commands\\showpatternanalysis',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/app/Commands/SearchCodeCommand.php' => 
+    array (
+      0 => '98b86703065e9b236c49e984cd116580661add84',
+      1 => 
+      array (
+        0 => 'app\\commands\\searchcodecommand',
+      ),
+      2 => 
+      array (
+        0 => 'app\\commands\\handle',
       ),
       3 => 
       array (

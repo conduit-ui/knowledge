@@ -101,12 +101,9 @@ class Bm25SparseEmbeddingService implements SparseEmbeddingServiceInterface
         // Remove special characters, keep alphanumeric and spaces
         $text = (string) preg_replace('/[^a-z0-9\s]/', ' ', $text);
 
-        // Split into tokens
+        // Split into tokens (preg_split with valid pattern never returns false)
+        /** @var array<string> $tokens */
         $tokens = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-
-        if ($tokens === false) {
-            return [];
-        }
 
         // Filter stop words and short tokens
         return array_values(array_filter(

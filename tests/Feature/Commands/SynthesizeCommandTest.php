@@ -82,6 +82,35 @@ describe('dedupe', function (): void {
         $this->artisan('synthesize', ['--dedupe' => true, '--dry-run' => true])
             ->assertSuccessful();
     });
+
+    it('skips already processed entries to avoid duplicate processing', function (): void {
+        // Simulate a scroll result that contains the same entry ID twice
+        // (can happen with pagination edge cases or data inconsistencies)
+        $candidate = createEntry('1', 'Test Entry', 50, 'draft');
+        $duplicateCandidate = createEntry('1', 'Test Entry', 50, 'draft'); // Same ID appears again
+        $higherConfidenceMatch = createEntry('2', 'Better Entry', 80, 'validated', 0.95);
+
+        $this->qdrantMock->shouldReceive('scroll')
+            ->with(['status' => 'draft'], 100)
+            ->andReturn(collect([$candidate, $duplicateCandidate]));
+
+        // First iteration: finds a match and processes it
+        // Second iteration: same ID should be skipped via continue
+        $this->qdrantMock->shouldReceive('search')
+            ->once()  // Should only be called once since second iteration is skipped
+            ->andReturn(collect([$higherConfidenceMatch]));
+
+        // Only one merge should happen
+        $this->qdrantMock->shouldReceive('updateFields')
+            ->once()
+            ->with('1', Mockery::on(fn ($fields): bool => $fields['status'] === 'deprecated'))
+            ->andReturn(true);
+
+        mockEmptyDigestAndArchive($this->qdrantMock);
+
+        $this->artisan('synthesize')
+            ->assertSuccessful();
+    });
 });
 
 describe('digest', function (): void {
@@ -136,6 +165,52 @@ describe('digest', function (): void {
         $this->qdrantMock->shouldNotReceive('upsert');
 
         $this->artisan('synthesize', ['--digest' => true])
+            ->assertSuccessful();
+    });
+
+    it('shows digest preview in dry-run mode', function (): void {
+        // No existing digest
+        $this->qdrantMock->shouldReceive('search')
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->andReturn(collect());
+
+        // Recent validated entries with high confidence
+        $entries = collect([
+            createEntry('1', 'Feature Complete', 85, 'validated'),
+        ]);
+
+        $this->qdrantMock->shouldReceive('scroll')
+            ->with(['status' => 'validated'], 50)
+            ->andReturn($entries);
+
+        // Should NOT upsert in dry-run mode
+        $this->qdrantMock->shouldNotReceive('upsert');
+
+        $this->artisan('synthesize', ['--digest' => true, '--dry-run' => true])
+            ->expectsOutputToContain('Would create digest:')
+            ->assertSuccessful();
+    });
+
+    it('truncates long content in digest preview', function (): void {
+        // No existing digest
+        $this->qdrantMock->shouldReceive('search')
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->andReturn(collect());
+
+        // Entry with long content (>100 chars)
+        $longContent = str_repeat('This is a very long piece of content that exceeds the hundred character limit. ', 3);
+        $entryWithLongContent = createEntry('1', 'Long Content Entry', 85, 'validated');
+        $entryWithLongContent['content'] = $longContent;
+
+        $this->qdrantMock->shouldReceive('scroll')
+            ->with(['status' => 'validated'], 50)
+            ->andReturn(collect([$entryWithLongContent]));
+
+        // Should NOT upsert in dry-run mode
+        $this->qdrantMock->shouldNotReceive('upsert');
+
+        $this->artisan('synthesize', ['--digest' => true, '--dry-run' => true])
+            ->expectsOutputToContain('...')
             ->assertSuccessful();
     });
 });
