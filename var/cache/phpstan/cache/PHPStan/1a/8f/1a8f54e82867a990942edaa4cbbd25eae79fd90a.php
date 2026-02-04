@@ -2,6 +2,6 @@
 
 // variadic-method-App\Exceptions\Qdrant\CollectionCreationException-withReason-/home/jordan/projects/knowledge/app/Exceptions/Qdrant/CollectionCreationException.php
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1768694921-v4',
+   'variableKey' => '1768835655-v4',
    'data' => false,
 ));

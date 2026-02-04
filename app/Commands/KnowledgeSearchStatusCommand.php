@@ -32,7 +32,7 @@ class KnowledgeSearchStatusCommand extends Command
         $embeddingProvider = config('search.embedding_provider') ?: 'none';
 
         $testEmbedding = $embeddingService->generate('test');
-        $hasEmbeddingSupport = count($testEmbedding) > 0;
+        $hasEmbeddingSupport = $testEmbedding !== [];
 
         $qdrant = app(\App\Services\QdrantService::class);
         $entries = $qdrant->search('', [], 10000);

@@ -21,7 +21,7 @@ class KnowledgeStatsCommand extends Command
     public function handle(QdrantService $qdrant): int
     {
         $total = spin(
-            fn () => $qdrant->count(),
+            fn (): int => $qdrant->count(),
             'Loading knowledge base...'
         );
 

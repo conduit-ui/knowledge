@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 use App\Services\GitContextService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->service = new GitContextService;
 });
 
-it('detects if directory is a git repository', function () {
+it('detects if directory is a git repository', function (): void {
     $isGit = $this->service->isGitRepository();
     expect($isGit)->toBeTrue();
 });
 
-it('gets current repository path', function () {
+it('gets current repository path', function (): void {
     $repoPath = $this->service->getRepositoryPath();
     expect($repoPath)->toBeString()->not->toBeEmpty();
 });
 
-it('gets repository URL from remote origin', function () {
+it('gets repository URL from remote origin', function (): void {
     $repoUrl = $this->service->getRepositoryUrl();
     if ($repoUrl !== null) {
         expect($repoUrl)->toBeString();
@@ -27,17 +27,17 @@ it('gets repository URL from remote origin', function () {
     }
 });
 
-it('gets current branch name', function () {
+it('gets current branch name', function (): void {
     $branch = $this->service->getCurrentBranch();
     expect($branch)->toBeString()->not->toBeEmpty();
 });
 
-it('gets current commit hash', function () {
+it('gets current commit hash', function (): void {
     $commit = $this->service->getCurrentCommit();
     expect($commit)->toBeString()->toHaveLength(40); // Full SHA-1 hash
 });
 
-it('gets git user name', function () {
+it('gets git user name', function (): void {
     $author = $this->service->getAuthor();
     if ($author !== null) {
         expect($author)->toBeString();
@@ -46,7 +46,7 @@ it('gets git user name', function () {
     }
 });
 
-it('returns full git context', function () {
+it('returns full git context', function (): void {
     $context = $this->service->getContext();
 
     expect($context)->toBeArray()
@@ -57,7 +57,7 @@ it('returns full git context', function () {
     expect($context['commit'])->toBeString();
 });
 
-it('handles non-git directory gracefully', function () {
+it('handles non-git directory gracefully', function (): void {
     $service = new GitContextService('/tmp');
 
     expect($service->isGitRepository())->toBeFalse();
@@ -74,7 +74,7 @@ it('handles non-git directory gracefully', function () {
     expect($context['commit'])->toBeNull();
 });
 
-it('handles git command failures gracefully', function () {
+it('handles git command failures gracefully', function (): void {
     // Create a temporary directory that is initialized as a git repo but broken
     $tempDir = sys_get_temp_dir().'/fake-git-'.uniqid();
     mkdir($tempDir);
@@ -106,7 +106,7 @@ it('handles git command failures gracefully', function () {
     $process->run();
 });
 
-it('handles empty git user name gracefully', function () {
+it('handles empty git user name gracefully', function (): void {
     // Create a temp directory and unset git config to test empty string handling
     $tempDir = sys_get_temp_dir().'/git-no-author-'.uniqid();
     mkdir($tempDir);
@@ -132,7 +132,7 @@ it('handles empty git user name gracefully', function () {
     $process->run();
 });
 
-it('returns author name when git config user.name is set', function () {
+it('returns author name when git config user.name is set', function (): void {
     // Create a temp directory with git config user.name set
     // This ensures lines 190-192 in getAuthor() are covered in CI
     $tempDir = sys_get_temp_dir().'/git-with-author-'.uniqid();
@@ -157,7 +157,7 @@ it('returns author name when git config user.name is set', function () {
     removeDirectory($tempDir);
 });
 
-it('handles getcwd failure in runGitCommand', function () {
+it('handles getcwd failure in runGitCommand', function (): void {
     // Test with a path that getcwd() would conceptually fail on
     // This is difficult to test directly, but we ensure the code path exists
     $service = new GitContextService(null);
@@ -166,7 +166,7 @@ it('handles getcwd failure in runGitCommand', function () {
     expect($service->isGitRepository())->toBeTrue();
 });
 
-it('returns null when getAuthor fails', function () {
+it('returns null when getAuthor fails', function (): void {
     // Create a temporary directory without git
     $tempDir = sys_get_temp_dir().'/no-git-'.uniqid();
     mkdir($tempDir);
@@ -184,7 +184,7 @@ it('returns null when getAuthor fails', function () {
     rmdir($tempDir);
 });
 
-it('covers all error paths in git service methods', function () {
+it('covers all error paths in git service methods', function (): void {
     // Initialize a new empty git repo
     $tempDir = sys_get_temp_dir().'/empty-git-'.uniqid();
     mkdir($tempDir);

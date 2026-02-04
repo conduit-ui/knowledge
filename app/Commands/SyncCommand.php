@@ -88,7 +88,7 @@ class SyncCommand extends Command
      */
     protected function getClient(): Client
     {
-        if ($this->client === null) {
+        if (! $this->client instanceof \GuzzleHttp\Client) {
             // Use container-bound client if available (for testing)
             // @codeCoverageIgnoreStart
             $this->client = app()->bound(Client::class)
@@ -139,7 +139,7 @@ class SyncCommand extends Command
             if ($response->getStatusCode() !== 200) {
                 $this->error('Failed to pull from cloud: HTTP '.$response->getStatusCode());
 
-                return compact('created', 'updated', 'failed');
+                return ['created' => $created, 'updated' => $updated, 'failed' => $failed];
             }
             // @codeCoverageIgnoreEnd
 
@@ -148,7 +148,7 @@ class SyncCommand extends Command
             if (! is_array($responseData) || ! isset($responseData['data'])) {
                 $this->error('Invalid response from cloud API.');
 
-                return compact('created', 'updated', 'failed');
+                return ['created' => $created, 'updated' => $updated, 'failed' => $failed];
             }
 
             $entries = $responseData['data'];
@@ -197,8 +197,8 @@ class SyncCommand extends Command
                         $created++;
                     }
                     // @codeCoverageIgnoreEnd
-                // @codeCoverageIgnoreStart
-                } catch (\Exception $e) {
+                    // @codeCoverageIgnoreStart
+                } catch (\Exception) {
                     $failed++;
                 }
                 // @codeCoverageIgnoreEnd
@@ -213,7 +213,7 @@ class SyncCommand extends Command
             $failed++;
         }
 
-        return compact('created', 'updated', 'failed');
+        return ['created' => $created, 'updated' => $updated, 'failed' => $failed];
     }
 
     /**
@@ -235,7 +235,7 @@ class SyncCommand extends Command
             if ($entries->isEmpty()) {
                 $this->warn('No local entries to push.');
 
-                return compact('sent', 'created', 'updated', 'failed');
+                return ['sent' => $sent, 'created' => $created, 'updated' => $updated, 'failed' => $failed];
             }
 
             // Build payload array
@@ -305,7 +305,7 @@ class SyncCommand extends Command
             $failed += count($allPayload ?? []);
         }
 
-        return compact('sent', 'created', 'updated', 'failed');
+        return ['sent' => $sent, 'created' => $created, 'updated' => $updated, 'failed' => $failed];
     }
 
     /**

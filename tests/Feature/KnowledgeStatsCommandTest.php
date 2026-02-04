@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-describe('KnowledgeStatsCommand', function () {
-    it('displays comprehensive analytics dashboard covering all code paths', function () {
+describe('KnowledgeStatsCommand', function (): void {
+    it('displays comprehensive analytics dashboard covering all code paths', function (): void {
         $qdrant = mock(QdrantService::class);
         app()->instance(QdrantService::class, $qdrant);
 

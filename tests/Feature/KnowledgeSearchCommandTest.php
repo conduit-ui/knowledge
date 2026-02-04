@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-describe('KnowledgeSearchCommand', function () {
-    beforeEach(function () {
+describe('KnowledgeSearchCommand', function (): void {
+    beforeEach(function (): void {
         $this->qdrantService = mock(QdrantService::class);
 
         app()->instance(QdrantService::class, $this->qdrantService);
     });
 
-    it('requires at least one parameter', function () {
+    it('requires at least one parameter', function (): void {
         $this->artisan('search')
             ->expectsOutput('Please provide at least one search parameter.')
             ->assertFailed();
     });
 
-    it('finds entries by keyword', function () {
+    it('finds entries by keyword', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('Laravel', [], 20)
@@ -42,7 +42,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Laravel Testing');
     });
 
-    it('filters by tag', function () {
+    it('filters by tag', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('', ['tag' => 'php'], 20)
@@ -67,7 +67,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('PHP Standards');
     });
 
-    it('filters by category', function () {
+    it('filters by category', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('', ['category' => 'tutorial'], 20)
@@ -92,7 +92,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Laravel Testing');
     });
 
-    it('shows no results message', function () {
+    it('shows no results message', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([]));
@@ -102,7 +102,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutput('No entries found.');
     });
 
-    it('supports semantic flag', function () {
+    it('supports semantic flag', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('Laravel', [], 20)
@@ -130,7 +130,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Laravel Testing');
     });
 
-    it('combines query and filters', function () {
+    it('combines query and filters', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('Laravel', ['category' => 'tutorial'], 20)
@@ -158,7 +158,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Laravel Testing');
     });
 
-    it('shows entry details', function () {
+    it('shows entry details', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([
@@ -183,7 +183,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Module: TestModule');
     });
 
-    it('truncates long content', function () {
+    it('truncates long content', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([
@@ -206,7 +206,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('...');
     });
 
-    it('displays multiple search results', function () {
+    it('displays multiple search results', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([
@@ -243,7 +243,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('PHP Standards');
     });
 
-    it('supports multiple filters simultaneously', function () {
+    it('supports multiple filters simultaneously', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->with('', [
@@ -266,7 +266,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutput('No entries found.');
     });
 
-    it('handles empty tags array gracefully', function () {
+    it('handles empty tags array gracefully', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([
@@ -289,7 +289,7 @@ describe('KnowledgeSearchCommand', function () {
             ->expectsOutputToContain('Untagged Entry');
     });
 
-    it('displays score in results', function () {
+    it('displays score in results', function (): void {
         $this->qdrantService->shouldReceive('search')
             ->once()
             ->andReturn(collect([

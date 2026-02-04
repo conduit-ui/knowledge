@@ -33,7 +33,20 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     '/home/jordan/projects/knowledge/config/search.php' => 
     array (
-      0 => '0042af78342a655ad4ed30f0a82a90d26c47681a',
+      0 => 'ffe8363092e6f2672a7e4d6d73de25e8d2b4560d',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    '/home/jordan/projects/knowledge/config/services.php' => 
+    array (
+      0 => '5bac4fb4d0c8709298006e2f49b69328aa3311c3',
       1 => 
       array (
       ),

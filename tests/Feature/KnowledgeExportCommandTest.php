@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Services\MarkdownExporter;
 use App\Services\QdrantService;
 
-describe('KnowledgeExportCommand', function () {
-    beforeEach(function () {
+describe('KnowledgeExportCommand', function (): void {
+    beforeEach(function (): void {
         $this->qdrant = mock(QdrantService::class);
         $this->markdownExporter = mock(MarkdownExporter::class);
 
@@ -19,7 +19,7 @@ describe('KnowledgeExportCommand', function () {
         }
     });
 
-    afterEach(function () {
+    afterEach(function (): void {
         // Clean up test files
         if (is_dir('/tmp/export-tests')) {
             array_map('unlink', glob('/tmp/export-tests/*'));
@@ -27,13 +27,13 @@ describe('KnowledgeExportCommand', function () {
         }
     });
 
-    it('validates ID is numeric', function () {
+    it('validates ID is numeric', function (): void {
         $this->artisan('export', ['id' => 'not-numeric'])
             ->expectsOutput('The ID must be a valid number.')
             ->assertFailed();
     });
 
-    it('fails when entry not found', function () {
+    it('fails when entry not found', function (): void {
         $this->qdrant->shouldReceive('getById')
             ->once()
             ->with(999)
@@ -44,7 +44,7 @@ describe('KnowledgeExportCommand', function () {
             ->assertFailed();
     });
 
-    it('exports entry as markdown to stdout by default', function () {
+    it('exports entry as markdown to stdout by default', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Test Entry',
@@ -76,7 +76,7 @@ Test content')
             ->assertSuccessful();
     });
 
-    it('exports entry as markdown to file', function () {
+    it('exports entry as markdown to file', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Test Entry',
@@ -114,7 +114,7 @@ Test content');
         expect(file_get_contents($outputPath))->toContain('# Test Entry');
     });
 
-    it('exports entry as json to stdout', function () {
+    it('exports entry as json to stdout', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Test Entry',
@@ -142,7 +142,7 @@ Test content');
             ->assertSuccessful();
     });
 
-    it('exports entry as json to file', function () {
+    it('exports entry as json to file', function (): void {
         $entry = [
             'id' => 2,
             'title' => 'JSON Export',
@@ -175,7 +175,7 @@ Test content');
         expect($json['title'])->toBe('JSON Export');
     });
 
-    it('creates output directory if it does not exist', function () {
+    it('creates output directory if it does not exist', function (): void {
         $entry = [
             'id' => 3,
             'title' => 'New Directory Test',

@@ -1,7 +1,7 @@
 <?php declare(strict_types = 1);
 
 return [
-	'lastFullAnalysisTime' => 1768699168,
+	'lastFullAnalysisTime' => 1770180115,
 	'meta' => array (
   'cacheVersion' => 'v12-linesToIgnore',
   'phpstanVersion' => '1.12.32',
@@ -17,7 +17,7 @@ return [
   ),
   'composerLocks' => 
   array (
-    '/home/jordan/projects/knowledge/composer.lock' => '54acd8cadc850777f71422d134798519480f8c25',
+    '/home/jordan/projects/knowledge/composer.lock' => 'cdb5745d2767fc9f008faed865bcc03894b1535c',
   ),
   'composerInstalled' => 
   array (
@@ -1141,6 +1141,18 @@ return [
           ),
           'dev_requirement' => false,
         ),
+        'rector/rector' => 
+        array (
+          'pretty_version' => '1.2.10',
+          'version' => '1.2.10.0',
+          'reference' => '40f9cf38c05296bd32f444121336a521a293fa61',
+          'type' => 'library',
+          'install_path' => '/home/jordan/projects/knowledge/vendor/composer/../rector/rector',
+          'aliases' => 
+          array (
+          ),
+          'dev_requirement' => true,
+        ),
         'rhumsaa/uuid' => 
         array (
           'dev_requirement' => false,
@@ -1711,45 +1723,47 @@ return [
     7 => 'Zend OPcache',
     8 => 'calendar',
     9 => 'ctype',
-    10 => 'date',
-    11 => 'dom',
-    12 => 'exif',
-    13 => 'fileinfo',
-    14 => 'filter',
-    15 => 'ftp',
-    16 => 'gettext',
-    17 => 'hash',
-    18 => 'iconv',
-    19 => 'intl',
-    20 => 'json',
-    21 => 'libxml',
-    22 => 'mbstring',
-    23 => 'mysqli',
-    24 => 'mysqlnd',
-    25 => 'openssl',
-    26 => 'pcntl',
-    27 => 'pcov',
-    28 => 'pcre',
-    29 => 'pdo_mysql',
-    30 => 'pdo_sqlite',
-    31 => 'posix',
-    32 => 'random',
-    33 => 'readline',
-    34 => 'session',
-    35 => 'shmop',
-    36 => 'sockets',
-    37 => 'sodium',
-    38 => 'sqlite3',
-    39 => 'standard',
-    40 => 'sysvmsg',
-    41 => 'sysvsem',
-    42 => 'sysvshm',
-    43 => 'tokenizer',
-    44 => 'xml',
-    45 => 'xmlreader',
-    46 => 'xmlwriter',
-    47 => 'xsl',
-    48 => 'zlib',
+    10 => 'curl',
+    11 => 'date',
+    12 => 'dom',
+    13 => 'exif',
+    14 => 'fileinfo',
+    15 => 'filter',
+    16 => 'ftp',
+    17 => 'gettext',
+    18 => 'hash',
+    19 => 'iconv',
+    20 => 'intl',
+    21 => 'json',
+    22 => 'libxml',
+    23 => 'mbstring',
+    24 => 'mysqli',
+    25 => 'mysqlnd',
+    26 => 'openssl',
+    27 => 'pcntl',
+    28 => 'pcov',
+    29 => 'pcre',
+    30 => 'pdo_mysql',
+    31 => 'pdo_sqlite',
+    32 => 'posix',
+    33 => 'random',
+    34 => 'readline',
+    35 => 'session',
+    36 => 'shmop',
+    37 => 'sockets',
+    38 => 'sodium',
+    39 => 'sqlite3',
+    40 => 'standard',
+    41 => 'sysvmsg',
+    42 => 'sysvsem',
+    43 => 'sysvshm',
+    44 => 'tokenizer',
+    45 => 'xml',
+    46 => 'xmlreader',
+    47 => 'xmlwriter',
+    48 => 'xsl',
+    49 => 'zip',
+    50 => 'zlib',
   ),
   'stubFiles' => 
   array (
@@ -1759,6 +1773,89 @@ return [
 	'projectExtensionFiles' => array (
 ),
 	'errorsCallback' => static function (): array { return array (
+  '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'line' => 185,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 185,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
+       'identifier' => 'empty.notAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+    1 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'line' => 197,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 197,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
+       'identifier' => 'empty.notAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+    2 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'line' => 208,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 208,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
+       'identifier' => 'empty.notAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+    3 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Variable $cat on left side of ?? always exists and is not nullable.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'line' => 224,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 224,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\Coalesce',
+       'identifier' => 'nullCoalesce.variable',
+       'metadata' => 
+      array (
+      ),
+    )),
+    4 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'line' => 230,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 230,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
+       'identifier' => 'empty.notAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+  ),
   '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php' => 
   array (
     0 => 
@@ -1800,12 +1897,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Cannot cast array|bool|string|null to string.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
-       'line' => 47,
+       'line' => 50,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 47,
+       'nodeLine' => 50,
        'nodeType' => 'PhpParser\\Node\\Expr\\Cast\\String_',
        'identifier' => 'cast.string',
        'metadata' => 
@@ -1816,13 +1913,13 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Parameter #1 $entry of method App\\Services\\QdrantService::upsert() expects array{id: int|string, title: string, content: string, tags?: array<string>, category?: string, module?: string, priority?: string, status?: string, ...}, array{title: string, content: non-empty-string, category: \'architecture\'|\'debugging\'|\'deployment\'|\'security\'|\'testing\'|null, module: string|null, priority: \'critical\'|\'high\'|\'low\'|\'medium\', confidence: int, source: string|null, ticket: string|null, ...} given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
-       'line' => 148,
+       'line' => 155,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
        'traitFilePath' => NULL,
        'tip' => '• Offset \'category\' (string) does not accept type string|null.
 • Offset \'module\' (string) does not accept type string|null.',
-       'nodeLine' => 148,
+       'nodeLine' => 155,
        'nodeType' => 'PhpParser\\Node\\Expr\\MethodCall',
        'identifier' => 'argument.type',
        'metadata' => 
@@ -2078,12 +2175,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Only booleans are allowed in a negated boolean, array|bool|string|null given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 45,
+       'line' => 57,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 45,
+       'nodeLine' => 57,
        'nodeType' => 'PhpParser\\Node\\Expr\\BooleanNot',
        'identifier' => 'booleanNot.exprNotBoolean',
        'metadata' => 
@@ -2094,12 +2191,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Only booleans are allowed in a negated boolean, array|bool|string|null given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 45,
+       'line' => 57,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 45,
+       'nodeLine' => 57,
        'nodeType' => 'PhpParser\\Node\\Expr\\BooleanNot',
        'identifier' => 'booleanNot.exprNotBoolean',
        'metadata' => 
@@ -2110,12 +2207,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Only booleans are allowed in an if condition, array|bool|string|null given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 56,
+       'line' => 68,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 56,
+       'nodeLine' => 68,
        'nodeType' => 'PhpParser\\Node\\Stmt\\If_',
        'identifier' => 'if.condNotBoolean',
        'metadata' => 
@@ -2126,12 +2223,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Only booleans are allowed in an if condition, array|string|true given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 65,
+       'line' => 77,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 65,
+       'nodeLine' => 77,
        'nodeType' => 'PhpParser\\Node\\Stmt\\If_',
        'identifier' => 'if.condNotBoolean',
        'metadata' => 
@@ -2142,12 +2239,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Only booleans are allowed in an if condition, array<string, array<string>|float|int|string|null>|null given.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 182,
+       'line' => 194,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 182,
+       'nodeLine' => 194,
        'nodeType' => 'PhpParser\\Node\\Stmt\\If_',
        'identifier' => 'if.condNotBoolean',
        'metadata' => 
@@ -2158,14 +2255,65 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Variable $allPayload on left side of ?? always exists and is not nullable.',
        'file' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-       'line' => 293,
+       'line' => 305,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 293,
+       'nodeLine' => 305,
        'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\Coalesce',
        'identifier' => 'nullCoalesce.variable',
+       'metadata' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Offset \'updated_at\' on array{id: int|string, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, ...} in isset() always exists and is not nullable.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'line' => 249,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 249,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Isset_',
+       'identifier' => 'isset.offset',
+       'metadata' => 
+      array (
+      ),
+    )),
+    1 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Offset \'confidence\' on array{id: int|string, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, ...} on left side of ?? always exists and is not nullable.',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'line' => 250,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 250,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\Coalesce',
+       'identifier' => 'nullCoalesce.offset',
+       'metadata' => 
+      array (
+      ),
+    )),
+    2 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Unable to resolve the template type TGroupKey in call to method Illuminate\\Support\\Collection<int,array<string, mixed>>::groupBy()',
+       'file' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'line' => 266,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+       'traitFilePath' => NULL,
+       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
+       'nodeLine' => 266,
+       'nodeType' => 'PhpParser\\Node\\Expr\\MethodCall',
+       'identifier' => 'argument.templateType',
        'metadata' => 
       array (
       ),
@@ -2196,12 +2344,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Method App\\Integrations\\Qdrant\\Requests\\CreateCollection::defaultBody() return type has no value type specified in iterable type array.',
        'file' => '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/CreateCollection.php',
-       'line' => 29,
+       'line' => 30,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/CreateCollection.php',
        'traitFilePath' => NULL,
        'tip' => 'See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type',
-       'nodeLine' => 29,
+       'nodeLine' => 30,
        'nodeType' => 'PHPStan\\Node\\InClassMethodNode',
        'identifier' => 'missingType.iterableValue',
        'metadata' => 
@@ -2240,6 +2388,25 @@ return [
        'traitFilePath' => NULL,
        'tip' => 'See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type',
        'nodeLine' => 31,
+       'nodeType' => 'PHPStan\\Node\\InClassMethodNode',
+       'identifier' => 'missingType.iterableValue',
+       'metadata' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php' => 
+  array (
+    0 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Method App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints::defaultBody() return type has no value type specified in iterable type array.',
+       'file' => '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php',
+       'line' => 43,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php',
+       'traitFilePath' => NULL,
+       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-no-value-type-specified-in-iterable-type',
+       'nodeLine' => 43,
        'nodeType' => 'PHPStan\\Node\\InClassMethodNode',
        'identifier' => 'missingType.iterableValue',
        'metadata' => 
@@ -2351,51 +2518,134 @@ return [
       array (
       ),
     )),
+    3 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Strict comparison using !== between non-empty-array and array{} will always evaluate to true.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/MarkdownExporter.php',
+       'line' => 45,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/MarkdownExporter.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 45,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\NotIdentical',
+       'identifier' => 'notIdentical.alwaysTrue',
+       'metadata' => 
+      array (
+      ),
+    )),
   ),
-  '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
+  '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php' => 
   array (
     0 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Method App\\Services\\QdrantService::search() should return Illuminate\\Support\\Collection<int, array{id: int|string, score: float, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, ...}> but returns Illuminate\\Support\\Collection<(int|string), array{id: mixed, score: mixed, title: mixed, content: mixed, tags: mixed, category: mixed, module: mixed, priority: mixed, ...}>.',
-       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 208,
+       'message' => 'Offset \'content\' on array{id: int|string, title: string, content: string} on left side of ?? always exists and is not nullable.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'line' => 123,
        'canBeIgnored' => true,
-       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 208,
-       'nodeType' => 'PhpParser\\Node\\Stmt\\Return_',
-       'identifier' => 'return.type',
+       'nodeLine' => 123,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\Coalesce',
+       'identifier' => 'nullCoalesce.offset',
        'metadata' => 
       array (
       ),
     )),
     1 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Unable to resolve the template type TKey in call to function collect',
-       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 208,
+       'message' => 'Offset \'title\' on array{id: int|string, title: string, content: string} on left side of ?? always exists and is not nullable.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'line' => 123,
        'canBeIgnored' => true,
-       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
        'traitFilePath' => NULL,
-       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
-       'nodeLine' => 208,
-       'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
-       'identifier' => 'argument.templateType',
+       'tip' => NULL,
+       'nodeLine' => 123,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BinaryOp\\Coalesce',
+       'identifier' => 'nullCoalesce.offset',
        'metadata' => 
       array (
       ),
     )),
     2 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Unable to resolve the template type TValue in call to function collect',
+       'message' => 'Short ternary operator is not allowed. Use null coalesce operator if applicable or consider using long ternary.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'line' => 141,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 141,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Ternary',
+       'identifier' => 'ternary.shortNotAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+    3 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Only booleans are allowed in an if condition, int<0, max>|false given.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'line' => 172,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 172,
+       'nodeType' => 'PhpParser\\Node\\Stmt\\If_',
+       'identifier' => 'if.condNotBoolean',
+       'metadata' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
+  array (
+    0 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Parameter #2 $points of class App\\Integrations\\Qdrant\\Requests\\UpsertPoints constructor expects array<int, array{id: int|string, vector: array<float>, payload: array<string, mixed>}>, array{array{id: int|string, payload: array{title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, confidence: int, ...}, vector: non-empty-array<non-empty-array<array<float|int>|float>|float>}} given.',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 208,
+       'line' => 158,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => 'Offset \'vector\' (array<float>) does not accept type array<array<array<float|int>|float>|float>.',
+       'nodeLine' => 156,
+       'nodeType' => 'PhpParser\\Node\\Expr\\New_',
+       'identifier' => 'argument.type',
+       'metadata' => 
+      array (
+      ),
+    )),
+    1 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Method App\\Services\\QdrantService::search() should return Illuminate\\Support\\Collection<int, array{id: int|string, score: float, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, ...}> but returns Illuminate\\Support\\Collection<(int|string), array{id: mixed, score: mixed, title: mixed, content: mixed, tags: mixed, category: mixed, module: mixed, priority: mixed, ...}>.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 231,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 231,
+       'nodeType' => 'PhpParser\\Node\\Stmt\\Return_',
+       'identifier' => 'return.type',
+       'metadata' => 
+      array (
+      ),
+    )),
+    2 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Unable to resolve the template type TKey in call to function collect',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 231,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
-       'nodeLine' => 208,
+       'nodeLine' => 231,
        'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
        'identifier' => 'argument.templateType',
        'metadata' => 
@@ -2404,30 +2654,30 @@ return [
     )),
     3 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'message' => 'Unable to resolve the template type TValue in call to function collect',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 258,
+       'line' => 231,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
-       'tip' => NULL,
-       'nodeLine' => 258,
-       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
-       'identifier' => 'empty.notAllowed',
+       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
+       'nodeLine' => 231,
+       'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
+       'identifier' => 'argument.templateType',
        'metadata' => 
       array (
       ),
     )),
     4 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Method App\\Services\\QdrantService::scroll() should return Illuminate\\Support\\Collection<int, array{id: int|string, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, ...}> but returns Illuminate\\Support\\Collection<(int|string), array{id: mixed, title: mixed, content: mixed, tags: mixed, category: mixed, module: mixed, priority: mixed, status: mixed, ...}>.',
+       'message' => 'Method App\\Services\\QdrantService::hybridSearch() should return Illuminate\\Support\\Collection<int, array{id: int|string, score: float, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, ...}> but returns Illuminate\\Support\\Collection<(int|string), array{id: mixed, score: mixed, title: mixed, content: mixed, tags: mixed, category: mixed, module: mixed, priority: mixed, ...}>.',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 276,
+       'line' => 330,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 276,
+       'nodeLine' => 330,
        'nodeType' => 'PhpParser\\Node\\Stmt\\Return_',
        'identifier' => 'return.type',
        'metadata' => 
@@ -2438,12 +2688,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Unable to resolve the template type TKey in call to function collect',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 276,
+       'line' => 330,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
-       'nodeLine' => 276,
+       'nodeLine' => 330,
        'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
        'identifier' => 'argument.templateType',
        'metadata' => 
@@ -2454,12 +2704,12 @@ return [
     \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Unable to resolve the template type TValue in call to function collect',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 276,
+       'line' => 330,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
-       'nodeLine' => 276,
+       'nodeLine' => 330,
        'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
        'identifier' => 'argument.templateType',
        'metadata' => 
@@ -2468,25 +2718,73 @@ return [
     )),
     7 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'message' => 'Method App\\Services\\QdrantService::scroll() should return Illuminate\\Support\\Collection<int, array{id: int|string, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, ...}> but returns Illuminate\\Support\\Collection<(int|string), array{id: mixed, title: mixed, content: mixed, tags: mixed, category: mixed, module: mixed, priority: mixed, status: mixed, ...}>.',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 345,
+       'line' => 398,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 345,
-       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
-       'identifier' => 'empty.notAllowed',
+       'nodeLine' => 398,
+       'nodeType' => 'PhpParser\\Node\\Stmt\\Return_',
+       'identifier' => 'return.type',
        'metadata' => 
       array (
       ),
     )),
     8 => 
     \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Unable to resolve the template type TKey in call to function collect',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 398,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
+       'nodeLine' => 398,
+       'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
+       'identifier' => 'argument.templateType',
+       'metadata' => 
+      array (
+      ),
+    )),
+    9 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Unable to resolve the template type TValue in call to function collect',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 398,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => 'See: https://phpstan.org/blog/solving-phpstan-error-unable-to-resolve-template-type',
+       'nodeLine' => 398,
+       'nodeType' => 'PhpParser\\Node\\Expr\\FuncCall',
+       'identifier' => 'argument.templateType',
+       'metadata' => 
+      array (
+      ),
+    )),
+    10 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 467,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 467,
+       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
+       'identifier' => 'empty.notAllowed',
+       'metadata' => 
+      array (
+      ),
+    )),
+    11 => 
+    \PHPStan\Analyser\Error::__set_state(array(
        'message' => 'Parameter #1 $entry of method App\\Services\\QdrantService::upsert() expects array{id: int|string, title: string, content: string, tags?: array<string>, category?: string, module?: string, priority?: string, status?: string, ...}, array{id: int|string, title: string, content: string, tags: array<string>, category: string|null, module: string|null, priority: string|null, status: string|null, ...} given.',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 382,
+       'line' => 504,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
@@ -2494,73 +2792,60 @@ return [
 • Offset \'module\' (string) does not accept type string|null.
 • Offset \'priority\' (string) does not accept type string|null.
 • Offset \'status\' (string) does not accept type string|null.',
-       'nodeLine' => 382,
+       'nodeLine' => 504,
        'nodeType' => 'PhpParser\\Node\\Expr\\MethodCall',
        'identifier' => 'argument.type',
-       'metadata' => 
-      array (
-      ),
-    )),
-    9 => 
-    \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Parameter #1 $entry of method App\\Services\\QdrantService::upsert() expects array{id: int|string, title: string, content: string, tags?: array<string>, category?: string, module?: string, priority?: string, status?: string, ...}, non-empty-array<string, mixed> given.',
-       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 402,
-       'canBeIgnored' => true,
-       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'traitFilePath' => NULL,
-       'tip' => NULL,
-       'nodeLine' => 402,
-       'nodeType' => 'PhpParser\\Node\\Expr\\MethodCall',
-       'identifier' => 'argument.type',
-       'metadata' => 
-      array (
-      ),
-    )),
-    10 => 
-    \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Only booleans are allowed in a negated boolean, mixed given.',
-       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 412,
-       'canBeIgnored' => true,
-       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'traitFilePath' => NULL,
-       'tip' => NULL,
-       'nodeLine' => 412,
-       'nodeType' => 'PhpParser\\Node\\Expr\\BooleanNot',
-       'identifier' => 'booleanNot.exprNotBoolean',
-       'metadata' => 
-      array (
-      ),
-    )),
-    11 => 
-    \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
-       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 440,
-       'canBeIgnored' => true,
-       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'traitFilePath' => NULL,
-       'tip' => NULL,
-       'nodeLine' => 440,
-       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
-       'identifier' => 'empty.notAllowed',
        'metadata' => 
       array (
       ),
     )),
     12 => 
     \PHPStan\Analyser\Error::__set_state(array(
-       'message' => 'Construct empty() is not allowed. Use more strict comparison.',
+       'message' => 'Parameter #1 $entry of method App\\Services\\QdrantService::upsert() expects array{id: int|string, title: string, content: string, tags?: array<string>, category?: string, module?: string, priority?: string, status?: string, ...}, non-empty-array<string, mixed> given.',
        'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-       'line' => 464,
+       'line' => 524,
        'canBeIgnored' => true,
        'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
        'traitFilePath' => NULL,
        'tip' => NULL,
-       'nodeLine' => 464,
-       'nodeType' => 'PhpParser\\Node\\Expr\\Empty_',
-       'identifier' => 'empty.notAllowed',
+       'nodeLine' => 524,
+       'nodeType' => 'PhpParser\\Node\\Expr\\MethodCall',
+       'identifier' => 'argument.type',
+       'metadata' => 
+      array (
+      ),
+    )),
+    13 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Only booleans are allowed in a negated boolean, mixed given.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'line' => 534,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 534,
+       'nodeType' => 'PhpParser\\Node\\Expr\\BooleanNot',
+       'identifier' => 'booleanNot.exprNotBoolean',
+       'metadata' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php' => 
+  array (
+    0 => 
+    \PHPStan\Analyser\Error::__set_state(array(
+       'message' => 'Only booleans are allowed in an if condition, int|false given.',
+       'file' => '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php',
+       'line' => 180,
+       'canBeIgnored' => true,
+       'filePath' => '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php',
+       'traitFilePath' => NULL,
+       'tip' => NULL,
+       'nodeLine' => 180,
+       'nodeType' => 'PhpParser\\Node\\Stmt\\If_',
+       'identifier' => 'if.condNotBoolean',
        'metadata' => 
       array (
       ),
@@ -2576,16 +2861,30 @@ return [
 	'collectedDataCallback' => static function (): array { return array (
 ); },
 	'dependencies' => array (
+  '/home/jordan/projects/knowledge/app/Commands/IndexCodeCommand.php' => 
+  array (
+    'fileHash' => '05bcc48ab16be0cf75dec1d3ef95c25aa3115793',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php' => 
+  array (
+    'fileHash' => '49d778791dee2097ae15edec02295d948db237df',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
   '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php' => 
   array (
-    'fileHash' => '279779bfd8f27337205ff63d0487faa8309551b7',
+    'fileHash' => '2604403d3c79fc0d6e06bdd8cfea63b6b1e32904',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php' => 
   array (
-    'fileHash' => '2200ae859dd4af61a43ef0273640dc88bb4b68e0',
+    'fileHash' => 'bba911c4e0a1739b0ef5b1c62e30e1258a20143b',
     'dependentFiles' => 
     array (
     ),
@@ -2599,14 +2898,14 @@ return [
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeConfigCommand.php' => 
   array (
-    'fileHash' => '8fe81d438336962a5c0664587d0920f9690af507',
+    'fileHash' => 'd700cbf2101f871f31763385ec223127aa3a4e98',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportAllCommand.php' => 
   array (
-    'fileHash' => 'c3bc61342b691a478e79fcb3da33fe707b8e7c78',
+    'fileHash' => 'd3e6830cbe8162134f3044b334dc3ca32332b3b8',
     'dependentFiles' => 
     array (
     ),
@@ -2627,42 +2926,42 @@ return [
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeListCommand.php' => 
   array (
-    'fileHash' => 'c9f1c58d0b14475f69c9d9b5e5beeca13ed0b096',
+    'fileHash' => '23c9268cf16b725228b56c9ece8ea7766a15c3f5',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchCommand.php' => 
   array (
-    'fileHash' => 'ff3736e75e14fb37fedac8ca2ed28ae5f0dfef93',
+    'fileHash' => '507b4855effed70e32f7a89fb560a713c27537f6',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchStatusCommand.php' => 
   array (
-    'fileHash' => 'f8db7c7130edc0c487cc99825afa43f8d59c0dae',
+    'fileHash' => '4582141ded7873fb2943b619cc2307cb3a773868',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeShowCommand.php' => 
   array (
-    'fileHash' => '568f34ee9c3f4b3c9114bb419f029f6c0f82b07d',
+    'fileHash' => '5aa95fa7ab05ac7ea7a258abbf61f59ce84adc7d',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeStatsCommand.php' => 
   array (
-    'fileHash' => '291283e895d1dfbd83499830880e805daef4f2f9',
+    'fileHash' => '04cef12ab315e21c26dd73351a38c65cebd40cf2',
     'dependentFiles' => 
     array (
     ),
   ),
   '/home/jordan/projects/knowledge/app/Commands/KnowledgeUpdateCommand.php' => 
   array (
-    'fileHash' => '95a556a17b4ade3ad3cc53518d04f1670d1ace9d',
+    'fileHash' => '2d58683c969fc1377a9f99cdd6d72129836f97f6',
     'dependentFiles' => 
     array (
     ),
@@ -2674,9 +2973,23 @@ return [
     array (
     ),
   ),
+  '/home/jordan/projects/knowledge/app/Commands/SearchCodeCommand.php' => 
+  array (
+    'fileHash' => '98b86703065e9b236c49e984cd116580661add84',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
   '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php' => 
   array (
-    'fileHash' => '76176a0ea5e078e5f1fff8bd082024e9ef7e5bb8',
+    'fileHash' => '966b9fe507105331b170a0e0cf5664abb33a0d97',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php' => 
+  array (
+    'fileHash' => 'f0f2804265d41ef8f4229f26f0cfdc5fef65698f',
     'dependentFiles' => 
     array (
     ),
@@ -2688,9 +3001,19 @@ return [
     array (
       0 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchStatusCommand.php',
       1 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
-      2 => '/home/jordan/projects/knowledge/app/Services/EmbeddingService.php',
-      3 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
-      4 => '/home/jordan/projects/knowledge/app/Services/StubEmbeddingService.php',
+      2 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      3 => '/home/jordan/projects/knowledge/app/Services/EmbeddingService.php',
+      4 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      5 => '/home/jordan/projects/knowledge/app/Services/StubEmbeddingService.php',
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Contracts/SparseEmbeddingServiceInterface.php' => 
+  array (
+    'fileHash' => 'df0fcee7a3c7f85a73d650d071fc04ed7b014b35',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Services/Bm25SparseEmbeddingService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Enums/ObservationType.php' => 
@@ -2723,6 +3046,14 @@ return [
       0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
+  '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/DuplicateEntryException.php' => 
+  array (
+    'fileHash' => '71869d3446f4d9e8be7c5d2d9be3b41112783037',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
+    ),
+  ),
   '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/EmbeddingException.php' => 
   array (
     'fileHash' => 'bd7ada14342c3dfb058817947adb20bddc06f800',
@@ -2736,12 +3067,14 @@ return [
     'fileHash' => '06e6ae7407d18426f6e9a964a5836835af76209f',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/CollectionCreationException.php',
-      1 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/CollectionNotFoundException.php',
-      2 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/ConnectionException.php',
-      3 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/EmbeddingException.php',
-      4 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/UpsertException.php',
-      5 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
+      1 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/CollectionCreationException.php',
+      2 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/CollectionNotFoundException.php',
+      3 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/ConnectionException.php',
+      4 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/DuplicateEntryException.php',
+      5 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/EmbeddingException.php',
+      6 => '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/UpsertException.php',
+      7 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/UpsertException.php' => 
@@ -2757,15 +3090,17 @@ return [
     'fileHash' => '7f97e900ca6566edf377d16698fbc212a9ffc118',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/CreateCollection.php' => 
   array (
-    'fileHash' => '4eb16903318bf987f8dc682b6cf11fe38710df96',
+    'fileHash' => '4c4669b1c0fc94471cb8fd4afb6769e08d8a26c3',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/DeletePoints.php' => 
@@ -2781,12 +3116,21 @@ return [
     'fileHash' => '848731660bb899fa01b953774bc2796186efc81d',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/GetPoints.php' => 
   array (
     'fileHash' => 'e2248747a52a53f1b32eb45227385015da8b0157',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php' => 
+  array (
+    'fileHash' => 'ef69730d2a598260cd8f6ea0b010cf574b3a9b06',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
@@ -2805,7 +3149,8 @@ return [
     'fileHash' => '5784ff9984afdfb66df5ccd896779be683d8f50b',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/UpsertPoints.php' => 
@@ -2813,20 +3158,37 @@ return [
     'fileHash' => 'cebb42bba4726cd2e866c32960d104a5ab5da66d',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
+      0 => '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php',
+      1 => '/home/jordan/projects/knowledge/app/Services/QdrantService.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php' => 
   array (
-    'fileHash' => 'f8dddb08e689019973d5c468638c46fc83962758',
+    'fileHash' => 'd28bad87d9ead4c3484c081f1829f5a181da5457',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/config/app.php',
     ),
   ),
+  '/home/jordan/projects/knowledge/app/Services/Bm25SparseEmbeddingService.php' => 
+  array (
+    'fileHash' => 'f115e2154b5f27ba34581cfd6e3792dff0ec7415',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php' => 
+  array (
+    'fileHash' => '24926bd92f7599a1df32aba9714cf19f974bc9fb',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Commands/IndexCodeCommand.php',
+      1 => '/home/jordan/projects/knowledge/app/Commands/SearchCodeCommand.php',
+    ),
+  ),
   '/home/jordan/projects/knowledge/app/Services/EmbeddingService.php' => 
   array (
-    'fileHash' => 'cbc4319f9920844aac598518f3f93ccc8676a366',
+    'fileHash' => '771f2cbcedb07af94feb9f1dc22738f271eb2ed1',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
@@ -2843,7 +3205,7 @@ return [
   ),
   '/home/jordan/projects/knowledge/app/Services/KnowledgePathService.php' => 
   array (
-    'fileHash' => 'f96cad767fe39741ad7b939b3e764ee4503aae06',
+    'fileHash' => 'c18555771386565470630c2bce6c2c47434e2db1',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeConfigCommand.php',
@@ -2852,37 +3214,47 @@ return [
   ),
   '/home/jordan/projects/knowledge/app/Services/MarkdownExporter.php' => 
   array (
-    'fileHash' => '29ef5057e089d77ed0f8d22c0c2e006c15b678d5',
+    'fileHash' => 'ff366f4d2e3f14aee8298366f8a04fdb2d8ba4b4',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportAllCommand.php',
       1 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportCommand.php',
     ),
   ),
-  '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
+  '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php' => 
   array (
-    'fileHash' => 'e99145112e79dfa288b46be1f56bcb03231c835e',
+    'fileHash' => '6d90fdd399160de677eec19d741a8977edd06190',
     'dependentFiles' => 
     array (
-      0 => '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php',
-      1 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
-      2 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeArchiveCommand.php',
-      3 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportAllCommand.php',
-      4 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportCommand.php',
-      5 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeListCommand.php',
-      6 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchCommand.php',
-      7 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchStatusCommand.php',
-      8 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeShowCommand.php',
-      9 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeStatsCommand.php',
-      10 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeUpdateCommand.php',
-      11 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeValidateCommand.php',
-      12 => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
-      13 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
+      0 => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
+  array (
+    'fileHash' => 'd50fa85c93149b849becad9f49065a0da3112e0a',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
+      1 => '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php',
+      2 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeAddCommand.php',
+      3 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeArchiveCommand.php',
+      4 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportAllCommand.php',
+      5 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeExportCommand.php',
+      6 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeListCommand.php',
+      7 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchCommand.php',
+      8 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeSearchStatusCommand.php',
+      9 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeShowCommand.php',
+      10 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeStatsCommand.php',
+      11 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeUpdateCommand.php',
+      12 => '/home/jordan/projects/knowledge/app/Commands/KnowledgeValidateCommand.php',
+      13 => '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php',
+      14 => '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php',
+      15 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
     ),
   ),
   '/home/jordan/projects/knowledge/app/Services/RuntimeEnvironment.php' => 
   array (
-    'fileHash' => '27d5db176ba0e2c911b75f4de288303daae4ec02',
+    'fileHash' => '3ae17cfcc00e08ca6a67d14a322983fe399a8e7b',
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
@@ -2895,6 +3267,14 @@ return [
     'dependentFiles' => 
     array (
       0 => '/home/jordan/projects/knowledge/app/Providers/AppServiceProvider.php',
+    ),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php' => 
+  array (
+    'fileHash' => 'fbd80933c787ec0db201981109b883edd376ecd0',
+    'dependentFiles' => 
+    array (
+      0 => '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php',
     ),
   ),
   '/home/jordan/projects/knowledge/config/app.php' => 
@@ -2913,13 +3293,216 @@ return [
   ),
   '/home/jordan/projects/knowledge/config/search.php' => 
   array (
-    'fileHash' => '0042af78342a655ad4ed30f0a82a90d26c47681a',
+    'fileHash' => 'ffe8363092e6f2672a7e4d6d73de25e8d2b4560d',
+    'dependentFiles' => 
+    array (
+    ),
+  ),
+  '/home/jordan/projects/knowledge/config/services.php' => 
+  array (
+    'fileHash' => '5bac4fb4d0c8709298006e2f49b69328aa3311c3',
     'dependentFiles' => 
     array (
     ),
   ),
 ),
 	'exportedNodesCallback' => static function (): array { return array (
+  '/home/jordan/projects/knowledge/app/Commands/IndexCodeCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Commands\\IndexCodeCommand',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'LaravelZero\\Framework\\Commands\\Command',
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'signature',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'description',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'handle',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'int',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'indexer',
+               'type' => 'App\\Services\\CodeIndexerService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Commands/InsightsCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Commands\\InsightsCommand',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'LaravelZero\\Framework\\Commands\\Command',
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'signature',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'description',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'handle',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'int',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'qdrant',
+               'type' => 'App\\Services\\QdrantService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'themeClassifier',
+               'type' => 'App\\Services\\ThemeClassifierService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'patternDetector',
+               'type' => 'App\\Services\\PatternDetectorService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
   '/home/jordan/projects/knowledge/app/Commands/InstallCommand.php' => 
   array (
     0 => 
@@ -4388,12 +4971,116 @@ return [
       ),
     )),
   ),
+  '/home/jordan/projects/knowledge/app/Commands/SearchCodeCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Commands\\SearchCodeCommand',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'LaravelZero\\Framework\\Commands\\Command',
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'signature',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'description',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'handle',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'int',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'indexer',
+               'type' => 'App\\Services\\CodeIndexerService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
   '/home/jordan/projects/knowledge/app/Commands/SyncCommand.php' => 
   array (
     0 => 
     \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
        'name' => 'App\\Commands\\SyncCommand',
-       'phpDoc' => NULL,
+       'phpDoc' => 
+      \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+         'phpDocString' => '/**
+ * @codeCoverageIgnore Integration command - requires external prefrontal-cortex API
+ */',
+         'namespace' => 'App\\Commands',
+         'uses' => 
+        array (
+          'qdrantservice' => 'App\\Services\\QdrantService',
+          'client' => 'GuzzleHttp\\Client',
+          'guzzleexception' => 'GuzzleHttp\\Exception\\GuzzleException',
+          'str' => 'Illuminate\\Support\\Str',
+          'command' => 'LaravelZero\\Framework\\Commands\\Command',
+        ),
+         'constUses' => 
+        array (
+        ),
+      )),
        'abstract' => false,
        'final' => false,
        'extends' => 'LaravelZero\\Framework\\Commands\\Command',
@@ -4597,6 +5284,93 @@ return [
       ),
     )),
   ),
+  '/home/jordan/projects/knowledge/app/Commands/SynthesizeCommand.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Commands\\SynthesizeCommand',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'LaravelZero\\Framework\\Commands\\Command',
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'signature',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'description',
+          ),
+           'phpDoc' => NULL,
+           'type' => NULL,
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'handle',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'int',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'qdrant',
+               'type' => 'App\\Services\\QdrantService',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
   '/home/jordan/projects/knowledge/app/Contracts/EmbeddingServiceInterface.php' => 
   array (
     0 => 
@@ -4696,6 +5470,67 @@ return [
             \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
                'name' => 'b',
                'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Contracts/SparseEmbeddingServiceInterface.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedInterfaceNode::__set_state(array(
+       'name' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+       'phpDoc' => NULL,
+       'extends' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'generate',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Generate a sparse vector representation for the given text.
+     *
+     * Returns an associative array with \'indices\' and \'values\' keys,
+     * suitable for Qdrant sparse vector format.
+     *
+     * @param  string  $text  The text to generate sparse embedding for
+     * @return array{indices: array<int>, values: array<float>}
+     */',
+             'namespace' => 'App\\Contracts',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'text',
+               'type' => 'string',
                'byRef' => false,
                'variadic' => false,
                'hasDefault' => false,
@@ -4923,6 +5758,234 @@ return [
             \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
                'name' => 'message',
                'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Exceptions/Qdrant/DuplicateEntryException.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Exceptions\\Qdrant\\DuplicateEntryException',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'App\\Exceptions\\Qdrant\\QdrantException',
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedClassConstantsNode::__set_state(array(
+           'constants' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedClassConstantNode::__set_state(array(
+               'name' => 'TYPE_HASH',
+               'value' => '\'hash\'',
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'public' => true,
+           'private' => false,
+           'final' => false,
+           'phpDoc' => NULL,
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedClassConstantsNode::__set_state(array(
+           'constants' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedClassConstantNode::__set_state(array(
+               'name' => 'TYPE_SIMILARITY',
+               'value' => '\'similarity\'',
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'public' => true,
+           'private' => false,
+           'final' => false,
+           'phpDoc' => NULL,
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => '__construct',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => NULL,
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'message',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'duplicateType',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'existingId',
+               'type' => 'string|int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            3 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'similarityScore',
+               'type' => '?float',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        3 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'hashMatch',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Create exception for hash-based duplicate detection.
+     */',
+             'namespace' => 'App\\Exceptions\\Qdrant',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => true,
+           'returnType' => 'self',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'existingId',
+               'type' => 'string|int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'contentHash',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        4 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'similarityMatch',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Create exception for vector similarity-based duplicate detection.
+     */',
+             'namespace' => 'App\\Exceptions\\Qdrant',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => true,
+           'returnType' => 'self',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'existingId',
+               'type' => 'string|int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'similarityScore',
+               'type' => 'float',
                'byRef' => false,
                'variadic' => false,
                'hasDefault' => false,
@@ -5304,6 +6367,17 @@ return [
               array (
               ),
             )),
+            3 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'hybridEnabled',
+               'type' => 'bool',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
           ),
            'attributes' => 
           array (
@@ -5661,6 +6735,207 @@ return [
                'byRef' => false,
                'variadic' => false,
                'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'resolveEndpoint',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'string',
+           'parameters' => 
+          array (
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        3 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'defaultBody',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => false,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Integrations/Qdrant/Requests/HybridSearchPoints.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
+       'phpDoc' => 
+      \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+         'phpDocString' => '/**
+ * Hybrid search using prefetch + RRF (Reciprocal Rank Fusion).
+ *
+ * Combines dense vector (semantic) and sparse vector (lexical/BM25) search
+ * results using Qdrant\'s native RRF fusion for improved relevance.
+ */',
+         'namespace' => 'App\\Integrations\\Qdrant\\Requests',
+         'uses' => 
+        array (
+          'hasbody' => 'Saloon\\Contracts\\Body\\HasBody',
+          'method' => 'Saloon\\Enums\\Method',
+          'request' => 'Saloon\\Http\\Request',
+          'hasjsonbody' => 'Saloon\\Traits\\Body\\HasJsonBody',
+        ),
+         'constUses' => 
+        array (
+        ),
+      )),
+       'abstract' => false,
+       'final' => false,
+       'extends' => 'Saloon\\Http\\Request',
+       'implements' => 
+      array (
+        0 => 'Saloon\\Contracts\\Body\\HasBody',
+      ),
+       'usedTraits' => 
+      array (
+        0 => 'Saloon\\Traits\\Body\\HasJsonBody',
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedPropertiesNode::__set_state(array(
+           'names' => 
+          array (
+            0 => 'method',
+          ),
+           'phpDoc' => NULL,
+           'type' => 'Saloon\\Enums\\Method',
+           'public' => false,
+           'private' => false,
+           'static' => false,
+           'readonly' => false,
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => '__construct',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * @param  array<float>  $denseVector  Dense embedding vector
+     * @param  array{indices: array<int>, values: array<float>}  $sparseVector  Sparse embedding vector
+     * @param  array<string, mixed>|null  $filter  Optional Qdrant filter
+     */',
+             'namespace' => 'App\\Integrations\\Qdrant\\Requests',
+             'uses' => 
+            array (
+              'hasbody' => 'Saloon\\Contracts\\Body\\HasBody',
+              'method' => 'Saloon\\Enums\\Method',
+              'request' => 'Saloon\\Http\\Request',
+              'hasjsonbody' => 'Saloon\\Traits\\Body\\HasJsonBody',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => NULL,
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'collectionName',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'denseVector',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'sparseVector',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            3 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'limit',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            4 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'prefetchLimit',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            5 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'filter',
+               'type' => '?array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
                'attributes' => 
               array (
               ),
@@ -6295,6 +7570,444 @@ return [
            'returnType' => 'void',
            'parameters' => 
           array (
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/Bm25SparseEmbeddingService.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Services\\Bm25SparseEmbeddingService',
+       'phpDoc' => 
+      \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+         'phpDocString' => '/**
+ * BM25-inspired sparse embedding service.
+ *
+ * Generates sparse vectors using term frequency and token hashing.
+ * This provides a simple, fast sparse representation suitable for
+ * hybrid search with RRF fusion in Qdrant.
+ */',
+         'namespace' => 'App\\Services',
+         'uses' => 
+        array (
+          'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+        ),
+         'constUses' => 
+        array (
+        ),
+      )),
+       'abstract' => false,
+       'final' => false,
+       'extends' => NULL,
+       'implements' => 
+      array (
+        0 => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => '__construct',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => NULL,
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'vocabSize',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'k1',
+               'type' => 'float',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'b',
+               'type' => 'float',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            3 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'avgDocLength',
+               'type' => 'float',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'generate',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Generate sparse vector using BM25-inspired term weighting.
+     *
+     * @return array{indices: array<int>, values: array<float>}
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'text',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/CodeIndexerService.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Services\\CodeIndexerService',
+       'phpDoc' => NULL,
+       'abstract' => false,
+       'final' => false,
+       'extends' => NULL,
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => '__construct',
+           'phpDoc' => NULL,
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => NULL,
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'embeddingService',
+               'type' => 'App\\Contracts\\EmbeddingServiceInterface',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'vectorSize',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'ensureCollection',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Ensure the code collection exists.
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'finder' => 'Symfony\\Component\\Finder\\Finder',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'bool',
+           'parameters' => 
+          array (
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'findFiles',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Find all indexable code files in the given paths.
+     *
+     * @param  array<string>  $paths
+     * @return \\Generator<array{path: string, repo: string}>
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'finder' => 'Symfony\\Component\\Finder\\Finder',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'Generator',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'paths',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        3 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'indexFile',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Index a single file.
+     *
+     * @return array{chunks: int, success: bool, error?: string}
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'finder' => 'Symfony\\Component\\Finder\\Finder',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'filepath',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'repo',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        4 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'search',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Search code semantically.
+     *
+     * @param  array{repo?: string, language?: string}  $filters
+     * @return array<array{filepath: string, repo: string, language: string, content: string, score: float, functions: array<string>}>
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'finder' => 'Symfony\\Component\\Finder\\Finder',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'query',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'limit',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'filters',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
           ),
            'attributes' => 
           array (
@@ -7048,6 +8761,158 @@ return [
       ),
     )),
   ),
+  '/home/jordan/projects/knowledge/app/Services/PatternDetectorService.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Services\\PatternDetectorService',
+       'phpDoc' => 
+      \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+         'phpDocString' => '/**
+ * Detects recurring patterns and topics in knowledge entries.
+ *
+ * Identifies:
+ * - Frequently mentioned topics
+ * - Recurring problems/blockers
+ * - Common project associations
+ * - Temporal patterns (daily/weekly trends)
+ */',
+         'namespace' => 'App\\Services',
+         'uses' => 
+        array (
+          'collection' => 'Illuminate\\Support\\Collection',
+        ),
+         'constUses' => 
+        array (
+        ),
+      )),
+       'abstract' => false,
+       'final' => false,
+       'extends' => NULL,
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'detect',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Detect patterns from a collection of entries.
+     *
+     * @param  Collection<int, array{id: string|int, title: string, content: string, tags?: array<string>, category?: string|null, created_at?: string}>  $entries
+     * @return array{
+     *     frequent_topics: array<string, int>,
+     *     recurring_tags: array<string, int>,
+     *     project_associations: array<string, int>,
+     *     category_distribution: array<string, int>,
+     *     insights: array<string>
+     * }
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'collection' => 'Illuminate\\Support\\Collection',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'entries',
+               'type' => 'Illuminate\\Support\\Collection',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'findEntriesMatchingPattern',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Find entries that match a detected pattern.
+     *
+     * @param  Collection<int, array{id: string|int, title: string, content: string}>  $entries
+     * @return Collection<int, array{id: string|int, title: string, content: string}>
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'collection' => 'Illuminate\\Support\\Collection',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'Illuminate\\Support\\Collection',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'entries',
+               'type' => 'Illuminate\\Support\\Collection',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'pattern',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
   '/home/jordan/projects/knowledge/app/Services/QdrantService.php' => 
   array (
     0 => 
@@ -7136,12 +9001,82 @@ return [
               array (
               ),
             )),
+            5 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'hybridEnabled',
+               'type' => 'bool',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
           ),
            'attributes' => 
           array (
           ),
         )),
         1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'setSparseEmbeddingService',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Set the sparse embedding service for hybrid search.
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+              'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
+              'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
+              'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
+              'upsertexception' => 'App\\Exceptions\\Qdrant\\UpsertException',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
+              'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'collection' => 'Illuminate\\Support\\Collection',
+              'cache' => 'Illuminate\\Support\\Facades\\Cache',
+              'clientexception' => 'Saloon\\Exceptions\\Request\\ClientException',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'void',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'service',
+               'type' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'ensureCollection',
            'phpDoc' => 
@@ -7153,6 +9088,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7162,6 +9098,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7198,7 +9135,7 @@ return [
           array (
           ),
         )),
-        2 => 
+        3 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'upsert',
            'phpDoc' => 
@@ -7225,6 +9162,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7234,6 +9172,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7276,12 +9215,23 @@ return [
               array (
               ),
             )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'checkDuplicates',
+               'type' => 'bool',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
           ),
            'attributes' => 
           array (
           ),
         )),
-        3 => 
+        4 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'search',
            'phpDoc' => 
@@ -7316,6 +9266,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7325,6 +9276,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7394,7 +9346,135 @@ return [
           array (
           ),
         )),
-        4 => 
+        5 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'hybridSearch',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Hybrid search using both dense and sparse vectors with RRF fusion.
+     *
+     * Falls back to dense-only search if hybrid is not enabled or sparse embedding fails.
+     *
+     * @param  array{
+     *     tag?: string,
+     *     category?: string,
+     *     module?: string,
+     *     priority?: string,
+     *     status?: string
+     * }  $filters
+     * @return Collection<int, array{
+     *     id: string|int,
+     *     score: float,
+     *     title: string,
+     *     content: string,
+     *     tags: array<string>,
+     *     category: ?string,
+     *     module: ?string,
+     *     priority: ?string,
+     *     status: ?string,
+     *     confidence: int,
+     *     usage_count: int,
+     *     created_at: string,
+     *     updated_at: string
+     * }>
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+              'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
+              'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
+              'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
+              'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
+              'upsertexception' => 'App\\Exceptions\\Qdrant\\UpsertException',
+              'qdrantconnector' => 'App\\Integrations\\Qdrant\\QdrantConnector',
+              'createcollection' => 'App\\Integrations\\Qdrant\\Requests\\CreateCollection',
+              'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
+              'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
+              'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
+              'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
+              'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
+              'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
+              'collection' => 'Illuminate\\Support\\Collection',
+              'cache' => 'Illuminate\\Support\\Facades\\Cache',
+              'clientexception' => 'Saloon\\Exceptions\\Request\\ClientException',
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'Illuminate\\Support\\Collection',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'query',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+            1 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'filters',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            2 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'limit',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            3 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'prefetchLimit',
+               'type' => 'int',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+            4 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'project',
+               'type' => 'string',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => true,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        6 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'scroll',
            'phpDoc' => 
@@ -7424,6 +9504,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7433,6 +9514,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7502,7 +9584,7 @@ return [
           array (
           ),
         )),
-        5 => 
+        7 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'delete',
            'phpDoc' => 
@@ -7516,6 +9598,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7525,6 +9608,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7572,7 +9656,7 @@ return [
           array (
           ),
         )),
-        6 => 
+        8 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'getById',
            'phpDoc' => 
@@ -7599,6 +9683,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7608,6 +9693,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7655,7 +9741,7 @@ return [
           array (
           ),
         )),
-        7 => 
+        9 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'incrementUsage',
            'phpDoc' => 
@@ -7667,6 +9753,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7676,6 +9763,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7723,7 +9811,7 @@ return [
           array (
           ),
         )),
-        8 => 
+        10 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'updateFields',
            'phpDoc' => 
@@ -7737,6 +9825,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7746,6 +9835,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -7804,7 +9894,7 @@ return [
           array (
           ),
         )),
-        9 => 
+        11 => 
         \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
            'name' => 'count',
            'phpDoc' => 
@@ -7818,6 +9908,7 @@ return [
              'uses' => 
             array (
               'embeddingserviceinterface' => 'App\\Contracts\\EmbeddingServiceInterface',
+              'sparseembeddingserviceinterface' => 'App\\Contracts\\SparseEmbeddingServiceInterface',
               'collectioncreationexception' => 'App\\Exceptions\\Qdrant\\CollectionCreationException',
               'connectionexception' => 'App\\Exceptions\\Qdrant\\ConnectionException',
               'embeddingexception' => 'App\\Exceptions\\Qdrant\\EmbeddingException',
@@ -7827,6 +9918,7 @@ return [
               'deletepoints' => 'App\\Integrations\\Qdrant\\Requests\\DeletePoints',
               'getcollectioninfo' => 'App\\Integrations\\Qdrant\\Requests\\GetCollectionInfo',
               'getpoints' => 'App\\Integrations\\Qdrant\\Requests\\GetPoints',
+              'hybridsearchpoints' => 'App\\Integrations\\Qdrant\\Requests\\HybridSearchPoints',
               'scrollpoints' => 'App\\Integrations\\Qdrant\\Requests\\ScrollPoints',
               'searchpoints' => 'App\\Integrations\\Qdrant\\Requests\\SearchPoints',
               'upsertpoints' => 'App\\Integrations\\Qdrant\\Requests\\UpsertPoints',
@@ -8180,6 +10272,170 @@ return [
               array (
               ),
             )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+      ),
+       'attributes' => 
+      array (
+      ),
+    )),
+  ),
+  '/home/jordan/projects/knowledge/app/Services/ThemeClassifierService.php' => 
+  array (
+    0 => 
+    \PHPStan\Dependency\ExportedNode\ExportedClassNode::__set_state(array(
+       'name' => 'App\\Services\\ThemeClassifierService',
+       'phpDoc' => 
+      \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+         'phpDocString' => '/**
+ * Classifies knowledge entries into strategic themes.
+ *
+ * Themes are based on Jordan\'s vision strategic priorities:
+ * - Quality Automation (78%) - automated code review, testing, certification
+ * - Developer Experience (65%) - GitHub CLI, natural language interfaces
+ * - Context Continuity (35%) - knowledge management, session memory
+ * - Integrated Infrastructure (10%) - physical systems, property, homelab
+ */',
+         'namespace' => 'App\\Services',
+         'uses' => 
+        array (
+        ),
+         'constUses' => 
+        array (
+        ),
+      )),
+       'abstract' => false,
+       'final' => false,
+       'extends' => NULL,
+       'implements' => 
+      array (
+      ),
+       'usedTraits' => 
+      array (
+      ),
+       'traitUseAdaptations' => 
+      array (
+      ),
+       'statements' => 
+      array (
+        0 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'classify',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Classify an entry into themes.
+     *
+     * @param  array{title: string, content: string, tags?: array<string>, category?: string|null}  $entry
+     * @return array{theme: string|null, confidence: float, all_scores: array<string, float>}
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'entry',
+               'type' => 'array',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        1 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'classifyBatch',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Classify multiple entries and return theme distribution.
+     *
+     * @param  iterable<array{title: string, content: string, tags?: array<string>, category?: string|null}>  $entries
+     * @return array{distribution: array<string, int>, unclassified: int, total: int}
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
+            0 => 
+            \PHPStan\Dependency\ExportedNode\ExportedParameterNode::__set_state(array(
+               'name' => 'entries',
+               'type' => 'iterable',
+               'byRef' => false,
+               'variadic' => false,
+               'hasDefault' => false,
+               'attributes' => 
+              array (
+              ),
+            )),
+          ),
+           'attributes' => 
+          array (
+          ),
+        )),
+        2 => 
+        \PHPStan\Dependency\ExportedNode\ExportedMethodNode::__set_state(array(
+           'name' => 'getThemeTargets',
+           'phpDoc' => 
+          \PHPStan\Dependency\ExportedNode\ExportedPhpDocNode::__set_state(array(
+             'phpDocString' => '/**
+     * Get theme progress based on vision targets.
+     *
+     * @return array<string, array{target: float, description: string}>
+     */',
+             'namespace' => 'App\\Services',
+             'uses' => 
+            array (
+            ),
+             'constUses' => 
+            array (
+            ),
+          )),
+           'byRef' => false,
+           'public' => true,
+           'private' => false,
+           'abstract' => false,
+           'final' => false,
+           'static' => false,
+           'returnType' => 'array',
+           'parameters' => 
+          array (
           ),
            'attributes' => 
           array (

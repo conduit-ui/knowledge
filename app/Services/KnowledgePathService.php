@@ -7,7 +7,7 @@ namespace App\Services;
 class KnowledgePathService
 {
     public function __construct(
-        private RuntimeEnvironment $runtime
+        private readonly RuntimeEnvironment $runtime
     ) {}
 
     /**

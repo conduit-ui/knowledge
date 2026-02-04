@@ -4,15 +4,15 @@ services:
     container_name: knowledge-qdrant
     restart: unless-stopped
     ports:
-      - "6333:6333"  # HTTP API
-      - "6334:6334"  # gRPC API (optional)
+      - "100.68.122.24:6333:6333"  # HTTP API - Tailscale only
+      - "100.68.122.24:6334:6334"  # gRPC API - Tailscale only
     volumes:
       - qdrant_storage:/qdrant/storage
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/6333"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -22,7 +22,7 @@ services:
     container_name: knowledge-redis
     restart: unless-stopped
     ports:
-      - "6380:6379"
+      - "100.68.122.24:6380:6379"  # Tailscale only
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
@@ -39,20 +39,17 @@ services:
     container_name: knowledge-embeddings
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "100.68.122.24:8001:8001"  # Tailscale only
     volumes:
       - embedding_cache:/root/.cache
     environment:
       - EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
       - DEVICE=cpu
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Ollama runs natively on Mac with Metal GPU - no container needed
-  # Access at localhost:11434
 
 volumes:
   qdrant_storage:

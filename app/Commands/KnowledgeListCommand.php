@@ -51,7 +51,7 @@ class KnowledgeListCommand extends Command
 
         // Use scroll to get entries (no vector search needed)
         $results = spin(
-            fn () => $qdrant->scroll($filters, $limit, 'default', $parsedOffset),
+            fn (): \Illuminate\Support\Collection => $qdrant->scroll($filters, $limit, 'default', $parsedOffset),
             'Fetching entries...'
         );
 
@@ -64,8 +64,8 @@ class KnowledgeListCommand extends Command
         info("Found {$results->count()} ".str('entry')->plural($results->count()));
 
         // Build table data
-        $rows = $results->map(function (array $entry) {
-            $tags = isset($entry['tags']) && count($entry['tags']) > 0
+        $rows = $results->map(function (array $entry): array {
+            $tags = isset($entry['tags']) && $entry['tags'] !== []
                 ? implode(', ', array_slice($entry['tags'], 0, 3)).(count($entry['tags']) > 3 ? '...' : '')
                 : '-';
 

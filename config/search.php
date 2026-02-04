@@ -55,6 +55,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Hybrid Search Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Hybrid search combines dense (semantic) and sparse (BM25/lexical) vectors
+    | using Reciprocal Rank Fusion (RRF) for improved relevance.
+    |
+    | When enabled, the collection will store both dense and sparse vectors,
+    | and the hybridSearch() method can be used for combined retrieval.
+    |
+    */
+
+    'hybrid' => [
+        'enabled' => env('HYBRID_SEARCH_ENABLED', false),
+        'prefetch_limit' => env('HYBRID_PREFETCH_LIMIT', 40),
+        'sparse_vocab_size' => env('HYBRID_SPARSE_VOCAB_SIZE', 30000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Ollama Configuration
     |--------------------------------------------------------------------------
     */

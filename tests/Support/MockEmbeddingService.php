@@ -38,15 +38,16 @@ class MockEmbeddingService implements EmbeddingServiceInterface
      */
     public function similarity(array $a, array $b): float
     {
-        if (count($a) !== count($b) || count($a) === 0) {
+        if (count($a) !== count($b) || $a === []) {
             return 0.0;
         }
 
         $dotProduct = 0.0;
         $magnitudeA = 0.0;
         $magnitudeB = 0.0;
+        $counter = count($a);
 
-        for ($i = 0; $i < count($a); $i++) {
+        for ($i = 0; $i < $counter; $i++) {
             $dotProduct += $a[$i] * $b[$i];
             $magnitudeA += $a[$i] * $a[$i];
             $magnitudeB += $b[$i] * $b[$i];

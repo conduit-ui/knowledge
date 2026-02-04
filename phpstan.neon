@@ -12,10 +12,6 @@ parameters:
         maximumNumberOfProcesses: 1
     ignoreErrors:
         -
-            message: '#does not specify its types: TFactory#'
-            paths:
-                - app/Models/*
-        -
             message: '#Only booleans are allowed in (an if condition|&&)#'
             paths:
                 - app/Services/*

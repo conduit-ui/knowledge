@@ -7,9 +7,9 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('GetPoints', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('GetPoints', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1']
@@ -18,7 +18,7 @@ describe('GetPoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/test-collection/points');
         });
 
-        it('handles collection names with special characters', function () {
+        it('handles collection names with special characters', function (): void {
             $request = new GetPoints(
                 collectionName: 'my-project_collection',
                 ids: ['id-1']
@@ -27,7 +27,7 @@ describe('GetPoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/my-project_collection/points');
         });
 
-        it('handles simple collection names', function () {
+        it('handles simple collection names', function (): void {
             $request = new GetPoints(
                 collectionName: 'simple',
                 ids: [1, 2, 3]
@@ -37,8 +37,8 @@ describe('GetPoints', function () {
         });
     });
 
-    describe('defaultBody', function () {
-        it('includes IDs with string values', function () {
+    describe('defaultBody', function (): void {
+        it('includes IDs with string values', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1', 'id-2', 'id-3']
@@ -53,7 +53,7 @@ describe('GetPoints', function () {
                 ->and($body['ids'])->toBe(['id-1', 'id-2', 'id-3']);
         });
 
-        it('includes IDs with integer values', function () {
+        it('includes IDs with integer values', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: [1, 2, 3, 4, 5]
@@ -67,7 +67,7 @@ describe('GetPoints', function () {
             expect($body['ids'])->toBe([1, 2, 3, 4, 5]);
         });
 
-        it('handles mixed ID types', function () {
+        it('handles mixed ID types', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['string-id', 123, 'another-id', 456]
@@ -81,7 +81,7 @@ describe('GetPoints', function () {
             expect($body['ids'])->toBe(['string-id', 123, 'another-id', 456]);
         });
 
-        it('sets with_payload to true', function () {
+        it('sets with_payload to true', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1']
@@ -96,7 +96,7 @@ describe('GetPoints', function () {
                 ->and($body['with_payload'])->toBeTrue();
         });
 
-        it('sets with_vector to false', function () {
+        it('sets with_vector to false', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1']
@@ -111,7 +111,7 @@ describe('GetPoints', function () {
                 ->and($body['with_vector'])->toBeFalse();
         });
 
-        it('includes all required body fields', function () {
+        it('includes all required body fields', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1', 'id-2']
@@ -125,7 +125,7 @@ describe('GetPoints', function () {
             expect($body)->toHaveKeys(['ids', 'with_payload', 'with_vector']);
         });
 
-        it('handles single ID', function () {
+        it('handles single ID', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['single-id']
@@ -140,7 +140,7 @@ describe('GetPoints', function () {
                 ->and($body['ids'][0])->toBe('single-id');
         });
 
-        it('handles empty array', function () {
+        it('handles empty array', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: []
@@ -154,8 +154,8 @@ describe('GetPoints', function () {
             expect($body['ids'])->toBeEmpty();
         });
 
-        it('handles bulk retrieval', function () {
-            $ids = array_map(fn ($i) => "id-{$i}", range(1, 50));
+        it('handles bulk retrieval', function (): void {
+            $ids = array_map(fn ($i): string => "id-{$i}", range(1, 50));
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: $ids
@@ -170,8 +170,8 @@ describe('GetPoints', function () {
         });
     });
 
-    describe('method', function () {
-        it('uses POST method', function () {
+    describe('method', function (): void {
+        it('uses POST method', function (): void {
             $request = new GetPoints(
                 collectionName: 'test-collection',
                 ids: ['id-1']
@@ -186,8 +186,8 @@ describe('GetPoints', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts required parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts required parameters', function (): void {
             $request = new GetPoints(
                 collectionName: 'test',
                 ids: ['id-1', 'id-2']
@@ -196,7 +196,7 @@ describe('GetPoints', function () {
             expect($request)->toBeInstanceOf(GetPoints::class);
         });
 
-        it('implements HasBody interface', function () {
+        it('implements HasBody interface', function (): void {
             $request = new GetPoints(
                 collectionName: 'test',
                 ids: ['id-1']

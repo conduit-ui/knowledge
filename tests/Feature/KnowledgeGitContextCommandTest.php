@@ -6,7 +6,7 @@ use App\Services\GitContextService;
 
 describe('KnowledgeGitContextCommand', function (): void {
     describe('displaying git context', function (): void {
-        it('displays git context information', function () {
+        it('displays git context information', function (): void {
             $this->artisan('git:context')
                 ->expectsOutputToContain('Git Context Information')
                 ->expectsOutputToContain('Repository:')
@@ -15,7 +15,7 @@ describe('KnowledgeGitContextCommand', function (): void {
                 ->assertSuccessful();
         });
 
-        it('displays all context fields when in git repository', function () {
+        it('displays all context fields when in git repository', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(true);
             $mockService->shouldReceive('getContext')->andReturn([
@@ -36,7 +36,7 @@ describe('KnowledgeGitContextCommand', function (): void {
                 ->assertSuccessful();
         });
 
-        it('handles null values in context gracefully', function () {
+        it('handles null values in context gracefully', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(true);
             $mockService->shouldReceive('getContext')->andReturn([
@@ -57,7 +57,7 @@ describe('KnowledgeGitContextCommand', function (): void {
                 ->assertSuccessful();
         });
 
-        it('displays local path as repository when no remote configured', function () {
+        it('displays local path as repository when no remote configured', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(true);
             $mockService->shouldReceive('getContext')->andReturn([
@@ -78,7 +78,7 @@ describe('KnowledgeGitContextCommand', function (): void {
     });
 
     describe('handling non-git directories', function (): void {
-        it('handles non-git directory gracefully', function () {
+        it('handles non-git directory gracefully', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(false);
 
@@ -89,7 +89,7 @@ describe('KnowledgeGitContextCommand', function (): void {
                 ->assertSuccessful();
         });
 
-        it('exits early when not in git repository', function () {
+        it('exits early when not in git repository', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(false);
             $mockService->shouldNotReceive('getContext');
@@ -103,7 +103,7 @@ describe('KnowledgeGitContextCommand', function (): void {
     });
 
     describe('service integration', function (): void {
-        it('uses GitContextService for context retrieval', function () {
+        it('uses GitContextService for context retrieval', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->once()->andReturn(true);
             $mockService->shouldReceive('getContext')->once()->andReturn([
@@ -118,7 +118,7 @@ describe('KnowledgeGitContextCommand', function (): void {
             $this->artisan('git:context')->assertSuccessful();
         });
 
-        it('handles detached HEAD state', function () {
+        it('handles detached HEAD state', function (): void {
             $mockService = mock(GitContextService::class);
             $mockService->shouldReceive('isGitRepository')->andReturn(true);
             $mockService->shouldReceive('getContext')->andReturn([
@@ -137,28 +137,28 @@ describe('KnowledgeGitContextCommand', function (): void {
     });
 
     describe('command signature', function (): void {
-        it('has the correct signature', function () {
+        it('has the correct signature', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeGitContextCommand::class);
             expect($command->getName())->toBe('git:context');
         });
 
-        it('has the correct description', function () {
+        it('has the correct description', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeGitContextCommand::class);
             expect($command->getDescription())->toContain('git context');
         });
 
-        it('requires no arguments', function () {
+        it('requires no arguments', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeGitContextCommand::class);
             $definition = $command->getDefinition();
             expect($definition->getArguments())->toBeEmpty();
         });
 
-        it('has no options', function () {
+        it('has no options', function (): void {
             $command = $this->app->make(\App\Commands\KnowledgeGitContextCommand::class);
             $definition = $command->getDefinition();
             $options = $definition->getOptions();
             // Filter out default Laravel options (help, quiet, verbose, etc.)
-            $customOptions = array_filter($options, fn ($option) => ! in_array($option->getName(), [
+            $customOptions = array_filter($options, fn ($option): bool => ! in_array($option->getName(), [
                 'help', 'quiet', 'verbose', 'version', 'ansi', 'no-ansi', 'no-interaction', 'env',
             ]));
             expect($customOptions)->toBeEmpty();

@@ -7,9 +7,9 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('UpsertPoints', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('UpsertPoints', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'test-collection',
                 points: []
@@ -18,7 +18,7 @@ describe('UpsertPoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/test-collection/points');
         });
 
-        it('handles collection names with special characters', function () {
+        it('handles collection names with special characters', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'my-project_collection',
                 points: []
@@ -27,7 +27,7 @@ describe('UpsertPoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/my-project_collection/points');
         });
 
-        it('handles simple collection names', function () {
+        it('handles simple collection names', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'simple',
                 points: []
@@ -37,8 +37,8 @@ describe('UpsertPoints', function () {
         });
     });
 
-    describe('defaultBody', function () {
-        it('includes single point with string ID', function () {
+    describe('defaultBody', function (): void {
+        it('includes single point with string ID', function (): void {
             $points = [
                 [
                     'id' => 'test-id-1',
@@ -61,7 +61,7 @@ describe('UpsertPoints', function () {
                 ->and($body['points'])->toBe($points);
         });
 
-        it('includes single point with integer ID', function () {
+        it('includes single point with integer ID', function (): void {
             $points = [
                 [
                     'id' => 123,
@@ -83,7 +83,7 @@ describe('UpsertPoints', function () {
             expect($body['points'])->toBe($points);
         });
 
-        it('includes multiple points', function () {
+        it('includes multiple points', function (): void {
             $points = [
                 [
                     'id' => 'id-1',
@@ -116,7 +116,7 @@ describe('UpsertPoints', function () {
                 ->and($body['points'])->toBe($points);
         });
 
-        it('handles complex payload structures', function () {
+        it('handles complex payload structures', function (): void {
             $points = [
                 [
                     'id' => 'complex-1',
@@ -156,7 +156,7 @@ describe('UpsertPoints', function () {
             ]);
         });
 
-        it('handles minimal payload', function () {
+        it('handles minimal payload', function (): void {
             $points = [
                 [
                     'id' => 'minimal-1',
@@ -179,7 +179,7 @@ describe('UpsertPoints', function () {
                 ->and($body['points'][0]['payload'])->toHaveCount(1);
         });
 
-        it('handles empty points array', function () {
+        it('handles empty points array', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'test-collection',
                 points: []
@@ -193,7 +193,7 @@ describe('UpsertPoints', function () {
             expect($body['points'])->toBeEmpty();
         });
 
-        it('handles large vector dimensions', function () {
+        it('handles large vector dimensions', function (): void {
             $vector = array_fill(0, 1536, 0.1);
             $points = [
                 [
@@ -216,8 +216,8 @@ describe('UpsertPoints', function () {
             expect($body['points'][0]['vector'])->toHaveCount(1536);
         });
 
-        it('handles bulk upsert', function () {
-            $points = array_map(fn ($i) => [
+        it('handles bulk upsert', function (): void {
+            $points = array_map(fn ($i): array => [
                 'id' => "bulk-id-{$i}",
                 'vector' => [0.1 * $i, 0.2 * $i, 0.3 * $i],
                 'payload' => ['title' => "Entry {$i}"],
@@ -236,7 +236,7 @@ describe('UpsertPoints', function () {
             expect($body['points'])->toHaveCount(100);
         });
 
-        it('handles mixed ID types', function () {
+        it('handles mixed ID types', function (): void {
             $points = [
                 [
                     'id' => 'string-id',
@@ -265,8 +265,8 @@ describe('UpsertPoints', function () {
         });
     });
 
-    describe('method', function () {
-        it('uses PUT method', function () {
+    describe('method', function (): void {
+        it('uses PUT method', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'test-collection',
                 points: []
@@ -281,8 +281,8 @@ describe('UpsertPoints', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts required parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts required parameters', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'test',
                 points: [
@@ -297,7 +297,7 @@ describe('UpsertPoints', function () {
             expect($request)->toBeInstanceOf(UpsertPoints::class);
         });
 
-        it('implements HasBody interface', function () {
+        it('implements HasBody interface', function (): void {
             $request = new UpsertPoints(
                 collectionName: 'test',
                 points: []

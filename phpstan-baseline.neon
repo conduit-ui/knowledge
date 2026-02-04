@@ -1,6 +1,26 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
+			count: 4
+			path: app/Commands/InsightsCommand.php
+
+		-
+			message: "#^Variable \\$cat on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Commands/InsightsCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$project of method App\\\\Services\\\\QdrantService\\:\\:ensureCollection\\(\\) expects string, array\\|bool\\|string\\|null given\\.$#"
+			count: 1
+			path: app/Commands/InstallCommand.php
+
+		-
+			message: "#^Part \\$project \\(array\\|bool\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
+			count: 1
+			path: app/Commands/InstallCommand.php
+
+		-
 			message: "#^Cannot cast array\\|bool\\|string\\|null to string\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
@@ -9,6 +29,11 @@ parameters:
 			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\{title\\: string, content\\: non\\-empty\\-string, category\\: 'architecture'\\|'debugging'\\|'deployment'\\|'security'\\|'testing'\\|null, module\\: string\\|null, priority\\: 'critical'\\|'high'\\|'low'\\|'medium', confidence\\: int, source\\: string\\|null, ticket\\: string\\|null, \\.\\.\\.\\} given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
+
+		-
+			message: "#^Offset 'tags' on array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\} in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeListCommand.php
 
 		-
 			message: "#^Variable \\$tags in isset\\(\\) always exists and is not nullable\\.$#"
@@ -26,24 +51,34 @@ parameters:
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
+			message: "#^Method App\\\\Commands\\\\KnowledgeShowCommand\\:\\:renderEntry\\(\\) has parameter \\$entry with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeShowCommand.php
+
+		-
 			message: "#^Only booleans are allowed in a negated boolean, array\\<string, array\\<string\\>\\|int\\|string\\|null\\>\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
-			message: "#^Only booleans are allowed in an if condition, string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:incrementUsage\\(\\) expects int\\|string, array\\|bool\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeShowCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:incrementUsage\\(\\) expects int\\|string, array\\|bool\\|string\\|null given\\.$#"
+			message: "#^Method App\\\\Commands\\\\KnowledgeStatsCommand\\:\\:renderDashboard\\(\\) has parameter \\$entries with generic class Illuminate\\\\Support\\\\Collection but does not specify its types\\: TKey, TValue$#"
 			count: 1
-			path: app/Commands/KnowledgeShowCommand.php
+			path: app/Commands/KnowledgeStatsCommand.php
+
+		-
+			message: "#^Only booleans are allowed in &&, mixed given on the left side\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeStatsCommand.php
 
 		-
 			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|string\\|null given\\.$#"
@@ -59,26 +94,6 @@ parameters:
 			message: "#^Part \\$id \\(array\\|bool\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
 			count: 2
 			path: app/Commands/KnowledgeValidateCommand.php
-
-		-
-			message: "#^Method App\\\\Commands\\\\Service\\\\StatusCommand\\:\\:getContainerStatus\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Commands/Service/StatusCommand.php
-
-		-
-			message: "#^Method App\\\\Commands\\\\Service\\\\StatusCommand\\:\\:performHealthChecks\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Commands/Service/StatusCommand.php
-
-		-
-			message: "#^Method App\\\\Commands\\\\Service\\\\StatusCommand\\:\\:renderDashboard\\(\\) has parameter \\$containers with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Commands/Service/StatusCommand.php
-
-		-
-			message: "#^Method App\\\\Commands\\\\Service\\\\StatusCommand\\:\\:renderDashboard\\(\\) has parameter \\$healthData with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Commands/Service/StatusCommand.php
 
 		-
 			message: "#^Only booleans are allowed in a negated boolean, array\\|bool\\|string\\|null given\\.$#"
@@ -106,14 +121,19 @@ parameters:
 			path: app/Commands/SyncCommand.php
 
 		-
-			message: "#^Method App\\\\Contracts\\\\FullTextSearchInterface\\:\\:searchObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
+			message: "#^Offset 'confidence' on array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: app/Contracts/FullTextSearchInterface.php
+			path: app/Commands/SynthesizeCommand.php
 
 		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
+			message: "#^Offset 'updated_at' on array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
-			path: app/Contracts/FullTextSearchInterface.php
+			path: app/Commands/SynthesizeCommand.php
+
+		-
+			message: "#^Unable to resolve the template type TGroupKey in call to method Illuminate\\\\Support\\\\Collection\\<int,array\\<string, mixed\\>\\>\\:\\:groupBy\\(\\)$#"
+			count: 1
+			path: app/Commands/SynthesizeCommand.php
 
 		-
 			message: "#^Only booleans are allowed in an if condition, string\\|null given\\.$#"
@@ -136,6 +156,11 @@ parameters:
 			path: app/Integrations/Qdrant/Requests/GetPoints.php
 
 		-
+			message: "#^Method App\\\\Integrations\\\\Qdrant\\\\Requests\\\\HybridSearchPoints\\:\\:defaultBody\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Integrations/Qdrant/Requests/HybridSearchPoints.php
+
+		-
 			message: "#^Method App\\\\Integrations\\\\Qdrant\\\\Requests\\\\SearchPoints\\:\\:defaultBody\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: app/Integrations/Qdrant/Requests/SearchPoints.php
@@ -151,263 +176,43 @@ parameters:
 			path: app/Integrations/Qdrant/Requests/UpsertPoints.php
 
 		-
-			message: "#^Class App\\\\Models\\\\Observation not found\\.$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Method App\\\\Models\\\\Session\\:\\:observations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Method App\\\\Models\\\\Session\\:\\:observations\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany\\<App\\\\Models\\\\Observation, \\$this\\(App\\\\Models\\\\Session\\)\\> but returns Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany\\<Illuminate\\\\Database\\\\Eloquent\\\\Model, \\$this\\(App\\\\Models\\\\Session\\)\\>\\.$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Parameter \\#1 \\$related of method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:hasMany\\(\\) expects class\\-string\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>, string given\\.$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany\\<App\\\\Models\\\\Observation, \\$this\\(App\\\\Models\\\\Session\\)\\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany\\.$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:hasMany\\(\\)$#"
-			count: 1
-			path: app/Models/Session.php
-
-		-
-			message: "#^Class App\\\\Models\\\\Entry not found\\.$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Method App\\\\Models\\\\Tag\\:\\:entries\\(\\) has invalid return type App\\\\Models\\\\Entry\\.$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Method App\\\\Models\\\\Tag\\:\\:entries\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany\\<App\\\\Models\\\\Entry, \\$this\\(App\\\\Models\\\\Tag\\), Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\Pivot, 'pivot'\\> but returns Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany\\<Illuminate\\\\Database\\\\Eloquent\\\\Model, \\$this\\(App\\\\Models\\\\Tag\\), Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\Pivot, 'pivot'\\>\\.$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Parameter \\#1 \\$related of method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:belongsToMany\\(\\) expects class\\-string\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>, string given\\.$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Entry in generic type Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany\\<App\\\\Models\\\\Entry, \\$this\\(App\\\\Models\\\\Tag\\), Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\Pivot, string\\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany\\.$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:belongsToMany\\(\\)$#"
-			count: 1
-			path: app/Models/Tag.php
-
-		-
-			message: "#^Class App\\\\Services\\\\ChromaDBIndexService not found\\.$#"
-			count: 1
-			path: app/Providers/AppServiceProvider.php
-
-		-
-			message: "#^Class App\\\\Services\\\\SemanticSearchService not found\\.$#"
-			count: 1
-			path: app/Providers/AppServiceProvider.php
-
-		-
-			message: "#^Instantiated class App\\\\Services\\\\ChromaDBIndexService not found\\.$#"
-			count: 1
-			path: app/Providers/AppServiceProvider.php
-
-		-
-			message: "#^Instantiated class App\\\\Services\\\\SemanticSearchService not found\\.$#"
-			count: 1
-			path: app/Providers/AppServiceProvider.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:analyzeIssue\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:analyzeIssue\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:buildTodoList\\(\\) has parameter \\$analysis with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:buildTodoList\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:extractKeywords\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:gatherCodebaseContext\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:gatherCodebaseContext\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:groupFilesByChangeType\\(\\) has parameter \\$files with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:groupFilesByChangeType\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:searchFiles\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:validateAndEnhanceAnalysis\\(\\) has parameter \\$analysis with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\IssueAnalyzerService\\:\\:validateAndEnhanceAnalysis\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/IssueAnalyzerService.php
-
-		-
 			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
 			count: 3
 			path: app/Services/MarkdownExporter.php
 
 		-
-			message: "#^Call to static method query\\(\\) on an unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 3
-			path: app/Services/ObservationService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\ObservationService\\:\\:createObservation\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
+			message: "#^Strict comparison using \\!\\=\\= between non\\-empty\\-array and array\\{\\} will always evaluate to true\\.$#"
 			count: 1
-			path: app/Services/ObservationService.php
+			path: app/Services/MarkdownExporter.php
 
 		-
-			message: "#^Method App\\\\Services\\\\ObservationService\\:\\:getObservationsByType\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
+			message: "#^Offset 'content' on array\\{id\\: int\\|string, title\\: string, content\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: app/Services/ObservationService.php
+			path: app/Services/PatternDetectorService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\ObservationService\\:\\:getRecentObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
+			message: "#^Offset 'title' on array\\{id\\: int\\|string, title\\: string, content\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: app/Services/ObservationService.php
+			path: app/Services/PatternDetectorService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\ObservationService\\:\\:searchObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
+			message: "#^Short ternary operator is not allowed\\. Use null coalesce operator if applicable or consider using long ternary\\.$#"
 			count: 1
-			path: app/Services/ObservationService.php
-
-		-
-			message: "#^PHPDoc tag @var contains unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 2
-			path: app/Services/ObservationService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 3
-			path: app/Services/ObservationService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @var is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 2
-			path: app/Services/ObservationService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:analyzeIssue\\(\\) has parameter \\$codebaseContext with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:analyzeIssue\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:analyzeIssue\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:analyzeTestFailure\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:buildIssueAnalysisPrompt\\(\\) has parameter \\$codebaseContext with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:buildIssueAnalysisPrompt\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:enhanceEntry\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:expandQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:extractConcepts\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:extractTags\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:parseEnhancementResponse\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:parseIssueAnalysisResponse\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:suggestCodeChanges\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\OllamaService\\:\\:suggestCodeChanges\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/OllamaService.php
+			path: app/Services/PatternDetectorService.php
 
 		-
 			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
-			count: 3
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:scroll\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, status\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			count: 1
 			path: app/Services/QdrantService.php
 
 		-
@@ -431,161 +236,16 @@ parameters:
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Unable to resolve the template type TKey in call to function collect$#"
+			message: "#^Parameter \\#2 \\$points of class App\\\\Integrations\\\\Qdrant\\\\Requests\\\\UpsertPoints constructor expects array\\<int, array\\{id\\: int\\|string, vector\\: array\\<float\\>, payload\\: array\\<string, mixed\\>\\}\\>, array\\{array\\{id\\: int\\|string, payload\\: array\\{title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, confidence\\: int, \\.\\.\\.\\}, vector\\: non\\-empty\\-array\\<non\\-empty\\-array\\<array\\<float\\|int\\>\\|float\\>\\|float\\>\\}\\} given\\.$#"
 			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Unable to resolve the template type TKey in call to function collect$#"
+			count: 3
 			path: app/Services/QdrantService.php
 
 		-
 			message: "#^Unable to resolve the template type TValue in call to function collect$#"
-			count: 1
+			count: 3
 			path: app/Services/QdrantService.php
-
-		-
-			message: "#^Access to property \\$id on an unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^Call to static method query\\(\\) on an unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\SQLiteFtsService\\:\\:searchObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^PHPDoc tag @var for variable \\$observations contains unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @var for variable \\$observations is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/SQLiteFtsService.php
-
-		-
-			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Observation\\>\\:\\:where\\(\\)\\.$#"
-			count: 1
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\)\\.$#"
-			count: 2
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Dynamic call to static method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereNull\\(\\)\\.$#"
-			count: 1
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\SessionService\\:\\:getSessionObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^PHPDoc tag @var contains unknown class App\\\\Models\\\\Observation\\.$#"
-			count: 2
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @var is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 2
-			path: app/Services/SessionService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\StubFtsService\\:\\:searchObservations\\(\\) has invalid return type App\\\\Models\\\\Observation\\.$#"
-			count: 1
-			path: app/Services/StubFtsService.php
-
-		-
-			message: "#^Type App\\\\Models\\\\Observation in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, App\\\\Models\\\\Observation\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/StubFtsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:execute\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:execute\\(\\) has parameter \\$todos with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:execute\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeImplementation\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeImplementation\\(\\) has parameter \\$todo with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeImplementation\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeQuality\\(\\) has parameter \\$todo with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeQuality\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeTest\\(\\) has parameter \\$issue with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeTest\\(\\) has parameter \\$todo with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:executeTest\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:getCompletedTodos\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\TodoExecutorService\\:\\:getFailedTodos\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Property App\\\\Services\\\\TodoExecutorService\\:\\:\\$completedTodos type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php
-
-		-
-			message: "#^Property App\\\\Services\\\\TodoExecutorService\\:\\:\\$failedTodos type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/TodoExecutorService.php

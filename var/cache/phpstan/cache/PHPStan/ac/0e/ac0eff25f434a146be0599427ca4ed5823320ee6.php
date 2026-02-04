@@ -2,6 +2,6 @@
 
 // variadic-method-App\Commands\KnowledgeConfigCommand-invalidAction-/home/jordan/projects/knowledge/app/Commands/KnowledgeConfigCommand.php
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => '1768833157-v4',
+   'variableKey' => '1770179077-v4',
    'data' => false,
 ));

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 });
 
-it('validates an entry and boosts confidence', function () {
+it('validates an entry and boosts confidence', function (): void {
     $entry = [
         'id' => '1',
         'title' => 'Test Entry',
@@ -46,7 +46,7 @@ it('validates an entry and boosts confidence', function () {
         ->expectsOutput('Confidence: 60% -> 80%');
 });
 
-it('shows error when entry not found', function () {
+it('shows error when entry not found', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
         ->with('9999')
@@ -57,7 +57,7 @@ it('shows error when entry not found', function () {
         ->expectsOutput('Entry not found with ID: 9999');
 });
 
-it('validates id must be numeric', function () {
+it('validates id must be numeric', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
         ->with('abc')
@@ -67,7 +67,7 @@ it('validates id must be numeric', function () {
         ->assertFailed();
 });
 
-it('validates entry that is already validated', function () {
+it('validates entry that is already validated', function (): void {
     $entry = [
         'id' => '2',
         'title' => 'Already Validated',
@@ -100,7 +100,7 @@ it('validates entry that is already validated', function () {
         ->assertSuccessful();
 });
 
-it('displays validation date after validation', function () {
+it('displays validation date after validation', function (): void {
     $entry = [
         'id' => '3',
         'title' => 'Test Entry',
@@ -133,7 +133,7 @@ it('displays validation date after validation', function () {
         ->assertSuccessful();
 });
 
-it('validates entry with high confidence', function () {
+it('validates entry with high confidence', function (): void {
     $entry = [
         'id' => '4',
         'title' => 'High Confidence Entry',
@@ -167,7 +167,7 @@ it('validates entry with high confidence', function () {
         ->expectsOutput('Confidence: 95% -> 100%');
 });
 
-it('validates entry with low confidence', function () {
+it('validates entry with low confidence', function (): void {
     $entry = [
         'id' => '5',
         'title' => 'Low Confidence Entry',

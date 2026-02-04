@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Contracts\SparseEmbeddingServiceInterface;
 use App\Exceptions\Qdrant\CollectionCreationException;
 use App\Exceptions\Qdrant\ConnectionException;
 use App\Exceptions\Qdrant\EmbeddingException;
@@ -14,6 +15,7 @@ use App\Integrations\Qdrant\Requests\CreateCollection;
 use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
 use App\Integrations\Qdrant\Requests\GetPoints;
+use App\Integrations\Qdrant\Requests\HybridSearchPoints;
 use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
@@ -25,19 +27,30 @@ class QdrantService
 {
     private QdrantConnector $connector;
 
+    private ?SparseEmbeddingServiceInterface $sparseEmbeddingService = null;
+
     public function __construct(
         private readonly EmbeddingServiceInterface $embeddingService,
         private readonly int $vectorSize = 384,
         private readonly float $scoreThreshold = 0.7,
         private readonly int $cacheTtl = 604800, // 7 days
         private readonly bool $secure = false,
+        private readonly bool $hybridEnabled = false,
     ) {
         $this->connector = new QdrantConnector(
             host: config('search.qdrant.host', 'localhost'),
-            port: (int) config("search.qdrant.port", 6333),
+            port: (int) config('search.qdrant.port', 6333),
             apiKey: config('search.qdrant.api_key'),
             secure: $this->secure,
         );
+    }
+
+    /**
+     * Set the sparse embedding service for hybrid search.
+     */
+    public function setSparseEmbeddingService(SparseEmbeddingServiceInterface $service): void
+    {
+        $this->sparseEmbeddingService = $service;
     }
 
     /**
@@ -58,7 +71,7 @@ class QdrantService
             // Collection doesn't exist (404), create it
             if ($response->status() === 404) {
                 $createResponse = $this->connector->send(
-                    new CreateCollection($collectionName, $this->vectorSize)
+                    new CreateCollection($collectionName, $this->vectorSize, 'Cosine', $this->hybridEnabled)
                 );
 
                 if (! $createResponse->successful()) {
@@ -96,7 +109,7 @@ class QdrantService
      *     updated_at?: string
      * }  $entry
      */
-    public function upsert(array $entry, string $project = 'default'): bool
+    public function upsert(array $entry, string $project = 'default', bool $checkDuplicates = true): bool
     {
         $this->ensureCollection($project);
 
@@ -104,7 +117,7 @@ class QdrantService
         $text = $entry['title'].' '.$entry['content'];
         $vector = $this->getCachedEmbedding($text);
 
-        if (count($vector) === 0) {
+        if ($vector === []) {
             throw EmbeddingException::generationFailed($text);
         }
 
@@ -123,16 +136,26 @@ class QdrantService
             'updated_at' => $entry['updated_at'] ?? now()->toIso8601String(),
         ];
 
+        // Build point with appropriate vector format
+        $point = [
+            'id' => $entry['id'],
+            'payload' => $payload,
+        ];
+
+        if ($this->hybridEnabled && $this->sparseEmbeddingService instanceof \App\Contracts\SparseEmbeddingServiceInterface) {
+            $sparseVector = $this->sparseEmbeddingService->generate($text);
+            $point['vector'] = [
+                'dense' => $vector,
+                'sparse' => $sparseVector,
+            ];
+        } else {
+            $point['vector'] = $vector;
+        }
+
         $response = $this->connector->send(
             new UpsertPoints(
                 $this->getCollectionName($project),
-                [
-                    [
-                        'id' => $entry['id'],
-                        'vector' => $vector,
-                        'payload' => $payload,
-                    ],
-                ]
+                [$point]
             )
         );
 
@@ -181,7 +204,7 @@ class QdrantService
         // Generate query embedding
         $queryVector = $this->getCachedEmbedding($query);
 
-        if (count($queryVector) === 0) {
+        if ($queryVector === []) {
             return collect();
         }
 
@@ -205,12 +228,111 @@ class QdrantService
         $data = $response->json();
         $results = $data['result'] ?? [];
 
-        return collect($results)->map(function (array $result) {
+        return collect($results)->map(function (array $result): array {
             $payload = $result['payload'] ?? [];
 
             return [
                 'id' => $result['id'],
                 'score' => $result['score'] ?? 0.0,
+                'title' => $payload['title'] ?? '',
+                'content' => $payload['content'] ?? '',
+                'tags' => $payload['tags'] ?? [],
+                'category' => $payload['category'] ?? null,
+                'module' => $payload['module'] ?? null,
+                'priority' => $payload['priority'] ?? null,
+                'status' => $payload['status'] ?? null,
+                'confidence' => $payload['confidence'] ?? 0,
+                'usage_count' => $payload['usage_count'] ?? 0,
+                'created_at' => $payload['created_at'] ?? '',
+                'updated_at' => $payload['updated_at'] ?? '',
+            ];
+        });
+    }
+
+    /**
+     * Hybrid search using both dense and sparse vectors with RRF fusion.
+     *
+     * Falls back to dense-only search if hybrid is not enabled or sparse embedding fails.
+     *
+     * @param  array{
+     *     tag?: string,
+     *     category?: string,
+     *     module?: string,
+     *     priority?: string,
+     *     status?: string
+     * }  $filters
+     * @return Collection<int, array{
+     *     id: string|int,
+     *     score: float,
+     *     title: string,
+     *     content: string,
+     *     tags: array<string>,
+     *     category: ?string,
+     *     module: ?string,
+     *     priority: ?string,
+     *     status: ?string,
+     *     confidence: int,
+     *     usage_count: int,
+     *     created_at: string,
+     *     updated_at: string
+     * }>
+     */
+    public function hybridSearch(
+        string $query,
+        array $filters = [],
+        int $limit = 20,
+        int $prefetchLimit = 40,
+        string $project = 'default'
+    ): Collection {
+        // Fall back to dense search if hybrid not enabled or no sparse service
+        if (! $this->hybridEnabled || ! $this->sparseEmbeddingService instanceof \App\Contracts\SparseEmbeddingServiceInterface) {
+            return $this->search($query, $filters, $limit, $project);
+        }
+
+        $this->ensureCollection($project);
+
+        // Generate dense embedding
+        $denseVector = $this->getCachedEmbedding($query);
+
+        if ($denseVector === []) {
+            return collect();
+        }
+
+        // Generate sparse embedding
+        $sparseVector = $this->sparseEmbeddingService->generate($query);
+
+        // Fall back to dense search if sparse embedding fails
+        if ($sparseVector['indices'] === []) {
+            return $this->search($query, $filters, $limit, $project);
+        }
+
+        // Build Qdrant filter from search filters
+        $qdrantFilter = $this->buildFilter($filters);
+
+        $response = $this->connector->send(
+            new HybridSearchPoints(
+                $this->getCollectionName($project),
+                $denseVector,
+                $sparseVector,
+                $limit,
+                $prefetchLimit,
+                $qdrantFilter
+            )
+        );
+
+        if (! $response->successful()) {
+            return collect();
+        }
+
+        $data = $response->json();
+        $points = $data['result']['points'] ?? [];
+
+        return collect($points)->map(function (array $point): array {
+            $payload = $point['payload'] ?? [];
+
+            return [
+                'id' => $point['id'],
+                'score' => $point['score'] ?? 0.0,
                 'title' => $payload['title'] ?? '',
                 'content' => $payload['content'] ?? '',
                 'tags' => $payload['tags'] ?? [],
@@ -255,7 +377,7 @@ class QdrantService
     ): Collection {
         $this->ensureCollection($project);
 
-        $qdrantFilter = ! empty($filters) ? $this->buildFilter($filters) : null;
+        $qdrantFilter = $filters === [] ? null : $this->buildFilter($filters);
 
         $response = $this->connector->send(
             new ScrollPoints(
@@ -273,7 +395,7 @@ class QdrantService
         $data = $response->json();
         $points = $data['result']['points'] ?? [];
 
-        return collect($points)->map(function (array $point) {
+        return collect($points)->map(function (array $point): array {
             $payload = $point['payload'] ?? [];
 
             return [
@@ -419,7 +541,7 @@ class QdrantService
         return Cache::remember(
             $cacheKey,
             $this->cacheTtl,
-            fn () => $this->embeddingService->generate($text)
+            fn (): array => $this->embeddingService->generate($text)
         );
     }
 
@@ -437,7 +559,7 @@ class QdrantService
      */
     private function buildFilter(array $filters): ?array
     {
-        if (empty($filters)) {
+        if ($filters === []) {
             return null;
         }
 
@@ -461,7 +583,7 @@ class QdrantService
             ];
         }
 
-        return empty($must) ? null : ['must' => $must];
+        return $must === [] ? null : ['must' => $must];
     }
 
     /**

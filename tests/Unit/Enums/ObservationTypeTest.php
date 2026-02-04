@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\ObservationType;
 
-describe('ObservationType', function () {
-    it('has all expected cases', function () {
+describe('ObservationType', function (): void {
+    it('has all expected cases', function (): void {
         $cases = ObservationType::cases();
 
         expect($cases)->toHaveCount(6)
@@ -17,7 +17,7 @@ describe('ObservationType', function () {
             ->and($cases)->toContain(ObservationType::Change);
     });
 
-    it('has correct string values', function () {
+    it('has correct string values', function (): void {
         expect(ObservationType::Bugfix->value)->toBe('bugfix')
             ->and(ObservationType::Feature->value)->toBe('feature')
             ->and(ObservationType::Refactor->value)->toBe('refactor')
@@ -26,7 +26,7 @@ describe('ObservationType', function () {
             ->and(ObservationType::Change->value)->toBe('change');
     });
 
-    it('can be created from string value', function () {
+    it('can be created from string value', function (): void {
         expect(ObservationType::from('bugfix'))->toBe(ObservationType::Bugfix)
             ->and(ObservationType::from('feature'))->toBe(ObservationType::Feature)
             ->and(ObservationType::from('refactor'))->toBe(ObservationType::Refactor)
@@ -35,17 +35,17 @@ describe('ObservationType', function () {
             ->and(ObservationType::from('change'))->toBe(ObservationType::Change);
     });
 
-    it('throws exception for invalid value', function () {
-        expect(fn () => ObservationType::from('invalid'))
+    it('throws exception for invalid value', function (): void {
+        expect(fn (): \App\Enums\ObservationType => ObservationType::from('invalid'))
             ->toThrow(ValueError::class);
     });
 
-    it('can be used in tryFrom safely', function () {
+    it('can be used in tryFrom safely', function (): void {
         expect(ObservationType::tryFrom('bugfix'))->toBe(ObservationType::Bugfix)
             ->and(ObservationType::tryFrom('invalid'))->toBeNull();
     });
 
-    it('can be used in match expressions', function () {
+    it('can be used in match expressions', function (): void {
         $type = ObservationType::Feature;
 
         $result = match ($type) {
@@ -60,12 +60,12 @@ describe('ObservationType', function () {
         expect($result)->toBe('feat');
     });
 
-    it('can be compared', function () {
+    it('can be compared', function (): void {
         expect(ObservationType::Bugfix === ObservationType::Bugfix)->toBeTrue()
             ->and(ObservationType::Bugfix === ObservationType::Feature)->toBeFalse();
     });
 
-    it('is backed by string', function () {
+    it('is backed by string', function (): void {
         $reflection = new ReflectionEnum(ObservationType::class);
 
         expect($reflection->isBacked())->toBeTrue()

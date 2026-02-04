@@ -49,7 +49,7 @@ class KnowledgeUpdateCommand extends Command
 
         // Fetch existing entry
         $entry = spin(
-            fn () => $qdrant->getById($id),
+            fn (): ?array => $qdrant->getById($id),
             'Fetching entry...'
         );
 
@@ -166,7 +166,7 @@ class KnowledgeUpdateCommand extends Command
         }
         // @codeCoverageIgnoreEnd
 
-        if (count($updates) === 0) {
+        if ($updates === []) {
             error('No updates provided. Use --help to see available options.');
 
             return self::FAILURE;
@@ -177,11 +177,11 @@ class KnowledgeUpdateCommand extends Command
 
         // Normalize nullable fields for upsert (remove nulls, keep defined values)
         /** @var array{id: string|int, title: string, content: string, tags?: array<string>, category?: string, module?: string, priority?: string, status?: string, confidence?: int, usage_count?: int, created_at?: string, updated_at?: string} $normalizedEntry */
-        $normalizedEntry = array_filter($entry, fn ($value) => $value !== null);
+        $normalizedEntry = array_filter($entry, fn ($value): bool => $value !== null);
 
         // Save to Qdrant
         $success = spin(
-            fn () => $qdrant->upsert($normalizedEntry),
+            fn (): bool => $qdrant->upsert($normalizedEntry),
             'Updating knowledge entry...'
         );
 
@@ -203,7 +203,7 @@ class KnowledgeUpdateCommand extends Command
                 ['Updated', implode(', ', $updates)],
                 ['Category', $entry['category'] ?? 'N/A'],
                 ['Priority', $entry['priority'] ?? 'N/A'],
-                ['Confidence', (string) ($entry['confidence'] ?? 0).'%'],
+                ['Confidence', ($entry['confidence'] ?? 0).'%'],
                 ['Status', $entry['status'] ?? 'N/A'],
                 ['Tags', is_array($entry['tags']) ? implode(', ', $entry['tags']) : 'N/A'],
             ]

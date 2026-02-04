@@ -127,7 +127,7 @@ class KnowledgeConfigCommand extends Command
         }
 
         $config = $this->loadConfig();
-        $typedValue = $this->parseValue($key, $value);
+        $typedValue = $this->parseValue($value);
         $this->setNestedValue($config, $key, $typedValue);
 
         $this->saveConfig($config);
@@ -240,7 +240,7 @@ class KnowledgeConfigCommand extends Command
         }
     }
 
-    private function parseValue(string $key, string $value): string
+    private function parseValue(string $value): string
     {
         // All current config values are strings (URLs or collection names)
         return $value;
@@ -248,10 +248,11 @@ class KnowledgeConfigCommand extends Command
 
     private function validateValue(string $key, string $value): ?string
     {
-        if (in_array($key, self::URL_KEYS, true)) {
-            if (! $this->isValidUrl($value)) {
-                return "Value for {$key} must be a valid URL.";
-            }
+        if (! in_array($key, self::URL_KEYS, true)) {
+            return null;
+        }
+        if (! $this->isValidUrl($value)) {
+            return "Value for {$key} must be a valid URL.";
         }
 
         return null;

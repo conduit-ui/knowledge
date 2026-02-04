@@ -42,7 +42,7 @@ class MarkdownExporter
         $yaml[] = "confidence: {$entry['confidence']}";
         $yaml[] = "status: \"{$entry['status']}\"";
 
-        if (! empty($entry['tags']) && is_array($entry['tags']) && count($entry['tags']) > 0) {
+        if (! empty($entry['tags']) && is_array($entry['tags']) && $entry['tags'] !== []) {
             $yaml[] = 'tags:';
             foreach ($entry['tags'] as $tag) {
                 $yaml[] = "  - \"{$this->escapeYaml($tag)}\"";

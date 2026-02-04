@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 });
 
-it('lists all entries', function () {
+it('lists all entries', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 20, 'default', null)
@@ -23,7 +23,7 @@ it('lists all entries', function () {
         ->assertSuccessful();
 });
 
-it('filters by category', function () {
+it('filters by category', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with(['category' => 'architecture'], 20, 'default', null)
@@ -36,7 +36,7 @@ it('filters by category', function () {
         ->assertSuccessful();
 });
 
-it('filters by priority', function () {
+it('filters by priority', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with(['priority' => 'critical'], 20, 'default', null)
@@ -48,7 +48,7 @@ it('filters by priority', function () {
         ->assertSuccessful();
 });
 
-it('filters by status', function () {
+it('filters by status', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with(['status' => 'validated'], 20, 'default', null)
@@ -60,7 +60,7 @@ it('filters by status', function () {
         ->assertSuccessful();
 });
 
-it('filters by module', function () {
+it('filters by module', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with(['module' => 'Blood'], 20, 'default', null)
@@ -73,7 +73,7 @@ it('filters by module', function () {
         ->assertSuccessful();
 });
 
-it('limits results', function () {
+it('limits results', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 5, 'default', null)
@@ -89,7 +89,7 @@ it('limits results', function () {
         ->assertSuccessful();
 });
 
-it('shows default limit of 20', function () {
+it('shows default limit of 20', function (): void {
     $entries = collect();
     for ($i = 1; $i <= 20; $i++) {
         $entries->push([
@@ -113,7 +113,7 @@ it('shows default limit of 20', function () {
         ->assertSuccessful();
 });
 
-it('combines multiple filters', function () {
+it('combines multiple filters', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with(['category' => 'architecture', 'priority' => 'high'], 20, 'default', null)
@@ -127,7 +127,7 @@ it('combines multiple filters', function () {
     ])->assertSuccessful();
 });
 
-it('shows message when no entries exist', function () {
+it('shows message when no entries exist', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 20, 'default', null)
@@ -138,7 +138,7 @@ it('shows message when no entries exist', function () {
         ->expectsOutput('No entries found.');
 });
 
-it('orders by confidence and usage count', function () {
+it('orders by confidence and usage count', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 20, 'default', null)
@@ -152,7 +152,7 @@ it('orders by confidence and usage count', function () {
         ->assertSuccessful();
 });
 
-it('shows entry count', function () {
+it('shows entry count', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 20, 'default', null)
@@ -169,7 +169,7 @@ it('shows entry count', function () {
         ->expectsOutputToContain('5 entries');
 });
 
-it('accepts min-confidence filter', function () {
+it('accepts min-confidence filter', function (): void {
     // Note: KnowledgeListCommand doesn't implement min-confidence filter
     // This test should be removed or the command should be updated
     $this->qdrantMock->shouldReceive('scroll')
@@ -184,7 +184,7 @@ it('accepts min-confidence filter', function () {
         ->assertSuccessful();
 })->skip('min-confidence filter not implemented in KnowledgeListCommand');
 
-it('shows pagination info when results are limited', function () {
+it('shows pagination info when results are limited', function (): void {
     // Note: KnowledgeListCommand doesn't show pagination info like "Showing X of Y"
     // It just returns the scroll results from Qdrant
     $entries = collect();
@@ -210,7 +210,7 @@ it('shows pagination info when results are limited', function () {
         ->assertSuccessful();
 })->skip('Pagination info not implemented in KnowledgeListCommand');
 
-it('displays tags when entry has tags', function () {
+it('displays tags when entry has tags', function (): void {
     $this->qdrantMock->shouldReceive('scroll')
         ->once()
         ->with([], 20, 'default', null)

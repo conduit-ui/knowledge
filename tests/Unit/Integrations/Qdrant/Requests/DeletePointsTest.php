@@ -7,9 +7,9 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('DeletePoints', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('DeletePoints', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: ['id-1']
@@ -18,7 +18,7 @@ describe('DeletePoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/test-collection/points/delete');
         });
 
-        it('handles collection names with special characters', function () {
+        it('handles collection names with special characters', function (): void {
             $request = new DeletePoints(
                 collectionName: 'my-project_collection',
                 pointIds: ['id-1']
@@ -28,8 +28,8 @@ describe('DeletePoints', function () {
         });
     });
 
-    describe('defaultBody', function () {
-        it('includes point IDs with string values', function () {
+    describe('defaultBody', function (): void {
+        it('includes point IDs with string values', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: ['id-1', 'id-2', 'id-3']
@@ -44,7 +44,7 @@ describe('DeletePoints', function () {
                 ->and($body['points'])->toBe(['id-1', 'id-2', 'id-3']);
         });
 
-        it('includes point IDs with integer values', function () {
+        it('includes point IDs with integer values', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: [1, 2, 3, 4, 5]
@@ -58,7 +58,7 @@ describe('DeletePoints', function () {
             expect($body['points'])->toBe([1, 2, 3, 4, 5]);
         });
 
-        it('handles mixed ID types', function () {
+        it('handles mixed ID types', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: ['string-id', 123, 'another-id', 456]
@@ -72,7 +72,7 @@ describe('DeletePoints', function () {
             expect($body['points'])->toBe(['string-id', 123, 'another-id', 456]);
         });
 
-        it('handles single point ID', function () {
+        it('handles single point ID', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: ['single-id']
@@ -87,7 +87,7 @@ describe('DeletePoints', function () {
                 ->and($body['points'][0])->toBe('single-id');
         });
 
-        it('handles empty array', function () {
+        it('handles empty array', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: []
@@ -101,8 +101,8 @@ describe('DeletePoints', function () {
             expect($body['points'])->toBeEmpty();
         });
 
-        it('handles bulk deletion', function () {
-            $ids = array_map(fn ($i) => "id-{$i}", range(1, 100));
+        it('handles bulk deletion', function (): void {
+            $ids = array_map(fn ($i): string => "id-{$i}", range(1, 100));
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: $ids
@@ -117,8 +117,8 @@ describe('DeletePoints', function () {
         });
     });
 
-    describe('method', function () {
-        it('uses POST method', function () {
+    describe('method', function (): void {
+        it('uses POST method', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test-collection',
                 pointIds: ['id-1']
@@ -133,8 +133,8 @@ describe('DeletePoints', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts required parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts required parameters', function (): void {
             $request = new DeletePoints(
                 collectionName: 'test',
                 pointIds: ['id-1', 'id-2']

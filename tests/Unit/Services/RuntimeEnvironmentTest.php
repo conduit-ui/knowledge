@@ -83,7 +83,7 @@ describe('RuntimeEnvironment', function (): void {
 
             rmdir($testDir);
             rmdir(dirname($testDir));
-            rmdir(dirname(dirname($testDir)));
+            rmdir(dirname($testDir, 2));
         });
     });
 });

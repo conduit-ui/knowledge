@@ -36,7 +36,7 @@ class KnowledgeSearchCommand extends Command
         $priority = $this->option('priority');
         $status = $this->option('status');
         $limit = (int) $this->option('limit');
-        $useSemantic = $this->option('semantic');
+        $this->option('semantic');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
