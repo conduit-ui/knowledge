@@ -96,22 +96,7 @@ parameters:
 			path: app/Commands/KnowledgeValidateCommand.php
 
 		-
-			message: "#^Only booleans are allowed in a negated boolean, array\\|bool\\|string\\|null given\\.$#"
-			count: 2
-			path: app/Commands/SyncCommand.php
-
-		-
 			message: "#^Only booleans are allowed in an if condition, array\\<string, array\\<string\\>\\|float\\|int\\|string\\|null\\>\\|null given\\.$#"
-			count: 1
-			path: app/Commands/SyncCommand.php
-
-		-
-			message: "#^Only booleans are allowed in an if condition, array\\|bool\\|string\\|null given\\.$#"
-			count: 1
-			path: app/Commands/SyncCommand.php
-
-		-
-			message: "#^Only booleans are allowed in an if condition, array\\|string\\|true given\\.$#"
 			count: 1
 			path: app/Commands/SyncCommand.php
 
@@ -127,11 +112,6 @@ parameters:
 
 		-
 			message: "#^Offset 'updated_at' on array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\} in isset\\(\\) always exists and is not nullable\\.$#"
-			count: 1
-			path: app/Commands/SynthesizeCommand.php
-
-		-
-			message: "#^Unable to resolve the template type TGroupKey in call to method Illuminate\\\\Support\\\\Collection\\<int,array\\<string, mixed\\>\\>\\:\\:groupBy\\(\\)$#"
 			count: 1
 			path: app/Commands/SynthesizeCommand.php
 
