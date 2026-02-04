@@ -263,10 +263,10 @@ class SynthesizeCommand extends Command
         $lines = ["**Daily Knowledge Synthesis**\n"];
 
         // Group by category
-        $byCategory = $entries->groupBy(fn (array $e): mixed => $e['category'] ?? 'general');
+        $byCategory = $entries->groupBy(fn (array $e): string => (string) ($e['category'] ?? 'general'));
 
         foreach ($byCategory as $category => $categoryEntries) {
-            $lines[] = "\n### ".ucfirst((string) $category);
+            $lines[] = "\n### ".ucfirst($category);
 
             foreach ($categoryEntries as $entry) {
                 $confidence = $entry['confidence'] ?? 0;

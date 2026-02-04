@@ -10,9 +10,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
-/**
- * @codeCoverageIgnore Integration command - requires external prefrontal-cortex API
- */
 class SyncCommand extends Command
 {
     /**
@@ -20,7 +17,8 @@ class SyncCommand extends Command
      */
     protected $signature = 'sync
                             {--pull : Pull entries from cloud only}
-                            {--push : Push local entries to cloud only}';
+                            {--push : Push local entries to cloud only}
+                            {--delete : Delete cloud entries that do not exist locally (requires --push)}';
 
     /**
      * @var string
@@ -33,8 +31,16 @@ class SyncCommand extends Command
 
     public function handle(QdrantService $qdrant): int
     {
-        $pull = $this->option('pull');
-        $push = $this->option('push');
+        $pull = (bool) $this->option('pull');
+        $push = (bool) $this->option('push');
+        $delete = (bool) $this->option('delete');
+
+        // Validate --delete requires --push
+        if ($delete && ! $push) {
+            $this->error('The --delete option requires --push to be specified.');
+
+            return self::FAILURE;
+        }
 
         // Validate API token
         $token = config('services.prefrontal.token');
@@ -73,11 +79,18 @@ class SyncCommand extends Command
             return self::SUCCESS;
         }
 
-        // Push only
+        // Push only (with optional delete)
         if ($push) {
             $this->info('Pushing local entries to cloud...');
             $result = $this->pushToCloud($token, $qdrant);
-            $this->displayPushSummary($result);
+
+            $deleteResult = ['deleted' => 0, 'failed' => 0];
+            if ($delete) {
+                $this->info('Deleting cloud entries not present locally...');
+                $deleteResult = $this->deleteOrphanedCloudEntries($token, $qdrant);
+            }
+
+            $this->displayPushSummary($result, $deleteResult);
         }
 
         return self::SUCCESS;
@@ -368,20 +381,138 @@ class SyncCommand extends Command
      * Display summary for push-only operation.
      *
      * @param  array{sent: int, created: int, updated: int, failed: int}  $result
+     * @param  array{deleted: int, failed: int}  $deleteResult
      */
-    private function displayPushSummary(array $result): void
+    private function displayPushSummary(array $result, array $deleteResult = ['deleted' => 0, 'failed' => 0]): void
     {
         $this->newLine();
         $this->info('=== Push Summary ===');
 
+        $rows = [
+            ['Sent', $result['sent']],
+            ['Created (Cloud)', $result['created']],
+            ['Updated (Cloud)', $result['updated']],
+            ['Failed', $result['failed']],
+        ];
+
+        // Add delete stats if any deletions were attempted
+        if ($deleteResult['deleted'] > 0 || $deleteResult['failed'] > 0) {
+            $rows[] = ['Deleted (Cloud)', $deleteResult['deleted']];
+            $rows[] = ['Delete Failed', $deleteResult['failed']];
+        }
+
         $this->table(
             ['Operation', 'Count'],
-            [
-                ['Sent', $result['sent']],
-                ['Created (Cloud)', $result['created']],
-                ['Updated (Cloud)', $result['updated']],
-                ['Failed', $result['failed']],
-            ]
+            $rows
         );
+    }
+
+    /**
+     * Delete cloud entries that do not exist locally.
+     *
+     * @return array{deleted: int, failed: int}
+     */
+    private function deleteOrphanedCloudEntries(string $token, QdrantService $qdrant): array
+    {
+        $deleted = 0;
+        $failed = 0;
+
+        try {
+            // Get all cloud entries
+            $response = $this->getClient()->get('/api/knowledge/entries', [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            // @codeCoverageIgnoreStart
+            if ($response->getStatusCode() !== 200) {
+                $this->error('Failed to fetch cloud entries: HTTP '.$response->getStatusCode());
+
+                return ['deleted' => $deleted, 'failed' => $failed];
+            }
+            // @codeCoverageIgnoreEnd
+
+            $responseData = json_decode((string) $response->getBody(), true);
+
+            if (! is_array($responseData) || ! isset($responseData['data'])) {
+                $this->error('Invalid response from cloud API.');
+
+                return ['deleted' => $deleted, 'failed' => $failed];
+            }
+
+            $cloudEntries = $responseData['data'];
+
+            // Build map of cloud unique_ids to their cloud IDs
+            $cloudIdMap = [];
+            foreach ($cloudEntries as $entry) {
+                if (isset($entry['unique_id']) && isset($entry['id'])) {
+                    $cloudIdMap[$entry['unique_id']] = $entry['id'];
+                }
+            }
+
+            if ($cloudIdMap === []) {
+                $this->info('No cloud entries to process.');
+
+                return ['deleted' => $deleted, 'failed' => $failed];
+            }
+
+            // Get all local entries and build unique_id set
+            $localEntries = $qdrant->search('', [], 10000);
+            $localUniqueIds = [];
+            foreach ($localEntries as $entry) {
+                $localUniqueIds[] = $this->generateUniqueId($entry);
+            }
+
+            // Find cloud entries that don't exist locally
+            $toDelete = [];
+            foreach ($cloudIdMap as $uniqueId => $cloudId) {
+                if (! in_array($uniqueId, $localUniqueIds, true)) {
+                    $toDelete[] = $cloudId;
+                }
+            }
+
+            if ($toDelete === []) {
+                $this->info('No orphaned cloud entries to delete.');
+
+                return ['deleted' => $deleted, 'failed' => $failed];
+            }
+
+            $this->info('Found '.count($toDelete).' orphaned cloud entries to delete.');
+            $bar = $this->output->createProgressBar(count($toDelete));
+            $bar->start();
+
+            // Delete each orphaned entry
+            foreach ($toDelete as $cloudId) {
+                try {
+                    $deleteResponse = $this->getClient()->delete("/api/knowledge/{$cloudId}", [
+                        'headers' => [
+                            'Authorization' => "Bearer {$token}",
+                        ],
+                    ]);
+
+                    // @codeCoverageIgnoreStart
+                    if ($deleteResponse->getStatusCode() >= 200 && $deleteResponse->getStatusCode() < 300) {
+                        $deleted++;
+                    } else {
+                        $failed++;
+                    }
+                    // @codeCoverageIgnoreEnd
+                    // @codeCoverageIgnoreStart
+                } catch (GuzzleException) {
+                    $failed++;
+                }
+                // @codeCoverageIgnoreEnd
+
+                $bar->advance();
+            }
+
+            $bar->finish();
+            $this->newLine();
+        } catch (GuzzleException $e) {
+            $this->error('Failed to delete orphaned entries: '.$e->getMessage());
+        }
+
+        return ['deleted' => $deleted, 'failed' => $failed];
     }
 }
