@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 use Illuminate\Support\Str;
@@ -13,6 +14,7 @@ use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
+use function Laravel\Prompts\warning;
 
 class KnowledgeAddCommand extends Command
 {
@@ -31,7 +33,8 @@ class KnowledgeAddCommand extends Command
                             {--repo= : Repository URL or path}
                             {--branch= : Git branch name}
                             {--commit= : Git commit hash}
-                            {--no-git : Skip automatic git context detection}';
+                            {--no-git : Skip automatic git context detection}
+                            {--force : Skip duplicate detection and force creation}';
 
     protected $description = 'Add a new knowledge entry';
 
@@ -73,6 +76,8 @@ class KnowledgeAddCommand extends Command
         $commit = is_string($this->option('commit')) ? $this->option('commit') : null;
         /** @var bool $noGit */
         $noGit = (bool) $this->option('no-git');
+        /** @var bool $force */
+        $force = (bool) $this->option('force');
 
         // Validate required fields
         if ($content === null || $content === '') {
@@ -143,14 +148,27 @@ class KnowledgeAddCommand extends Command
         $id = Str::uuid()->toString();
         $data['id'] = $id;
 
-        // Store in Qdrant
-        $success = spin(
-            fn () => $qdrant->upsert($data),
-            'Storing knowledge entry...'
-        );
+        // Store in Qdrant with duplicate detection (unless --force is used)
+        $checkDuplicates = ! $force;
+        try {
+            $success = spin(
+                fn (): bool => $qdrant->upsert($data, 'default', $checkDuplicates),
+                'Storing knowledge entry...'
+            );
 
-        if (! $success) {
-            error('Failed to create knowledge entry');
+            if (! $success) {
+                error('Failed to create knowledge entry');
+
+                return self::FAILURE;
+            }
+        } catch (DuplicateEntryException $e) {
+            if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
+                error("Duplicate content detected: This exact content already exists as entry '{$e->existingId}'");
+            } else {
+                $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
+                warning("Potential duplicate detected: {$percentage}% similar to existing entry '{$e->existingId}'");
+                error('Entry not created. Use --force to override duplicate detection.');
+            }
 
             return self::FAILURE;
         }

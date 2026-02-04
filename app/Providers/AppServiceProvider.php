@@ -36,15 +36,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Runtime environment (must be first)
-        $this->app->singleton(RuntimeEnvironment::class, fn () => new RuntimeEnvironment);
+        $this->app->singleton(RuntimeEnvironment::class, fn (): \App\Services\RuntimeEnvironment => new RuntimeEnvironment);
 
         // Knowledge path service
-        $this->app->singleton(KnowledgePathService::class, fn ($app) => new KnowledgePathService(
+        $this->app->singleton(KnowledgePathService::class, fn ($app): \App\Services\KnowledgePathService => new KnowledgePathService(
             $app->make(RuntimeEnvironment::class)
         ));
 
         // Embedding service
-        $this->app->singleton(EmbeddingServiceInterface::class, function () {
+        $this->app->singleton(EmbeddingServiceInterface::class, function (): \App\Services\StubEmbeddingService|\App\Services\EmbeddingService {
             if (config('search.embedding_provider') === 'none') {
                 return new StubEmbeddingService;
             }
@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Qdrant vector database service
-        $this->app->singleton(QdrantService::class, fn ($app) => new QdrantService(
+        $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
             $app->make(EmbeddingServiceInterface::class),
             (int) config('search.embedding_dimension', 1024),
             (float) config('search.minimum_similarity', 0.7),

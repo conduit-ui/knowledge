@@ -2,31 +2,30 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->mockQdrant = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->mockQdrant);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 
-it('adds a knowledge entry with all options', function () {
+it('adds a knowledge entry with all options', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['title'] === 'Test Entry Title'
-                && $data['content'] === 'This is the detailed explanation'
-                && $data['category'] === 'architecture'
-                && $data['tags'] === ['module.submodule', 'patterns']
-                && $data['confidence'] === 85
-                && $data['priority'] === 'high'
-                && $data['status'] === 'draft'
-                && isset($data['id']);
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Test Entry Title'
+            && $data['content'] === 'This is the detailed explanation'
+            && $data['category'] === 'architecture'
+            && $data['tags'] === ['module.submodule', 'patterns']
+            && $data['confidence'] === 85
+            && $data['priority'] === 'high'
+            && $data['status'] === 'draft'
+            && isset($data['id'])), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -39,16 +38,14 @@ it('adds a knowledge entry with all options', function () {
     ])->assertSuccessful();
 });
 
-it('adds a knowledge entry with minimal options', function () {
+it('adds a knowledge entry with minimal options', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['title'] === 'Minimal Entry'
-                && $data['content'] === 'Content here'
-                && $data['priority'] === 'medium'
-                && $data['confidence'] === 50
-                && $data['status'] === 'draft';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Minimal Entry'
+            && $data['content'] === 'Content here'
+            && $data['priority'] === 'medium'
+            && $data['confidence'] === 50
+            && $data['status'] === 'draft'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -57,7 +54,7 @@ it('adds a knowledge entry with minimal options', function () {
     ])->assertSuccessful();
 });
 
-it('validates confidence must be between 0 and 100', function () {
+it('validates confidence must be between 0 and 100', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -67,7 +64,7 @@ it('validates confidence must be between 0 and 100', function () {
     ])->assertFailed();
 });
 
-it('validates confidence cannot be negative', function () {
+it('validates confidence cannot be negative', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -77,7 +74,7 @@ it('validates confidence cannot be negative', function () {
     ])->assertFailed();
 });
 
-it('validates priority must be valid enum value', function () {
+it('validates priority must be valid enum value', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -87,7 +84,7 @@ it('validates priority must be valid enum value', function () {
     ])->assertFailed();
 });
 
-it('validates category must be valid enum value', function () {
+it('validates category must be valid enum value', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -97,7 +94,7 @@ it('validates category must be valid enum value', function () {
     ])->assertFailed();
 });
 
-it('validates status must be valid enum value', function () {
+it('validates status must be valid enum value', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -107,15 +104,15 @@ it('validates status must be valid enum value', function () {
     ])->assertFailed();
 });
 
-it('requires title argument', function () {
+it('requires title argument', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
-    expect(function () {
+    expect(function (): void {
         $this->artisan('add');
     })->toThrow(\RuntimeException::class, 'Not enough arguments');
 });
 
-it('requires content option', function () {
+it('requires content option', function (): void {
     $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -123,12 +120,10 @@ it('requires content option', function () {
     ])->assertFailed();
 });
 
-it('accepts comma-separated tags', function () {
+it('accepts comma-separated tags', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['tags'] === ['tag1', 'tag2', 'tag3'];
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['tags'] === ['tag1', 'tag2', 'tag3']), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -138,12 +133,10 @@ it('accepts comma-separated tags', function () {
     ])->assertSuccessful();
 });
 
-it('accepts single tag', function () {
+it('accepts single tag', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['tags'] === ['single-tag'];
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['tags'] === ['single-tag']), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -153,12 +146,10 @@ it('accepts single tag', function () {
     ])->assertSuccessful();
 });
 
-it('accepts module option', function () {
+it('accepts module option', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['module'] === 'Blood';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['module'] === 'Blood'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -168,14 +159,12 @@ it('accepts module option', function () {
     ])->assertSuccessful();
 });
 
-it('accepts source, ticket, and author options', function () {
+it('accepts source, ticket, and author options', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['source'] === 'https://example.com'
-                && $data['ticket'] === 'JIRA-123'
-                && $data['author'] === 'John Doe';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['source'] === 'https://example.com'
+            && $data['ticket'] === 'JIRA-123'
+            && $data['author'] === 'John Doe'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -187,12 +176,10 @@ it('accepts source, ticket, and author options', function () {
     ])->assertSuccessful();
 });
 
-it('accepts status option', function () {
+it('accepts status option', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['status'] === 'validated';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['status'] === 'validated'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -202,7 +189,7 @@ it('accepts status option', function () {
     ])->assertSuccessful();
 });
 
-it('auto-populates git context when in git repository', function () {
+it('auto-populates git context when in git repository', function (): void {
     $mockGit = Mockery::mock(GitContextService::class);
     $mockGit->shouldReceive('isGitRepository')->andReturn(true);
     $mockGit->shouldReceive('getContext')->andReturn([
@@ -216,12 +203,10 @@ it('auto-populates git context when in git repository', function () {
 
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === 'https://github.com/test/repo'
-                && $data['branch'] === 'feature/test'
-                && $data['commit'] === 'abc123'
-                && $data['author'] === 'Git User';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === 'https://github.com/test/repo'
+            && $data['branch'] === 'feature/test'
+            && $data['commit'] === 'abc123'
+            && $data['author'] === 'Git User'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -230,7 +215,7 @@ it('auto-populates git context when in git repository', function () {
     ])->assertSuccessful();
 });
 
-it('skips git context when --no-git flag is used', function () {
+it('skips git context when --no-git flag is used', function (): void {
     $mockGit = Mockery::mock(GitContextService::class);
     $mockGit->shouldNotReceive('isGitRepository');
     $mockGit->shouldNotReceive('getContext');
@@ -239,12 +224,10 @@ it('skips git context when --no-git flag is used', function () {
 
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === null
-                && $data['branch'] === null
-                && $data['commit'] === null
-                && $data['author'] === null;
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === null
+            && $data['branch'] === null
+            && $data['commit'] === null
+            && $data['author'] === null), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -254,7 +237,7 @@ it('skips git context when --no-git flag is used', function () {
     ])->assertSuccessful();
 });
 
-it('overrides auto-detected git values with manual options', function () {
+it('overrides auto-detected git values with manual options', function (): void {
     $mockGit = Mockery::mock(GitContextService::class);
     $mockGit->shouldReceive('isGitRepository')->andReturn(true);
     $mockGit->shouldReceive('getContext')->andReturn([
@@ -268,12 +251,10 @@ it('overrides auto-detected git values with manual options', function () {
 
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === 'https://github.com/manual/repo'
-                && $data['branch'] === 'manual-branch'
-                && $data['commit'] === 'manual123'
-                && $data['author'] === 'Manual User';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === 'https://github.com/manual/repo'
+            && $data['branch'] === 'manual-branch'
+            && $data['commit'] === 'manual123'
+            && $data['author'] === 'Manual User'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -286,7 +267,7 @@ it('overrides auto-detected git values with manual options', function () {
     ])->assertSuccessful();
 });
 
-it('fails when QdrantService upsert returns false', function () {
+it('fails when QdrantService upsert returns false', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
         ->andReturn(false);
@@ -298,7 +279,7 @@ it('fails when QdrantService upsert returns false', function () {
         ->expectsOutputToContain('Failed to create knowledge entry');
 });
 
-it('displays success message with entry details', function () {
+it('displays success message with entry details', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
         ->andReturn(true);
@@ -316,16 +297,16 @@ it('displays success message with entry details', function () {
         ->expectsOutputToContain('Knowledge entry created');
 });
 
-it('generates unique UUID for entry ID', function () {
+it('generates unique UUID for entry ID', function (): void {
     $capturedId = null;
 
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) use (&$capturedId) {
+        ->with(Mockery::on(function ($data) use (&$capturedId): bool {
             $capturedId = $data['id'];
 
             return isset($data['id']) && is_string($data['id']);
-        }))
+        }), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -334,5 +315,54 @@ it('generates unique UUID for entry ID', function () {
     ])->assertSuccessful();
 
     expect($capturedId)->toBeString();
-    expect(strlen($capturedId))->toBeGreaterThan(0);
+    expect(strlen((string) $capturedId))->toBeGreaterThan(0);
+});
+
+it('fails when duplicate hash is detected', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->andThrow(DuplicateEntryException::hashMatch('existing-id-123', 'abc123'));
+
+    $this->artisan('add', [
+        'title' => 'Duplicate Entry',
+        '--content' => 'Same content as existing',
+    ])->assertFailed()
+        ->expectsOutputToContain('Duplicate content detected');
+});
+
+it('fails when similar entry is detected', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->andThrow(DuplicateEntryException::similarityMatch('similar-id-456', 0.97));
+
+    $this->artisan('add', [
+        'title' => 'Similar Entry',
+        '--content' => 'Very similar content',
+    ])->assertFailed()
+        ->expectsOutputToContain('duplicate detected');
+});
+
+it('allows duplicate override with --force flag', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), 'default', false) // checkDuplicates = false
+        ->andReturn(true);
+
+    $this->artisan('add', [
+        'title' => 'Force Entry',
+        '--content' => 'Content',
+        '--force' => true,
+    ])->assertSuccessful();
+});
+
+it('passes checkDuplicates=true by default', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), 'default', true) // checkDuplicates = true
+        ->andReturn(true);
+
+    $this->artisan('add', [
+        'title' => 'Normal Entry',
+        '--content' => 'Content',
+    ])->assertSuccessful();
 });

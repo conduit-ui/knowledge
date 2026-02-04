@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Services\MarkdownExporter;
 use App\Services\QdrantService;
 
-describe('KnowledgeExportAllCommand', function () {
-    beforeEach(function () {
+describe('KnowledgeExportAllCommand', function (): void {
+    beforeEach(function (): void {
         $this->qdrant = mock(QdrantService::class);
         $this->markdownExporter = mock(MarkdownExporter::class);
 
@@ -21,7 +21,7 @@ describe('KnowledgeExportAllCommand', function () {
         mkdir('/tmp/export-all-tests', 0755, true);
     });
 
-    afterEach(function () {
+    afterEach(function (): void {
         // Clean up test files
         if (is_dir('/tmp/export-all-tests')) {
             array_map('unlink', glob('/tmp/export-all-tests/*'));
@@ -29,7 +29,7 @@ describe('KnowledgeExportAllCommand', function () {
         }
     });
 
-    it('exports all entries as markdown', function () {
+    it('exports all entries as markdown', function (): void {
         $entries = collect([
             [
                 'id' => 1,
@@ -62,9 +62,7 @@ describe('KnowledgeExportAllCommand', function () {
 
         $this->markdownExporter->shouldReceive('exportArray')
             ->twice()
-            ->andReturnUsing(function ($entry) {
-                return "# {$entry['title']}";
-            });
+            ->andReturnUsing(fn ($entry): string => "# {$entry['title']}");
 
         $this->artisan('export:all', [
             '--output' => '/tmp/export-all-tests',
@@ -77,7 +75,7 @@ describe('KnowledgeExportAllCommand', function () {
         expect(file_exists('/tmp/export-all-tests/2-second-entry.md'))->toBeTrue();
     });
 
-    it('exports all entries as json', function () {
+    it('exports all entries as json', function (): void {
         $entries = collect([
             [
                 'id' => 1,
@@ -108,7 +106,7 @@ describe('KnowledgeExportAllCommand', function () {
         expect(file_exists('/tmp/export-all-tests/1-json-entry.json'))->toBeTrue();
     });
 
-    it('filters by category when specified', function () {
+    it('filters by category when specified', function (): void {
         $entries = collect([
             [
                 'id' => 1,
@@ -140,7 +138,7 @@ describe('KnowledgeExportAllCommand', function () {
             ->assertSuccessful();
     });
 
-    it('warns when no entries found', function () {
+    it('warns when no entries found', function (): void {
         $this->qdrant->shouldReceive('search')
             ->once()
             ->with('', [], 10000)
@@ -153,7 +151,7 @@ describe('KnowledgeExportAllCommand', function () {
             ->assertSuccessful();
     });
 
-    it('creates output directory if not exists', function () {
+    it('creates output directory if not exists', function (): void {
         $entries = collect([
             [
                 'id' => 1,
@@ -190,7 +188,7 @@ describe('KnowledgeExportAllCommand', function () {
         rmdir($outputDir);
     });
 
-    it('uses default output directory when not specified', function () {
+    it('uses default output directory when not specified', function (): void {
         $entries = collect([
             [
                 'id' => 1,
@@ -226,7 +224,7 @@ describe('KnowledgeExportAllCommand', function () {
         }
     });
 
-    it('generates proper filename slug', function () {
+    it('generates proper filename slug', function (): void {
         $entries = collect([
             [
                 'id' => 123,
@@ -260,7 +258,7 @@ describe('KnowledgeExportAllCommand', function () {
         expect(basename($files[0]))->toContain('123-');
     });
 
-    it('handles entries with empty title', function () {
+    it('handles entries with empty title', function (): void {
         $entries = collect([
             [
                 'id' => 1,

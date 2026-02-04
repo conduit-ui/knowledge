@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-describe('KnowledgeArchiveCommand', function () {
-    beforeEach(function () {
+describe('KnowledgeArchiveCommand', function (): void {
+    beforeEach(function (): void {
         $this->qdrant = mock(QdrantService::class);
         app()->instance(QdrantService::class, $this->qdrant);
     });
 
-    it('validates entry ID is numeric', function () {
+    it('validates entry ID is numeric', function (): void {
         $this->artisan('archive', ['id' => 'not-numeric'])
             ->expectsOutput('Entry ID must be a number.')
             ->assertFailed();
     });
 
-    it('fails when entry not found', function () {
+    it('fails when entry not found', function (): void {
         $this->qdrant->shouldReceive('getById')
             ->once()
             ->with(999)
@@ -27,7 +27,7 @@ describe('KnowledgeArchiveCommand', function () {
             ->assertFailed();
     });
 
-    it('archives an active entry', function () {
+    it('archives an active entry', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Test Entry',
@@ -56,7 +56,7 @@ describe('KnowledgeArchiveCommand', function () {
             ->assertSuccessful();
     });
 
-    it('warns when archiving already archived entry', function () {
+    it('warns when archiving already archived entry', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Archived Entry',
@@ -75,7 +75,7 @@ describe('KnowledgeArchiveCommand', function () {
             ->assertSuccessful();
     });
 
-    it('restores archived entry', function () {
+    it('restores archived entry', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Archived Entry',
@@ -105,7 +105,7 @@ describe('KnowledgeArchiveCommand', function () {
             ->assertSuccessful();
     });
 
-    it('warns when restoring non-archived entry', function () {
+    it('warns when restoring non-archived entry', function (): void {
         $entry = [
             'id' => 1,
             'title' => 'Active Entry',
@@ -124,7 +124,7 @@ describe('KnowledgeArchiveCommand', function () {
             ->assertSuccessful();
     });
 
-    it('archives draft entry', function () {
+    it('archives draft entry', function (): void {
         $entry = [
             'id' => 2,
             'title' => 'Draft Entry',

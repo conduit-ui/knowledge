@@ -7,41 +7,41 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('GetCollectionInfo', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('GetCollectionInfo', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new GetCollectionInfo(collectionName: 'test-collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/test-collection');
         });
 
-        it('handles collection names with hyphens', function () {
+        it('handles collection names with hyphens', function (): void {
             $request = new GetCollectionInfo(collectionName: 'my-project-collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/my-project-collection');
         });
 
-        it('handles collection names with underscores', function () {
+        it('handles collection names with underscores', function (): void {
             $request = new GetCollectionInfo(collectionName: 'my_project_collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/my_project_collection');
         });
 
-        it('handles simple collection names', function () {
+        it('handles simple collection names', function (): void {
             $request = new GetCollectionInfo(collectionName: 'simple');
 
             expect($request->resolveEndpoint())->toBe('/collections/simple');
         });
 
-        it('handles collection names with numbers', function () {
+        it('handles collection names with numbers', function (): void {
             $request = new GetCollectionInfo(collectionName: 'collection-123');
 
             expect($request->resolveEndpoint())->toBe('/collections/collection-123');
         });
     });
 
-    describe('method', function () {
-        it('uses GET method', function () {
+    describe('method', function (): void {
+        it('uses GET method', function (): void {
             $request = new GetCollectionInfo(collectionName: 'test-collection');
 
             $reflection = new ReflectionClass($request);
@@ -53,14 +53,14 @@ describe('GetCollectionInfo', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts collection name parameter', function () {
+    describe('constructor', function (): void {
+        it('accepts collection name parameter', function (): void {
             $request = new GetCollectionInfo(collectionName: 'test');
 
             expect($request)->toBeInstanceOf(GetCollectionInfo::class);
         });
 
-        it('creates instance with various collection name formats', function () {
+        it('creates instance with various collection name formats', function (): void {
             $names = [
                 'simple',
                 'with-hyphens',
@@ -76,14 +76,14 @@ describe('GetCollectionInfo', function () {
         });
     });
 
-    describe('request properties', function () {
-        it('does not implement HasBody interface', function () {
+    describe('request properties', function (): void {
+        it('does not implement HasBody interface', function (): void {
             $request = new GetCollectionInfo(collectionName: 'test');
 
             expect($request)->not->toBeInstanceOf(\Saloon\Contracts\Body\HasBody::class);
         });
 
-        it('is a valid Saloon request', function () {
+        it('is a valid Saloon request', function (): void {
             $request = new GetCollectionInfo(collectionName: 'test');
 
             expect($request)->toBeInstanceOf(\Saloon\Http\Request::class);

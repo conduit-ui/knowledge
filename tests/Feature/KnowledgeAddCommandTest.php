@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->gitService = mock(GitContextService::class);
     $this->qdrantService = mock(QdrantService::class);
 
@@ -13,16 +13,14 @@ beforeEach(function () {
     app()->instance(QdrantService::class, $this->qdrantService);
 });
 
-it('creates a knowledge entry with required fields', function () {
+it('creates a knowledge entry with required fields', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['title'] === 'Test Entry'
-                && $data['content'] === 'Test content'
-                && isset($data['id']);
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Test Entry'
+            && $data['content'] === 'Test content'
+            && isset($data['id'])), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -31,7 +29,7 @@ it('creates a knowledge entry with required fields', function () {
     ])->assertSuccessful();
 });
 
-it('auto-populates git fields when in a git repository', function () {
+it('auto-populates git fields when in a git repository', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(true);
     $this->gitService->shouldReceive('getContext')->andReturn([
         'repo' => 'test/repo',
@@ -42,12 +40,10 @@ it('auto-populates git fields when in a git repository', function () {
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === 'test/repo'
-                && $data['branch'] === 'main'
-                && $data['commit'] === 'abc123'
-                && $data['author'] === 'Test Author';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === 'test/repo'
+            && $data['branch'] === 'main'
+            && $data['commit'] === 'abc123'
+            && $data['author'] === 'Test Author'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -56,17 +52,15 @@ it('auto-populates git fields when in a git repository', function () {
     ])->assertSuccessful();
 });
 
-it('skips git detection with --no-git flag', function () {
+it('skips git detection with --no-git flag', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->never();
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === null
-                && $data['branch'] === null
-                && $data['commit'] === null
-                && $data['author'] === null;
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === null
+            && $data['branch'] === null
+            && $data['commit'] === null
+            && $data['author'] === null), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -76,7 +70,7 @@ it('skips git detection with --no-git flag', function () {
     ])->assertSuccessful();
 });
 
-it('allows manual git field overrides', function () {
+it('allows manual git field overrides', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(true);
     $this->gitService->shouldReceive('getContext')->andReturn([
         'repo' => 'auto/repo',
@@ -87,11 +81,9 @@ it('allows manual git field overrides', function () {
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['repo'] === 'custom/repo'
-                && $data['branch'] === 'custom-branch'
-                && $data['commit'] === 'abc123';
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['repo'] === 'custom/repo'
+            && $data['branch'] === 'custom-branch'
+            && $data['commit'] === 'abc123'), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -103,7 +95,7 @@ it('allows manual git field overrides', function () {
     ])->assertSuccessful();
 });
 
-it('validates required content field', function () {
+it('validates required content field', function (): void {
     $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -111,7 +103,7 @@ it('validates required content field', function () {
     ])->assertFailed();
 });
 
-it('validates confidence range', function () {
+it('validates confidence range', function (): void {
     $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -121,14 +113,12 @@ it('validates confidence range', function () {
     ])->assertFailed();
 });
 
-it('creates entry with tags', function () {
+it('creates entry with tags', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['tags'] === ['php', 'laravel', 'testing'];
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['tags'] === ['php', 'laravel', 'testing']), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [
@@ -138,7 +128,7 @@ it('creates entry with tags', function () {
     ])->assertSuccessful();
 });
 
-it('validates category is valid', function () {
+it('validates category is valid', function (): void {
     $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -148,7 +138,7 @@ it('validates category is valid', function () {
     ])->assertFailed();
 });
 
-it('validates priority is valid', function () {
+it('validates priority is valid', function (): void {
     $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -158,7 +148,7 @@ it('validates priority is valid', function () {
     ])->assertFailed();
 });
 
-it('validates status is valid', function () {
+it('validates status is valid', function (): void {
     $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
@@ -168,7 +158,7 @@ it('validates status is valid', function () {
     ])->assertFailed();
 });
 
-it('handles Qdrant upsert failure gracefully', function () {
+it('handles Qdrant upsert failure gracefully', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
@@ -181,23 +171,21 @@ it('handles Qdrant upsert failure gracefully', function () {
     ])->assertFailed();
 });
 
-it('creates entry with all optional fields', function () {
+it('creates entry with all optional fields', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::on(function ($data) {
-            return $data['title'] === 'Full Entry'
-                && $data['content'] === 'Full content'
-                && $data['category'] === 'testing'
-                && $data['module'] === 'TestModule'
-                && $data['priority'] === 'high'
-                && $data['confidence'] === 85
-                && $data['source'] === 'https://example.com'
-                && $data['ticket'] === 'JIRA-123'
-                && $data['status'] === 'validated'
-                && $data['tags'] === ['php', 'testing'];
-        }))
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Full Entry'
+            && $data['content'] === 'Full content'
+            && $data['category'] === 'testing'
+            && $data['module'] === 'TestModule'
+            && $data['priority'] === 'high'
+            && $data['confidence'] === 85
+            && $data['source'] === 'https://example.com'
+            && $data['ticket'] === 'JIRA-123'
+            && $data['status'] === 'validated'
+            && $data['tags'] === ['php', 'testing']), Mockery::any(), Mockery::any())
         ->andReturn(true);
 
     $this->artisan('add', [

@@ -7,29 +7,29 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('CreateCollection', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('CreateCollection', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new CreateCollection(collectionName: 'test-collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/test-collection');
         });
 
-        it('handles collection names with hyphens', function () {
+        it('handles collection names with hyphens', function (): void {
             $request = new CreateCollection(collectionName: 'my-project-collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/my-project-collection');
         });
 
-        it('handles collection names with underscores', function () {
+        it('handles collection names with underscores', function (): void {
             $request = new CreateCollection(collectionName: 'my_project_collection');
 
             expect($request->resolveEndpoint())->toBe('/collections/my_project_collection');
         });
     });
 
-    describe('defaultBody', function () {
-        it('includes default vector size and distance', function () {
+    describe('defaultBody', function (): void {
+        it('includes default vector size and distance', function (): void {
             $request = new CreateCollection(collectionName: 'test-collection');
 
             $reflection = new ReflectionClass($request);
@@ -44,7 +44,7 @@ describe('CreateCollection', function () {
                 ]);
         });
 
-        it('uses custom vector size when provided', function () {
+        it('uses custom vector size when provided', function (): void {
             $request = new CreateCollection(
                 collectionName: 'test-collection',
                 vectorSize: 768
@@ -58,7 +58,7 @@ describe('CreateCollection', function () {
             expect($body['vectors']['size'])->toBe(768);
         });
 
-        it('uses custom distance metric when provided', function () {
+        it('uses custom distance metric when provided', function (): void {
             $request = new CreateCollection(
                 collectionName: 'test-collection',
                 distance: 'Euclid'
@@ -72,7 +72,7 @@ describe('CreateCollection', function () {
             expect($body['vectors']['distance'])->toBe('Euclid');
         });
 
-        it('includes optimizers config', function () {
+        it('includes optimizers config', function (): void {
             $request = new CreateCollection(collectionName: 'test-collection');
 
             $reflection = new ReflectionClass($request);
@@ -86,7 +86,7 @@ describe('CreateCollection', function () {
                 ]);
         });
 
-        it('includes all required body fields', function () {
+        it('includes all required body fields', function (): void {
             $request = new CreateCollection(collectionName: 'test-collection');
 
             $reflection = new ReflectionClass($request);
@@ -97,7 +97,7 @@ describe('CreateCollection', function () {
             expect($body)->toHaveKeys(['vectors', 'optimizers_config']);
         });
 
-        it('uses all custom parameters', function () {
+        it('uses all custom parameters', function (): void {
             $request = new CreateCollection(
                 collectionName: 'custom-collection',
                 vectorSize: 1536,
@@ -116,8 +116,8 @@ describe('CreateCollection', function () {
         });
     });
 
-    describe('method', function () {
-        it('uses PUT method', function () {
+    describe('method', function (): void {
+        it('uses PUT method', function (): void {
             $request = new CreateCollection(collectionName: 'test-collection');
 
             $reflection = new ReflectionClass($request);
@@ -129,14 +129,14 @@ describe('CreateCollection', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts minimal parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts minimal parameters', function (): void {
             $request = new CreateCollection(collectionName: 'minimal');
 
             expect($request)->toBeInstanceOf(CreateCollection::class);
         });
 
-        it('accepts all parameters', function () {
+        it('accepts all parameters', function (): void {
             $request = new CreateCollection(
                 collectionName: 'full-config',
                 vectorSize: 2048,

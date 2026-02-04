@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Services\KnowledgePathService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Use a temporary config directory for testing
     $this->testConfigDir = sys_get_temp_dir().'/knowledge-config-test-'.uniqid();
     mkdir($this->testConfigDir, 0755, true);
@@ -20,29 +20,27 @@ beforeEach(function () {
         $mock->shouldReceive('getDatabasePath')
             ->andReturn($testConfigDir.'/knowledge.sqlite');
         $mock->shouldReceive('ensureDirectoryExists')
-            ->andReturnUsing(function ($path) {
+            ->andReturnUsing(function ($path): void {
                 if (! is_dir($path)) {
                     mkdir($path, 0755, true);
                 }
             });
         $mock->shouldReceive('databaseExists')
-            ->andReturnUsing(function () use ($testConfigDir) {
-                return file_exists($testConfigDir.'/knowledge.sqlite');
-            });
+            ->andReturnUsing(fn (): bool => file_exists($testConfigDir.'/knowledge.sqlite'));
 
         return $mock;
     });
 });
 
-afterEach(function () {
+afterEach(function (): void {
     // Clean up test directory
-    if (isset($this->testConfigDir) && is_dir($this->testConfigDir)) {
+    if (property_exists($this, 'testConfigDir') && $this->testConfigDir !== null && is_dir($this->testConfigDir)) {
         removeDirectory($this->testConfigDir);
     }
 });
 
-describe('knowledge:config list', function () {
-    it('lists all config settings when config file exists', function () {
+describe('knowledge:config list', function (): void {
+    it('lists all config settings when config file exists', function (): void {
         // Create config file
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
@@ -63,7 +61,7 @@ describe('knowledge:config list', function () {
             ->assertSuccessful();
     });
 
-    it('shows default values when config file does not exist', function () {
+    it('shows default values when config file does not exist', function (): void {
         $this->artisan('config')
             ->expectsOutputToContain('qdrant.url: http://localhost:6333')
             ->expectsOutputToContain('qdrant.collection: knowledge')
@@ -71,15 +69,15 @@ describe('knowledge:config list', function () {
             ->assertSuccessful();
     });
 
-    it('lists config with list action explicitly', function () {
+    it('lists config with list action explicitly', function (): void {
         $this->artisan('config', ['action' => 'list'])
             ->expectsOutputToContain('qdrant.url')
             ->assertSuccessful();
     });
 });
 
-describe('knowledge:config get', function () {
-    it('gets a specific config value', function () {
+describe('knowledge:config get', function (): void {
+    it('gets a specific config value', function (): void {
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
             'qdrant' => [
@@ -97,7 +95,7 @@ describe('knowledge:config get', function () {
             ->assertSuccessful();
     });
 
-    it('gets nested config value', function () {
+    it('gets nested config value', function (): void {
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
             'qdrant' => [
@@ -114,7 +112,7 @@ describe('knowledge:config get', function () {
             ->assertSuccessful();
     });
 
-    it('gets default value when key does not exist', function () {
+    it('gets default value when key does not exist', function (): void {
         $this->artisan('config', [
             'action' => 'get',
             'key' => 'qdrant.url',
@@ -123,7 +121,7 @@ describe('knowledge:config get', function () {
             ->assertSuccessful();
     });
 
-    it('fails when key is not provided for get action', function () {
+    it('fails when key is not provided for get action', function (): void {
         $this->artisan('config', [
             'action' => 'get',
         ])
@@ -131,7 +129,7 @@ describe('knowledge:config get', function () {
             ->assertFailed();
     });
 
-    it('fails when key is invalid', function () {
+    it('fails when key is invalid', function (): void {
         $this->artisan('config', [
             'action' => 'get',
             'key' => 'invalid.key',
@@ -141,8 +139,8 @@ describe('knowledge:config get', function () {
     });
 });
 
-describe('knowledge:config set', function () {
-    it('sets a string config value', function () {
+describe('knowledge:config set', function (): void {
+    it('sets a string config value', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.url',
@@ -155,7 +153,7 @@ describe('knowledge:config set', function () {
         expect($config['qdrant']['url'])->toBe('http://custom:9000');
     });
 
-    it('sets collection name', function () {
+    it('sets collection name', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.collection',
@@ -168,7 +166,7 @@ describe('knowledge:config set', function () {
         expect($config['qdrant']['collection'])->toBe('my-collection');
     });
 
-    it('sets embeddings url', function () {
+    it('sets embeddings url', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
@@ -181,7 +179,7 @@ describe('knowledge:config set', function () {
         expect($config['embeddings']['url'])->toBe('http://embeddings:8001');
     });
 
-    it('preserves existing config when setting new value', function () {
+    it('preserves existing config when setting new value', function (): void {
         // Set initial value
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
@@ -207,7 +205,7 @@ describe('knowledge:config set', function () {
         expect($config['embeddings']['url'])->toBe('http://new:8001');
     });
 
-    it('updates existing config value', function () {
+    it('updates existing config value', function (): void {
         // Set initial value
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
@@ -230,7 +228,7 @@ describe('knowledge:config set', function () {
         expect($config['qdrant']['url'])->toBe('http://new:6333');
     });
 
-    it('fails when key is not provided for set action', function () {
+    it('fails when key is not provided for set action', function (): void {
         $this->artisan('config', [
             'action' => 'set',
         ])
@@ -238,7 +236,7 @@ describe('knowledge:config set', function () {
             ->assertFailed();
     });
 
-    it('fails when value is not provided for set action', function () {
+    it('fails when value is not provided for set action', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.url',
@@ -247,7 +245,7 @@ describe('knowledge:config set', function () {
             ->assertFailed();
     });
 
-    it('fails when key is invalid', function () {
+    it('fails when key is invalid', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'invalid.key',
@@ -257,7 +255,7 @@ describe('knowledge:config set', function () {
             ->assertFailed();
     });
 
-    it('creates config directory if it does not exist', function () {
+    it('creates config directory if it does not exist', function (): void {
         // Remove test directory
         removeDirectory($this->testConfigDir);
 
@@ -273,8 +271,8 @@ describe('knowledge:config set', function () {
     });
 });
 
-describe('knowledge:config invalid action', function () {
-    it('fails with invalid action', function () {
+describe('knowledge:config invalid action', function (): void {
+    it('fails with invalid action', function (): void {
         $this->artisan('config', [
             'action' => 'invalid',
         ])
@@ -284,8 +282,8 @@ describe('knowledge:config invalid action', function () {
     });
 });
 
-describe('knowledge:config edge cases', function () {
-    it('handles invalid JSON in config file', function () {
+describe('knowledge:config edge cases', function (): void {
+    it('handles invalid JSON in config file', function (): void {
         $configPath = $this->testConfigDir.'/config.json';
         file_put_contents($configPath, 'not valid json {{{');
 
@@ -295,7 +293,7 @@ describe('knowledge:config edge cases', function () {
             ->assertSuccessful();
     });
 
-    it('handles non-array JSON in config file', function () {
+    it('handles non-array JSON in config file', function (): void {
         $configPath = $this->testConfigDir.'/config.json';
         file_put_contents($configPath, '"just a string"');
 
@@ -305,7 +303,7 @@ describe('knowledge:config edge cases', function () {
             ->assertSuccessful();
     });
 
-    it('creates new nested path when setting value', function () {
+    it('creates new nested path when setting value', function (): void {
         // Start with empty config
         $configPath = $this->testConfigDir.'/config.json';
         file_put_contents($configPath, '{}');
@@ -322,8 +320,8 @@ describe('knowledge:config edge cases', function () {
     });
 });
 
-describe('knowledge:config validation', function () {
-    it('validates url format for qdrant.url', function () {
+describe('knowledge:config validation', function (): void {
+    it('validates url format for qdrant.url', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.url',
@@ -333,7 +331,7 @@ describe('knowledge:config validation', function () {
             ->assertFailed();
     });
 
-    it('validates url format for embeddings.url', function () {
+    it('validates url format for embeddings.url', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'embeddings.url',
@@ -343,7 +341,7 @@ describe('knowledge:config validation', function () {
             ->assertFailed();
     });
 
-    it('accepts valid http url', function () {
+    it('accepts valid http url', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.url',
@@ -352,7 +350,7 @@ describe('knowledge:config validation', function () {
             ->assertSuccessful();
     });
 
-    it('accepts valid https url', function () {
+    it('accepts valid https url', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.url',
@@ -361,7 +359,7 @@ describe('knowledge:config validation', function () {
             ->assertSuccessful();
     });
 
-    it('allows any string for collection name', function () {
+    it('allows any string for collection name', function (): void {
         $this->artisan('config', [
             'action' => 'set',
             'key' => 'qdrant.collection',

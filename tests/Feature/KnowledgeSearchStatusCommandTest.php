@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Contracts\EmbeddingServiceInterface;
 use App\Services\QdrantService;
 
-describe('KnowledgeSearchStatusCommand', function () {
-    beforeEach(function () {
+describe('KnowledgeSearchStatusCommand', function (): void {
+    beforeEach(function (): void {
         $this->embeddingService = mock(EmbeddingServiceInterface::class);
         $this->qdrant = mock(QdrantService::class);
 
@@ -14,7 +14,7 @@ describe('KnowledgeSearchStatusCommand', function () {
         app()->instance(QdrantService::class, $this->qdrant);
     });
 
-    it('displays keyword search as always enabled', function () {
+    it('displays keyword search as always enabled', function (): void {
         config(['search.semantic_enabled' => false]);
         config(['search.embedding_provider' => 'none']);
 
@@ -32,7 +32,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays semantic search as enabled when configured', function () {
+    it('displays semantic search as enabled when configured', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'ollama']);
 
@@ -52,7 +52,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays semantic search as not configured when disabled', function () {
+    it('displays semantic search as not configured when disabled', function (): void {
         config(['search.semantic_enabled' => false]);
         config(['search.embedding_provider' => 'none']);
 
@@ -70,7 +70,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays semantic search as not configured when embedding service returns empty', function () {
+    it('displays semantic search as not configured when embedding service returns empty', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'openai']);
 
@@ -88,7 +88,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays database statistics', function () {
+    it('displays database statistics', function (): void {
         config(['search.semantic_enabled' => false]);
 
         $this->embeddingService->shouldReceive('generate')
@@ -111,7 +111,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays usage instructions with semantic search enabled', function () {
+    it('displays usage instructions with semantic search enabled', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'ollama']);
 
@@ -129,7 +129,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays usage instructions with semantic search disabled', function () {
+    it('displays usage instructions with semantic search disabled', function (): void {
         config(['search.semantic_enabled' => false]);
 
         $this->embeddingService->shouldReceive('generate')
@@ -146,7 +146,7 @@ describe('KnowledgeSearchStatusCommand', function () {
             ->assertSuccessful();
     });
 
-    it('handles empty database', function () {
+    it('handles empty database', function (): void {
         config(['search.semantic_enabled' => false]);
 
         $this->embeddingService->shouldReceive('generate')

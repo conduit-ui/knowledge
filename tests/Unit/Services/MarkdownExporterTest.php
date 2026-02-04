@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Services\MarkdownExporter;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->exporter = new MarkdownExporter;
 });
 
-describe('exportArray', function () {
-    it('exports entry with all fields', function () {
+describe('exportArray', function (): void {
+    it('exports entry with all fields', function (): void {
         $entry = [
             'id' => '123',
             'title' => 'Test Entry',
@@ -44,7 +44,7 @@ describe('exportArray', function () {
         expect($result)->toContain('This is test content');
     });
 
-    it('exports entry with minimal fields', function () {
+    it('exports entry with minimal fields', function (): void {
         $entry = [
             'id' => '456',
             'title' => 'Minimal Entry',
@@ -68,7 +68,7 @@ describe('exportArray', function () {
         expect($result)->not->toContain('tags:');
     });
 
-    it('escapes special characters in YAML', function () {
+    it('escapes special characters in YAML', function (): void {
         $entry = [
             'id' => '789',
             'title' => 'Title with "quotes"',
@@ -92,7 +92,7 @@ describe('exportArray', function () {
         expect($result)->toContain('  - "tag\\"with\\"quotes"');
     });
 
-    it('handles empty tags array', function () {
+    it('handles empty tags array', function (): void {
         $entry = [
             'id' => '111',
             'title' => 'No Tags',
@@ -111,7 +111,7 @@ describe('exportArray', function () {
         expect($result)->not->toContain('tags:');
     });
 
-    it('handles empty content', function () {
+    it('handles empty content', function (): void {
         $entry = [
             'id' => '222',
             'title' => 'Empty Content',
@@ -130,7 +130,7 @@ describe('exportArray', function () {
         expect($result)->toContain("\n\n\n"); // Empty content section
     });
 
-    it('handles missing content key', function () {
+    it('handles missing content key', function (): void {
         $entry = [
             'id' => '333',
             'title' => 'Missing Content Key',
@@ -148,7 +148,7 @@ describe('exportArray', function () {
         expect($result)->toContain("\n\n\n"); // Empty content section
     });
 
-    it('formats front matter correctly', function () {
+    it('formats front matter correctly', function (): void {
         $entry = [
             'id' => '444',
             'title' => 'Format Test',
@@ -168,7 +168,7 @@ describe('exportArray', function () {
         expect($result)->toMatch('/---\n.*\n---\n\n# /s');
     });
 
-    it('includes all required fields', function () {
+    it('includes all required fields', function (): void {
         $entry = [
             'id' => '555',
             'title' => 'Required Fields',
@@ -194,7 +194,7 @@ describe('exportArray', function () {
         expect($result)->toContain('updated_at:');
     });
 
-    it('handles multiple tags correctly', function () {
+    it('handles multiple tags correctly', function (): void {
         $entry = [
             'id' => '666',
             'title' => 'Multiple Tags',

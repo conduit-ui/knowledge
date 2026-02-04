@@ -6,9 +6,9 @@ namespace App\Services;
 
 class RuntimeEnvironment
 {
-    private string $basePath;
+    private readonly string $basePath;
 
-    private bool $isPhar;
+    private readonly bool $isPhar;
 
     public function __construct()
     {

@@ -35,35 +35,39 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-/**
- * Create a mock Response object with common configuration.
- */
-function createMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
-{
-    $response = Mockery::mock(Response::class);
-    $response->shouldReceive('successful')->andReturn($successful);
+if (! function_exists('createMockResponse')) {
+    /**
+     * Create a mock Response object with common configuration.
+     */
+    function createMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
+    {
+        $response = Mockery::mock(Response::class);
+        $response->shouldReceive('successful')->andReturn($successful);
 
-    if (! $successful || $status !== 200) {
-        $response->shouldReceive('status')->andReturn($status);
+        if (! $successful || $status !== 200) {
+            $response->shouldReceive('status')->andReturn($status);
+        }
+
+        if ($json !== null) {
+            $response->shouldReceive('json')->andReturn($json);
+        }
+
+        return $response;
     }
-
-    if ($json !== null) {
-        $response->shouldReceive('json')->andReturn($json);
-    }
-
-    return $response;
 }
 
-/**
- * Set up mock for ensureCollection to return success (collection exists).
- */
-function mockCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
-{
-    $response = createMockResponse(true);
-    $connector->shouldReceive('send')
-        ->with(Mockery::type(GetCollectionInfo::class))
-        ->times($times)
-        ->andReturn($response);
+if (! function_exists('mockCollectionExists')) {
+    /**
+     * Set up mock for ensureCollection to return success (collection exists).
+     */
+    function mockCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
+    {
+        $response = createMockResponse(true);
+        $connector->shouldReceive('send')
+            ->with(Mockery::type(GetCollectionInfo::class))
+            ->times($times)
+            ->andReturn($response);
+    }
 }
 
 describe('ensureCollection', function (): void {
@@ -163,7 +167,7 @@ describe('upsert', function (): void {
             'usage_count' => 5,
         ];
 
-        expect($this->service->upsert($entry))->toBeTrue();
+        expect($this->service->upsert($entry, 'default'))->toBeTrue();
     });
 
     it('successfully upserts an entry with minimal fields', function (): void {
@@ -186,7 +190,7 @@ describe('upsert', function (): void {
             'content' => 'Minimal content',
         ];
 
-        expect($this->service->upsert($entry))->toBeTrue();
+        expect($this->service->upsert($entry, 'default'))->toBeTrue();
     });
 
     it('throws exception when embedding generation fails', function (): void {
@@ -203,7 +207,7 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        expect(fn () => $this->service->upsert($entry))
+        expect(fn () => $this->service->upsert($entry, 'default'))
             ->toThrow(RuntimeException::class, 'Failed to generate embedding');
     });
 
@@ -227,7 +231,7 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        expect(fn () => $this->service->upsert($entry))
+        expect(fn () => $this->service->upsert($entry, 'default'))
             ->toThrow(RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
     });
 
@@ -254,10 +258,10 @@ describe('upsert', function (): void {
         ];
 
         // First call - generates embedding
-        $this->service->upsert($entry);
+        $this->service->upsert($entry, 'default');
 
         // Second call - uses cached embedding
-        $this->service->upsert($entry);
+        $this->service->upsert($entry, 'default');
     });
 
     it('does not cache embeddings when caching is disabled', function (): void {
@@ -283,10 +287,10 @@ describe('upsert', function (): void {
         ];
 
         // First call - generates embedding
-        $this->service->upsert($entry);
+        $this->service->upsert($entry, 'default');
 
         // Second call - generates embedding again (not cached)
-        $this->service->upsert($entry);
+        $this->service->upsert($entry, 'default');
     });
 });
 

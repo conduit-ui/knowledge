@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 });
 
-it('updates entry title', function () {
+it('updates entry title', function (): void {
     $entry = [
         'id' => 'test-id-123',
         'title' => 'Original Title',
@@ -32,10 +32,8 @@ it('updates entry title', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['title'] === 'New Title'
-                && $updatedEntry['id'] === 'test-id-123';
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['title'] === 'New Title'
+            && $updatedEntry['id'] === 'test-id-123')
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -44,7 +42,7 @@ it('updates entry title', function () {
     ])->assertSuccessful();
 });
 
-it('updates entry content', function () {
+it('updates entry content', function (): void {
     $entry = [
         'id' => 'test-id-456',
         'title' => 'Test Entry',
@@ -67,9 +65,7 @@ it('updates entry content', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['content'] === 'Updated content here';
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['content'] === 'Updated content here')
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -78,7 +74,7 @@ it('updates entry content', function () {
     ])->assertSuccessful();
 });
 
-it('updates entry tags by replacing them', function () {
+it('updates entry tags by replacing them', function (): void {
     $entry = [
         'id' => 'test-id-789',
         'title' => 'Test Entry',
@@ -101,9 +97,7 @@ it('updates entry tags by replacing them', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['tags'] === ['new-tag1', 'new-tag2'];
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['tags'] === ['new-tag1', 'new-tag2'])
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -112,7 +106,7 @@ it('updates entry tags by replacing them', function () {
     ])->assertSuccessful();
 });
 
-it('adds tags to existing tags', function () {
+it('adds tags to existing tags', function (): void {
     $entry = [
         'id' => 'test-id-add',
         'title' => 'Test Entry',
@@ -135,10 +129,8 @@ it('adds tags to existing tags', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return in_array('existing-tag', $updatedEntry['tags'], true)
-                && in_array('new-tag', $updatedEntry['tags'], true);
-        })
+        ->withArgs(fn ($updatedEntry): bool => in_array('existing-tag', $updatedEntry['tags'], true)
+            && in_array('new-tag', $updatedEntry['tags'], true))
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -147,7 +139,7 @@ it('adds tags to existing tags', function () {
     ])->assertSuccessful();
 });
 
-it('updates confidence level', function () {
+it('updates confidence level', function (): void {
     $entry = [
         'id' => 'test-id-conf',
         'title' => 'Test Entry',
@@ -170,9 +162,7 @@ it('updates confidence level', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['confidence'] === 85;
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['confidence'] === 85)
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -181,7 +171,7 @@ it('updates confidence level', function () {
     ])->assertSuccessful();
 });
 
-it('fails for invalid confidence', function () {
+it('fails for invalid confidence', function (): void {
     $entry = [
         'id' => 'test-id-invalid',
         'title' => 'Test Entry',
@@ -208,7 +198,7 @@ it('fails for invalid confidence', function () {
     ])->assertFailed();
 });
 
-it('fails for invalid category', function () {
+it('fails for invalid category', function (): void {
     $entry = [
         'id' => 'test-id-cat',
         'title' => 'Test Entry',
@@ -235,7 +225,7 @@ it('fails for invalid category', function () {
     ])->assertFailed();
 });
 
-it('fails for invalid priority', function () {
+it('fails for invalid priority', function (): void {
     $entry = [
         'id' => 'test-id-pri',
         'title' => 'Test Entry',
@@ -262,7 +252,7 @@ it('fails for invalid priority', function () {
     ])->assertFailed();
 });
 
-it('fails for invalid status', function () {
+it('fails for invalid status', function (): void {
     $entry = [
         'id' => 'test-id-stat',
         'title' => 'Test Entry',
@@ -289,7 +279,7 @@ it('fails for invalid status', function () {
     ])->assertFailed();
 });
 
-it('fails when entry not found', function () {
+it('fails when entry not found', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
         ->with('non-existent-id')
@@ -301,7 +291,7 @@ it('fails when entry not found', function () {
     ])->assertFailed();
 });
 
-it('fails when no updates provided', function () {
+it('fails when no updates provided', function (): void {
     $entry = [
         'id' => 'test-id-empty',
         'title' => 'Test Entry',
@@ -327,7 +317,7 @@ it('fails when no updates provided', function () {
     ])->assertFailed();
 });
 
-it('updates multiple fields at once', function () {
+it('updates multiple fields at once', function (): void {
     $entry = [
         'id' => 'test-id-multi',
         'title' => 'Original Title',
@@ -350,12 +340,10 @@ it('updates multiple fields at once', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['title'] === 'New Title'
-                && $updatedEntry['priority'] === 'high'
-                && $updatedEntry['status'] === 'validated'
-                && $updatedEntry['confidence'] === 90;
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['title'] === 'New Title'
+            && $updatedEntry['priority'] === 'high'
+            && $updatedEntry['status'] === 'validated'
+            && $updatedEntry['confidence'] === 90)
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -367,7 +355,7 @@ it('updates multiple fields at once', function () {
     ])->assertSuccessful();
 });
 
-it('updates category to valid value', function () {
+it('updates category to valid value', function (): void {
     $entry = [
         'id' => 'test-id-category',
         'title' => 'Test Entry',
@@ -390,9 +378,7 @@ it('updates category to valid value', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['category'] === 'debugging';
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['category'] === 'debugging')
         ->andReturn(true);
 
     $this->artisan('update', [
@@ -401,7 +387,7 @@ it('updates category to valid value', function () {
     ])->assertSuccessful();
 });
 
-it('updates timestamp on save', function () {
+it('updates timestamp on save', function (): void {
     $entry = [
         'id' => 'test-id-time',
         'title' => 'Test Entry',
@@ -424,9 +410,7 @@ it('updates timestamp on save', function () {
 
     $this->qdrantMock->shouldReceive('upsert')
         ->once()
-        ->withArgs(function ($updatedEntry) {
-            return $updatedEntry['updated_at'] !== '2024-01-01T00:00:00+00:00';
-        })
+        ->withArgs(fn ($updatedEntry): bool => $updatedEntry['updated_at'] !== '2024-01-01T00:00:00+00:00')
         ->andReturn(true);
 
     $this->artisan('update', [

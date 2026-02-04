@@ -101,7 +101,7 @@ class KnowledgeExportAllCommand extends Command
         $text = preg_replace('~[^\pL\d]+~u', '-', $text) ?? $text;
         $converted = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
         $text = is_string($converted) ? $converted : $text;
-        $text = preg_replace('~[^-\w]+~', '', $text) ?? $text;
+        $text = preg_replace('~[^\-\w]+~', '', $text) ?? $text;
         $text = trim($text, '-');
         $text = preg_replace('~-+~', '-', $text) ?? $text;
         $text = strtolower($text);

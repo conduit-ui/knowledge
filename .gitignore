@@ -12,3 +12,4 @@ coverage.xml
 /builds
 storage/framework/views/*.php
 __pycache__/
+var/cache/

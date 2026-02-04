@@ -7,9 +7,9 @@ use Saloon\Enums\Method;
 
 uses()->group('qdrant-unit', 'requests');
 
-describe('SearchPoints', function () {
-    describe('resolveEndpoint', function () {
-        it('resolves endpoint with collection name', function () {
+describe('SearchPoints', function (): void {
+    describe('resolveEndpoint', function (): void {
+        it('resolves endpoint with collection name', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -18,7 +18,7 @@ describe('SearchPoints', function () {
             expect($request->resolveEndpoint())->toBe('/collections/test-collection/points/search');
         });
 
-        it('handles collection names with special characters', function () {
+        it('handles collection names with special characters', function (): void {
             $request = new SearchPoints(
                 collectionName: 'my-project_collection',
                 vector: [0.1]
@@ -28,8 +28,8 @@ describe('SearchPoints', function () {
         });
     });
 
-    describe('defaultBody', function () {
-        it('includes vector in body', function () {
+    describe('defaultBody', function (): void {
+        it('includes vector in body', function (): void {
             $vector = [0.1, 0.2, 0.3, 0.4, 0.5];
             $request = new SearchPoints(
                 collectionName: 'test-collection',
@@ -45,7 +45,7 @@ describe('SearchPoints', function () {
                 ->and($body['vector'])->toBe($vector);
         });
 
-        it('includes default limit when not provided', function () {
+        it('includes default limit when not provided', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -60,7 +60,7 @@ describe('SearchPoints', function () {
                 ->and($body['limit'])->toBe(20);
         });
 
-        it('includes custom limit when provided', function () {
+        it('includes custom limit when provided', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3],
@@ -75,7 +75,7 @@ describe('SearchPoints', function () {
             expect($body['limit'])->toBe(50);
         });
 
-        it('includes default score threshold when not provided', function () {
+        it('includes default score threshold when not provided', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -90,7 +90,7 @@ describe('SearchPoints', function () {
                 ->and($body['score_threshold'])->toBe(0.7);
         });
 
-        it('includes custom score threshold when provided', function () {
+        it('includes custom score threshold when provided', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3],
@@ -105,7 +105,7 @@ describe('SearchPoints', function () {
             expect($body['score_threshold'])->toBe(0.85);
         });
 
-        it('sets with_payload to true', function () {
+        it('sets with_payload to true', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -120,7 +120,7 @@ describe('SearchPoints', function () {
                 ->and($body['with_payload'])->toBeTrue();
         });
 
-        it('sets with_vector to false', function () {
+        it('sets with_vector to false', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -135,7 +135,7 @@ describe('SearchPoints', function () {
                 ->and($body['with_vector'])->toBeFalse();
         });
 
-        it('excludes filter when null', function () {
+        it('excludes filter when null', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3],
@@ -150,7 +150,7 @@ describe('SearchPoints', function () {
             expect($body)->not->toHaveKey('filter');
         });
 
-        it('includes filter when provided', function () {
+        it('includes filter when provided', function (): void {
             $filter = [
                 'must' => [
                     ['key' => 'category', 'match' => ['value' => 'testing']],
@@ -172,7 +172,7 @@ describe('SearchPoints', function () {
                 ->and($body['filter'])->toBe($filter);
         });
 
-        it('includes all body fields when filter is provided', function () {
+        it('includes all body fields when filter is provided', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3],
@@ -196,7 +196,7 @@ describe('SearchPoints', function () {
             ]);
         });
 
-        it('includes all required body fields without filter', function () {
+        it('includes all required body fields without filter', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -216,7 +216,7 @@ describe('SearchPoints', function () {
             ]);
         });
 
-        it('handles complex filter structures', function () {
+        it('handles complex filter structures', function (): void {
             $filter = [
                 'must' => [
                     ['key' => 'category', 'match' => ['value' => 'testing']],
@@ -241,7 +241,7 @@ describe('SearchPoints', function () {
             expect($body['filter'])->toBe($filter);
         });
 
-        it('handles large vector dimensions', function () {
+        it('handles large vector dimensions', function (): void {
             $vector = array_fill(0, 1536, 0.1); // GPT-3 embedding size
             $request = new SearchPoints(
                 collectionName: 'test-collection',
@@ -257,8 +257,8 @@ describe('SearchPoints', function () {
         });
     });
 
-    describe('method', function () {
-        it('uses POST method', function () {
+    describe('method', function (): void {
+        it('uses POST method', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test-collection',
                 vector: [0.1, 0.2, 0.3]
@@ -273,8 +273,8 @@ describe('SearchPoints', function () {
         });
     });
 
-    describe('constructor', function () {
-        it('accepts minimal parameters', function () {
+    describe('constructor', function (): void {
+        it('accepts minimal parameters', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test',
                 vector: [0.1, 0.2, 0.3]
@@ -283,7 +283,7 @@ describe('SearchPoints', function () {
             expect($request)->toBeInstanceOf(SearchPoints::class);
         });
 
-        it('accepts all parameters', function () {
+        it('accepts all parameters', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test',
                 vector: [0.1, 0.2, 0.3],
@@ -295,7 +295,7 @@ describe('SearchPoints', function () {
             expect($request)->toBeInstanceOf(SearchPoints::class);
         });
 
-        it('implements HasBody interface', function () {
+        it('implements HasBody interface', function (): void {
             $request = new SearchPoints(
                 collectionName: 'test',
                 vector: [0.1, 0.2, 0.3]

@@ -9,7 +9,7 @@ use GuzzleHttp\Client;
 
 class EmbeddingService implements EmbeddingServiceInterface
 {
-    private Client $client;
+    private readonly Client $client;
 
     public function __construct(
         string $serverUrl = 'http://localhost:8001',

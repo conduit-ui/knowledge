@@ -13,7 +13,7 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-it('searches entries by keyword in title and content', function () {
+it('searches entries by keyword in title and content', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('timezone', [], 20)
@@ -41,7 +41,7 @@ it('searches entries by keyword in title and content', function () {
         ->expectsOutputToContain('Laravel Timezone Conversion');
 });
 
-it('searches entries by tag', function () {
+it('searches entries by tag', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', ['tag' => 'blood.notifications'], 20)
@@ -68,7 +68,7 @@ it('searches entries by tag', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('searches entries by category', function () {
+it('searches entries by category', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', ['category' => 'architecture'], 20)
@@ -95,7 +95,7 @@ it('searches entries by category', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('searches entries by category and module', function () {
+it('searches entries by category and module', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', ['category' => 'architecture', 'module' => 'Blood'], 20)
@@ -124,7 +124,7 @@ it('searches entries by category and module', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('searches entries by priority', function () {
+it('searches entries by priority', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', ['priority' => 'critical'], 20)
@@ -151,7 +151,7 @@ it('searches entries by priority', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('searches entries by status', function () {
+it('searches entries by status', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', ['status' => 'validated'], 20)
@@ -178,7 +178,7 @@ it('searches entries by status', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('shows message when no results found', function () {
+it('shows message when no results found', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('nonexistent', [], 20)
@@ -189,7 +189,7 @@ it('shows message when no results found', function () {
         ->expectsOutput('No entries found.');
 });
 
-it('searches with multiple filters', function () {
+it('searches with multiple filters', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', [
@@ -223,7 +223,7 @@ it('searches with multiple filters', function () {
         ->expectsOutputToContain('Found 1 entry');
 });
 
-it('requires at least one search parameter', function () {
+it('requires at least one search parameter', function (): void {
     $this->mockQdrant->shouldNotReceive('search');
 
     $this->artisan('search')
@@ -268,7 +268,7 @@ it('requires at least one search parameter', function () {
 //         ->expectsOutputToContain('...');
 // });
 
-it('handles entries with missing optional fields', function () {
+it('handles entries with missing optional fields', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('minimal', [], 20)
@@ -418,7 +418,7 @@ describe('--observations flag', function (): void {
 });
 */
 
-it('handles query with all filter types combined', function () {
+it('handles query with all filter types combined', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('laravel', [
@@ -441,7 +441,7 @@ it('handles query with all filter types combined', function () {
         ->expectsOutput('No entries found.');
 });
 
-it('uses semantic search by default', function () {
+it('uses semantic search by default', function (): void {
     $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('semantic', [], 20)

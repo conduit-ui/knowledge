@@ -26,7 +26,7 @@ class KnowledgeShowCommand extends Command
         }
 
         $entry = spin(
-            fn () => $qdrant->getById($id),
+            fn (): ?array => $qdrant->getById($id),
             'Fetching entry...'
         );
 

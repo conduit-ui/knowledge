@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Services\QdrantService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 });
 
-it('shows full details of an entry', function () {
+it('shows full details of an entry', function (): void {
     $entry = [
         'id' => '1',
         'title' => 'Test Entry',
@@ -41,7 +41,7 @@ it('shows full details of an entry', function () {
         ->expectsOutputToContain('This is the full content of the entry');
 });
 
-it('shows entry with minimal fields', function () {
+it('shows entry with minimal fields', function (): void {
     $entry = [
         'id' => '2',
         'title' => 'Minimal Entry',
@@ -73,7 +73,7 @@ it('shows entry with minimal fields', function () {
         ->expectsOutputToContain('Basic content');
 });
 
-it('shows usage statistics', function () {
+it('shows usage statistics', function (): void {
     $entry = [
         'id' => '3',
         'title' => 'Test Entry',
@@ -104,7 +104,7 @@ it('shows usage statistics', function () {
         ->expectsOutputToContain('5');
 });
 
-it('increments usage count when viewing', function () {
+it('increments usage count when viewing', function (): void {
     $entry = [
         'id' => '4',
         'title' => 'Test Entry',
@@ -134,7 +134,7 @@ it('increments usage count when viewing', function () {
         ->assertSuccessful();
 });
 
-it('shows error when entry not found', function () {
+it('shows error when entry not found', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
         ->with('9999')
@@ -145,7 +145,7 @@ it('shows error when entry not found', function () {
         ->expectsOutputToContain('not found');
 });
 
-it('validates id must be numeric', function () {
+it('validates id must be numeric', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
         ->with('abc')
@@ -155,7 +155,7 @@ it('validates id must be numeric', function () {
         ->assertFailed();
 });
 
-it('shows timestamps', function () {
+it('shows timestamps', function (): void {
     $entry = [
         'id' => '5',
         'title' => 'Test Entry',
@@ -186,10 +186,10 @@ it('shows timestamps', function () {
         ->assertSuccessful();
 });
 
-it('shows files if present', function () {
+it('shows files if present', function (): void {
     expect(true)->toBeTrue();
 })->skip('files field not implemented in Qdrant storage');
 
-it('shows repo details if present', function () {
+it('shows repo details if present', function (): void {
     expect(true)->toBeTrue();
 })->skip('repo fields not implemented in Qdrant storage');
