@@ -31,6 +31,11 @@ parameters:
 			path: app/Commands/KnowledgeAddCommand.php
 
 		-
+			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\<string, mixed\\> given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeAddCommand.php
+
+		-
 			message: "#^Offset 'tags' on array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeListCommand.php
@@ -46,27 +51,7 @@ parameters:
 			path: app/Commands/KnowledgeSearchStatusCommand.php
 
 		-
-			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeShowCommand.php
-
-		-
-			message: "#^Method App\\\\Commands\\\\KnowledgeShowCommand\\:\\:renderEntry\\(\\) has parameter \\$entry with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeShowCommand.php
-
-		-
 			message: "#^Only booleans are allowed in a negated boolean, array\\<string, array\\<string\\>\\|int\\|string\\|null\\>\\|null given\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeShowCommand.php
-
-		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|int\\|string\\|null given\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeShowCommand.php
-
-		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:incrementUsage\\(\\) expects int\\|string, array\\|bool\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeShowCommand.php
 
@@ -181,22 +166,27 @@ parameters:
 			path: app/Services/PatternDetectorService.php
 
 		-
-			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:executeSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:executeSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:scroll\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:scroll\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, status\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:findSimilar\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed\\}\\>\\.$#"
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) should return array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\|null but returns array\\<string, mixed\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 
@@ -227,10 +217,10 @@ parameters:
 
 		-
 			message: "#^Unable to resolve the template type TKey in call to function collect$#"
-			count: 3
+			count: 4
 			path: app/Services/QdrantService.php
 
 		-
 			message: "#^Unable to resolve the template type TValue in call to function collect$#"
-			count: 3
+			count: 4
 			path: app/Services/QdrantService.php

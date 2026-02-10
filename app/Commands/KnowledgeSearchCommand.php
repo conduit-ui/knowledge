@@ -21,7 +21,8 @@ class KnowledgeSearchCommand extends Command
                             {--priority= : Filter by priority}
                             {--status= : Filter by status}
                             {--limit=20 : Maximum number of results}
-                            {--semantic : Use semantic search if available}';
+                            {--semantic : Use semantic search if available}
+                            {--include-superseded : Include superseded entries in results}';
 
     /**
      * @var string
@@ -38,6 +39,7 @@ class KnowledgeSearchCommand extends Command
         $status = $this->option('status');
         $limit = (int) $this->option('limit');
         $this->option('semantic');
+        $includeSuperseded = (bool) $this->option('include-superseded');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
@@ -54,6 +56,10 @@ class KnowledgeSearchCommand extends Command
             'priority' => is_string($priority) ? $priority : null,
             'status' => is_string($status) ? $status : null,
         ]);
+
+        if ($includeSuperseded) {
+            $filters['include_superseded'] = true;
+        }
 
         // Use Qdrant for semantic search (always)
         $searchQuery = is_string($query) ? $query : '';
@@ -78,12 +84,18 @@ class KnowledgeSearchCommand extends Command
             $tags = $entry['tags'] ?? [];
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
+            $supersededBy = $entry['superseded_by'] ?? null;
 
             $isStale = $metadata->isStale($entry);
             $effectiveConfidence = $metadata->calculateEffectiveConfidence($entry);
             $confidenceLevel = $metadata->confidenceLevel($effectiveConfidence);
 
-            $this->line("<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>');
+            $titleLine = "<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>';
+            if ($supersededBy !== null) {
+                $titleLine .= ' <fg=red>[SUPERSEDED]</>';
+            }
+
+            $this->line($titleLine);
 
             if ($isStale) {
                 $days = $metadata->daysSinceVerification($entry);
@@ -91,6 +103,10 @@ class KnowledgeSearchCommand extends Command
             }
 
             $this->line('Category: '.$category." | Priority: {$priority} | Confidence: {$effectiveConfidence}% ({$confidenceLevel})");
+
+            if ($supersededBy !== null) {
+                $this->line("<fg=gray>Superseded by: {$supersededBy}</>");
+            }
 
             if ($module !== null) {
                 $this->line("Module: {$module}");
