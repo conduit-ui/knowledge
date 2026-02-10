@@ -304,11 +304,82 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 80,
                     'score' => 0.92,
+                    'superseded_by' => null,
                 ],
             ]));
 
         $this->artisan('search', ['query' => 'test'])
             ->assertSuccessful()
             ->expectsOutputToContain('score: 0.92');
+    });
+
+    it('passes include_superseded filter when flag is set', function (): void {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('test', Mockery::on(fn ($filters): bool => isset($filters['include_superseded']) && $filters['include_superseded'] === true), 20)
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Old Entry',
+                    'content' => 'Old content',
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 50,
+                    'score' => 0.85,
+                    'superseded_by' => 'uuid-2',
+                    'superseded_date' => '2026-01-15T00:00:00Z',
+                    'superseded_reason' => 'Updated',
+                ],
+            ]));
+
+        $this->artisan('search', [
+            'query' => 'test',
+            '--include-superseded' => true,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Old Entry');
+    });
+
+    it('does not pass include_superseded by default', function (): void {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->with('test', [], 20)
+            ->andReturn(collect([]));
+
+        $this->artisan('search', ['query' => 'test'])
+            ->assertSuccessful();
+    });
+
+    it('shows superseded indicator on superseded entries', function (): void {
+        $this->qdrantService->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'Superseded Entry',
+                    'content' => 'Old content',
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 50,
+                    'score' => 0.85,
+                    'superseded_by' => 'uuid-2',
+                    'superseded_date' => '2026-01-15T00:00:00Z',
+                    'superseded_reason' => 'Updated',
+                ],
+            ]));
+
+        $this->artisan('search', [
+            'query' => 'test',
+            '--include-superseded' => true,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('SUPERSEDED')
+            ->expectsOutputToContain('Superseded by: uuid-2');
     });
 });

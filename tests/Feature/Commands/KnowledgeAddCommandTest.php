@@ -337,7 +337,7 @@ it('fails when duplicate hash is detected', function (): void {
         ->expectsOutputToContain('Duplicate content detected');
 });
 
-it('fails when similar entry is detected', function (): void {
+it('fails when similar entry is detected and user declines', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
         ->andThrow(DuplicateEntryException::similarityMatch('similar-id-456', 0.97));
@@ -345,7 +345,9 @@ it('fails when similar entry is detected', function (): void {
     $this->artisan('add', [
         'title' => 'Similar Entry',
         '--content' => 'Very similar content',
-    ])->assertFailed()
+    ])
+        ->expectsConfirmation("Supersede existing entry 'similar-id-456' with this new entry?", 'no')
+        ->assertFailed()
         ->expectsOutputToContain('duplicate detected');
 });
 

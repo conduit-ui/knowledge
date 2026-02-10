@@ -178,19 +178,103 @@ class KnowledgeAddCommand extends Command
                 return self::FAILURE;
             }
         } catch (DuplicateEntryException $e) {
-            if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
-                error("Duplicate content detected: This exact content already exists as entry '{$e->existingId}'");
-            } else {
-                $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
-                warning("Potential duplicate detected: {$percentage}% similar to existing entry '{$e->existingId}'");
-                error('Entry not created. Use --force to override duplicate detection.');
-            }
-
-            return self::FAILURE;
+            return $this->handleDuplicate($e, $data, $qdrant, (int) $confidence);
         }
 
         info('Knowledge entry created!');
 
+        $this->displayEntryTable($id, $title, $category, $priority, (int) $confidence, $data['tags'] ?? null);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Handle a duplicate entry by offering to supersede or aborting.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function handleDuplicate(
+        DuplicateEntryException $e,
+        array $data,
+        QdrantService $qdrant,
+        int $confidence
+    ): int {
+        $existingId = $e->existingId;
+
+        if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
+            error("Duplicate content detected: This exact content already exists as entry '{$existingId}'");
+
+            return self::FAILURE;
+        }
+
+        $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
+        warning("Potential duplicate detected: {$percentage}% similar to existing entry '{$existingId}'");
+
+        // Require confirmation when confidence is low (below 70)
+        if ($confidence < 70) {
+            warning("Low confidence ({$confidence}%) - please confirm this supersedes the existing entry.");
+        }
+
+        $shouldSupersede = $this->confirm(
+            "Supersede existing entry '{$existingId}' with this new entry?",
+            $confidence >= 70
+        );
+
+        if (! $shouldSupersede) {
+            error('Entry not created. Existing knowledge preserved.');
+
+            return self::FAILURE;
+        }
+
+        // Force-create the new entry (skip duplicate check)
+        $success = spin(
+            fn (): bool => $qdrant->upsert($data, 'default', false),
+            'Storing new knowledge entry...'
+        );
+
+        if (! $success) {
+            error('Failed to create knowledge entry');
+
+            return self::FAILURE;
+        }
+
+        // Mark the old entry as superseded
+        $reason = "Superseded by newer entry with {$percentage}% similarity";
+        $marked = $qdrant->markSuperseded($existingId, $data['id'], $reason);
+
+        if (! $marked) {
+            warning('New entry created but failed to mark old entry as superseded.');
+        }
+
+        info('Knowledge entry created! Previous entry marked as superseded.');
+
+        /** @var string $id */
+        $id = $data['id'];
+        /** @var string $title */
+        $title = $data['title'];
+        /** @var string|null $category */
+        $category = $data['category'] ?? null;
+        /** @var string $priority */
+        $priority = $data['priority'] ?? 'medium';
+
+        $this->displayEntryTable($id, $title, $category, $priority, $confidence, $data['tags'] ?? null);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Display the entry summary table.
+     *
+     * @param  array<string>|null  $tags
+     */
+    private function displayEntryTable(
+        string $id,
+        string $title,
+        ?string $category,
+        string $priority,
+        int $confidence,
+        ?array $tags
+    ): void {
         table(
             ['Field', 'Value'],
             [
@@ -199,10 +283,8 @@ class KnowledgeAddCommand extends Command
                 ['Category', $category ?? 'N/A'],
                 ['Priority', $priority],
                 ['Confidence', "{$confidence}%"],
-                ['Tags', isset($data['tags']) ? implode(', ', $data['tags']) : 'N/A'],
+                ['Tags', $tags !== null ? implode(', ', $tags) : 'N/A'],
             ]
         );
-
-        return self::SUCCESS;
     }
 }

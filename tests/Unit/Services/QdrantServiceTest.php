@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Integrations\Qdrant\QdrantConnector;
 use App\Integrations\Qdrant\Requests\CreateCollection;
 use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
 use App\Integrations\Qdrant\Requests\GetPoints;
+use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
 use App\Services\QdrantService;
@@ -167,7 +169,7 @@ describe('upsert', function (): void {
             'usage_count' => 5,
         ];
 
-        expect($this->service->upsert($entry, 'default'))->toBeTrue();
+        expect($this->service->upsert($entry, 'default', false))->toBeTrue();
     });
 
     it('successfully upserts an entry with minimal fields', function (): void {
@@ -190,7 +192,7 @@ describe('upsert', function (): void {
             'content' => 'Minimal content',
         ];
 
-        expect($this->service->upsert($entry, 'default'))->toBeTrue();
+        expect($this->service->upsert($entry, 'default', false))->toBeTrue();
     });
 
     it('throws exception when embedding generation fails', function (): void {
@@ -207,7 +209,7 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        expect(fn () => $this->service->upsert($entry, 'default'))
+        expect(fn () => $this->service->upsert($entry, 'default', false))
             ->toThrow(RuntimeException::class, 'Failed to generate embedding');
     });
 
@@ -231,7 +233,7 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        expect(fn () => $this->service->upsert($entry, 'default'))
+        expect(fn () => $this->service->upsert($entry, 'default', false))
             ->toThrow(RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
     });
 
@@ -258,10 +260,10 @@ describe('upsert', function (): void {
         ];
 
         // First call - generates embedding
-        $this->service->upsert($entry, 'default');
+        $this->service->upsert($entry, 'default', false);
 
         // Second call - uses cached embedding
-        $this->service->upsert($entry, 'default');
+        $this->service->upsert($entry, 'default', false);
     });
 
     it('does not cache embeddings when caching is disabled', function (): void {
@@ -287,10 +289,10 @@ describe('upsert', function (): void {
         ];
 
         // First call - generates embedding
-        $this->service->upsert($entry, 'default');
+        $this->service->upsert($entry, 'default', false);
 
         // Second call - generates embedding again (not cached)
-        $this->service->upsert($entry, 'default');
+        $this->service->upsert($entry, 'default', false);
     });
 });
 
@@ -1015,5 +1017,499 @@ describe('updateFields', function (): void {
         $result = $this->service->updateFields('test-id', []);
 
         expect($result)->toBeTrue();
+    });
+});
+
+describe('upsert duplicate detection', function (): void {
+    it('throws hash match exception when exact duplicate content exists', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock findSimilar search returning exact match
+        $searchResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'existing-id',
+                    'score' => 0.99,
+                    'payload' => [
+                        'title' => 'Test Title',
+                        'content' => 'Test content',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+        ];
+
+        expect(fn () => $this->service->upsert($entry, 'default', true))
+            ->toThrow(DuplicateEntryException::class);
+    });
+
+    it('throws similarity match exception when similar entry exists', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content here')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock findSimilar search returning similar (not exact) match
+        $searchResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'existing-id',
+                    'score' => 0.97,
+                    'payload' => [
+                        'title' => 'Test Title',
+                        'content' => 'Different content',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content here',
+        ];
+
+        expect(fn () => $this->service->upsert($entry, 'default', true))
+            ->toThrow(DuplicateEntryException::class);
+    });
+
+    it('skips duplicate detection when checkDuplicates is false', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+        ];
+
+        // Should NOT make a search call for duplicate detection
+        $this->mockConnector->shouldNotReceive('send')
+            ->with(Mockery::type(SearchPoints::class));
+
+        expect($this->service->upsert($entry, 'default', false))->toBeTrue();
+    });
+
+    it('proceeds when no similar entries found', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Unique Title Unique content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock findSimilar returning no results
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Unique Title',
+            'content' => 'Unique content',
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
+    });
+
+    it('stores superseded fields in payload', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $entry = [
+            'id' => 'test-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'superseded_by' => 'new-id',
+            'superseded_date' => '2026-01-01T00:00:00Z',
+            'superseded_reason' => 'Updated knowledge',
+        ];
+
+        expect($this->service->upsert($entry, 'default', false))->toBeTrue();
+    });
+});
+
+describe('findSimilar', function (): void {
+    it('returns similar entries above threshold', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $searchResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'similar-1',
+                    'score' => 0.97,
+                    'payload' => [
+                        'title' => 'Similar Entry',
+                        'content' => 'Similar content',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $results = $this->service->findSimilar([0.1, 0.2, 0.3], 'default', 0.95);
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()['id'])->toBe('similar-1');
+        expect($results->first()['score'])->toBe(0.97);
+    });
+
+    it('returns empty collection when no similar entries found', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $results = $this->service->findSimilar([0.1, 0.2, 0.3]);
+
+        expect($results)->toBeEmpty();
+    });
+
+    it('returns empty collection when search fails', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $searchResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $results = $this->service->findSimilar([0.1, 0.2, 0.3]);
+
+        expect($results)->toBeEmpty();
+    });
+});
+
+describe('markSuperseded', function (): void {
+    it('marks an existing entry as superseded', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock getById for updateFields
+        $getPointsResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'old-id',
+                    'payload' => [
+                        'title' => 'Old Entry',
+                        'content' => 'Old content',
+                        'tags' => [],
+                        'category' => null,
+                        'module' => null,
+                        'priority' => 'medium',
+                        'status' => 'draft',
+                        'confidence' => 50,
+                        'usage_count' => 0,
+                        'created_at' => '2025-01-01T00:00:00Z',
+                        'updated_at' => '2025-01-01T00:00:00Z',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($getPointsResponse);
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->markSuperseded('old-id', 'new-id', 'Newer knowledge available');
+
+        expect($result)->toBeTrue();
+    });
+
+    it('returns false when entry does not exist', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($getPointsResponse);
+
+        $result = $this->service->markSuperseded('nonexistent', 'new-id');
+
+        expect($result)->toBeFalse();
+    });
+});
+
+describe('getSupersessionHistory', function (): void {
+    it('returns empty history when entry does not exist', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($getPointsResponse);
+
+        $history = $this->service->getSupersessionHistory('nonexistent');
+
+        expect($history['supersedes'])->toBeEmpty();
+        expect($history['superseded_by'])->toBeNull();
+    });
+
+    it('returns successor when entry is superseded', function (): void {
+        // Mock getById for the entry itself
+        mockCollectionExists($this->mockConnector, 3);
+
+        $entryResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'old-id',
+                    'payload' => [
+                        'title' => 'Old Entry',
+                        'content' => 'Old content',
+                        'superseded_by' => 'new-id',
+                        'superseded_date' => '2026-01-15T00:00:00Z',
+                        'superseded_reason' => 'Updated',
+                    ],
+                ],
+            ],
+        ]);
+
+        // Mock getById for the successor
+        $successorResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'new-id',
+                    'payload' => [
+                        'title' => 'New Entry',
+                        'content' => 'New content',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->twice()
+            ->andReturn($entryResponse, $successorResponse);
+
+        // Mock scroll for predecessors
+        $scrollResponse = createMockResponse(true, 200, [
+            'result' => ['points' => []],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $history = $this->service->getSupersessionHistory('old-id');
+
+        expect($history['superseded_by'])->not()->toBeNull();
+        expect($history['superseded_by']['id'])->toBe('new-id');
+        expect($history['superseded_by']['title'])->toBe('New Entry');
+    });
+
+    it('returns predecessors when entry supersedes others', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock getById for the entry itself (not superseded)
+        $entryResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'new-id',
+                    'payload' => [
+                        'title' => 'New Entry',
+                        'content' => 'New content',
+                        'superseded_by' => null,
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($entryResponse);
+
+        // Mock scroll for predecessors
+        $scrollResponse = createMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    [
+                        'id' => 'old-id-1',
+                        'payload' => [
+                            'title' => 'Old Entry 1',
+                            'content' => 'Old content 1',
+                            'superseded_by' => 'new-id',
+                            'superseded_reason' => 'Updated by new entry',
+                        ],
+                    ],
+                    [
+                        'id' => 'old-id-2',
+                        'payload' => [
+                            'title' => 'Old Entry 2',
+                            'content' => 'Old content 2',
+                            'superseded_by' => 'new-id',
+                            'superseded_reason' => 'Also updated',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $history = $this->service->getSupersessionHistory('new-id');
+
+        expect($history['superseded_by'])->toBeNull();
+        expect($history['supersedes'])->toHaveCount(2);
+        expect($history['supersedes'][0]['id'])->toBe('old-id-1');
+        expect($history['supersedes'][1]['id'])->toBe('old-id-2');
+    });
+
+    it('returns empty predecessors when scroll fails', function (): void {
+        mockCollectionExists($this->mockConnector, 2);
+
+        $entryResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'test-id',
+                    'payload' => [
+                        'title' => 'Entry',
+                        'content' => 'Content',
+                        'superseded_by' => null,
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($entryResponse);
+
+        $scrollResponse = createMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $history = $this->service->getSupersessionHistory('test-id');
+
+        expect($history['supersedes'])->toBeEmpty();
+        expect($history['superseded_by'])->toBeNull();
+    });
+});
+
+describe('getById with superseded fields', function (): void {
+    it('includes superseded fields in response', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $getPointsResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'test-id',
+                    'payload' => [
+                        'title' => 'Test Entry',
+                        'content' => 'Content',
+                        'superseded_by' => 'new-id',
+                        'superseded_date' => '2026-01-15T00:00:00Z',
+                        'superseded_reason' => 'Replaced',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($getPointsResponse);
+
+        $result = $this->service->getById('test-id');
+
+        expect($result)->not()->toBeNull();
+        expect($result['superseded_by'])->toBe('new-id');
+        expect($result['superseded_date'])->toBe('2026-01-15T00:00:00Z');
+        expect($result['superseded_reason'])->toBe('Replaced');
+    });
+
+    it('returns null superseded fields when not set', function (): void {
+        mockCollectionExists($this->mockConnector);
+
+        $getPointsResponse = createMockResponse(true, 200, [
+            'result' => [
+                [
+                    'id' => 'test-id',
+                    'payload' => [
+                        'title' => 'Test Entry',
+                        'content' => 'Content',
+                    ],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(GetPoints::class))
+            ->once()
+            ->andReturn($getPointsResponse);
+
+        $result = $this->service->getById('test-id');
+
+        expect($result)->not()->toBeNull();
+        expect($result['superseded_by'])->toBeNull();
+        expect($result['superseded_date'])->toBeNull();
+        expect($result['superseded_reason'])->toBeNull();
     });
 });

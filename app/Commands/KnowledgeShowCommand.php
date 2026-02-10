@@ -27,6 +27,12 @@ class KnowledgeShowCommand extends Command
             $id = (int) $id;
         }
 
+        if (! is_string($id) && ! is_int($id)) {
+            error('Invalid entry ID.');
+
+            return self::FAILURE;
+        }
+
         $entry = spin(
             fn (): ?array => $qdrant->getById($id),
             'Fetching entry...'
@@ -42,13 +48,26 @@ class KnowledgeShowCommand extends Command
 
         $this->renderEntry($entry, $metadata);
 
+        // Show supersession history
+        $history = $qdrant->getSupersessionHistory($id);
+        $this->renderSupersessionHistory($entry, $history);
+
         return self::SUCCESS;
     }
 
+    /**
+     * @param  array<string, mixed>  $entry
+     */
     private function renderEntry(array $entry, EntryMetadataService $metadata): void
     {
         $this->newLine();
-        $this->line("<fg=cyan;options=bold>{$entry['title']}</>");
+
+        $titleLine = "<fg=cyan;options=bold>{$entry['title']}</>";
+        $supersededBy = $entry['superseded_by'] ?? null;
+        if ($supersededBy !== null && $supersededBy !== '') {
+            $titleLine .= ' <fg=red>[SUPERSEDED]</>';
+        }
+        $this->line($titleLine);
         $this->line("<fg=gray>ID: {$entry['id']}</>");
         $this->newLine();
 
@@ -76,18 +95,56 @@ class KnowledgeShowCommand extends Command
             ['Evidence', $entry['evidence'] ?? 'N/A'],
         ];
 
-        if ($entry['module']) {
+        if ($entry['module'] !== null) {
             $rows[] = ['Module', $entry['module']];
         }
 
-        if (! empty($entry['tags'])) {
-            $rows[] = ['Tags', implode(', ', $entry['tags'])];
+        /** @var array<string> $tags */
+        $tags = $entry['tags'] ?? [];
+        if ($tags !== []) {
+            $rows[] = ['Tags', implode(', ', $tags)];
+        }
+
+        if ($supersededBy !== null && $supersededBy !== '') {
+            $rows[] = ['Superseded By', $supersededBy];
+            $rows[] = ['Superseded Date', $entry['superseded_date'] ?? 'N/A'];
+            $rows[] = ['Superseded Reason', $entry['superseded_reason'] ?? 'N/A'];
         }
 
         table(['Field', 'Value'], $rows);
 
         $this->newLine();
         $this->line("<fg=gray>Created: {$entry['created_at']} | Updated: {$entry['updated_at']}</>");
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     * @param  array{supersedes: array<int, array<string, mixed>>, superseded_by: array<string, mixed>|null}  $history
+     */
+    private function renderSupersessionHistory(array $entry, array $history): void
+    {
+        $hasHistory = $history['supersedes'] !== [] || $history['superseded_by'] !== null;
+
+        if (! $hasHistory) {
+            return;
+        }
+
+        $this->newLine();
+        $this->line('<fg=yellow;options=bold>Supersession History</>');
+
+        if ($history['superseded_by'] !== null) {
+            $successor = $history['superseded_by'];
+            $this->line('<fg=red>  This entry was superseded by:</>');
+            $this->line("    <fg=cyan>[{$successor['id']}]</> {$successor['title']}");
+        }
+
+        if ($history['supersedes'] !== []) {
+            $this->line('<fg=green>  This entry supersedes:</>');
+            foreach ($history['supersedes'] as $predecessor) {
+                $reason = $predecessor['superseded_reason'] ?? 'No reason provided';
+                $this->line("    <fg=cyan>[{$predecessor['id']}]</> {$predecessor['title']} <fg=gray>({$reason})</>");
+            }
+        }
     }
 
     private function colorize(string $text, string $color): string

@@ -8,6 +8,7 @@ use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\SparseEmbeddingServiceInterface;
 use App\Exceptions\Qdrant\CollectionCreationException;
 use App\Exceptions\Qdrant\ConnectionException;
+use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Exceptions\Qdrant\EmbeddingException;
 use App\Exceptions\Qdrant\UpsertException;
 use App\Integrations\Qdrant\QdrantConnector;
@@ -117,8 +118,13 @@ class QdrantService
      *     created_at?: string,
      *     updated_at?: string,
      *     last_verified?: string|null,
-     *     evidence?: string|null
+     *     evidence?: string|null,
+     *     superseded_by?: string,
+     *     superseded_date?: string,
+     *     superseded_reason?: string
      * }  $entry
+     *
+     * @throws DuplicateEntryException
      */
     public function upsert(array $entry, string $project = 'default', bool $checkDuplicates = true): bool
     {
@@ -130,6 +136,24 @@ class QdrantService
 
         if ($vector === []) {
             throw EmbeddingException::generationFailed($text);
+        }
+
+        // Check for duplicates when requested (for new entries)
+        if ($checkDuplicates) {
+            $contentHash = hash('sha256', $entry['title'].$entry['content']);
+            $similar = $this->findSimilar($vector, $project, 0.95);
+
+            foreach ($similar as $existing) {
+                $existingHash = hash('sha256', $existing['title'].$existing['content']);
+                if ($existingHash === $contentHash) {
+                    throw DuplicateEntryException::hashMatch($existing['id'], $contentHash);
+                }
+            }
+
+            if ($similar->isNotEmpty()) {
+                $topMatch = $similar->first();
+                throw DuplicateEntryException::similarityMatch($topMatch['id'], $topMatch['score']);
+            }
         }
 
         // Store full entry data in payload
@@ -147,6 +171,9 @@ class QdrantService
             'updated_at' => $entry['updated_at'] ?? now()->toIso8601String(),
             'last_verified' => $entry['last_verified'] ?? null,
             'evidence' => $entry['evidence'] ?? null,
+            'superseded_by' => $entry['superseded_by'] ?? null,
+            'superseded_date' => $entry['superseded_date'] ?? null,
+            'superseded_reason' => $entry['superseded_reason'] ?? null,
         ];
 
         // Build point with appropriate vector format
@@ -183,6 +210,123 @@ class QdrantService
     }
 
     /**
+     * Mark an existing entry as superseded by a new entry.
+     */
+    public function markSuperseded(
+        string|int $existingId,
+        string|int $newId,
+        string $reason = 'Updated with newer knowledge',
+        string $project = 'default'
+    ): bool {
+        return $this->updateFields($existingId, [
+            'superseded_by' => (string) $newId,
+            'superseded_date' => now()->toIso8601String(),
+            'superseded_reason' => $reason,
+        ], $project);
+    }
+
+    /**
+     * Find entries similar to the given vector above a threshold.
+     *
+     * @param  array<float>  $vector
+     * @return Collection<int, array{id: string|int, score: float, title: string, content: string}>
+     */
+    public function findSimilar(array $vector, string $project = 'default', float $threshold = 0.95): Collection
+    {
+        $this->ensureCollection($project);
+
+        // Exclude already-superseded entries from duplicate detection
+        $filter = [
+            'must' => [
+                [
+                    'is_empty' => ['key' => 'superseded_by'],
+                ],
+            ],
+        ];
+
+        $response = $this->connector->send(
+            new SearchPoints(
+                $this->getCollectionName($project),
+                $vector,
+                5,
+                $threshold,
+                $filter
+            )
+        );
+
+        if (! $response->successful()) {
+            return collect();
+        }
+
+        $data = $response->json();
+        $results = $data['result'] ?? [];
+
+        return collect($results)->map(fn (array $result): array => [
+            'id' => $result['id'],
+            'score' => $result['score'] ?? 0.0,
+            'title' => $result['payload']['title'] ?? '',
+            'content' => $result['payload']['content'] ?? '',
+        ]);
+    }
+
+    /**
+     * Get supersession history for an entry (entries it superseded and entries that supersede it).
+     *
+     * @return array{supersedes: array<int, array<string, mixed>>, superseded_by: array<string, mixed>|null}
+     */
+    public function getSupersessionHistory(string|int $id, string $project = 'default'): array
+    {
+        $history = [
+            'supersedes' => [],
+            'superseded_by' => null,
+        ];
+
+        $entry = $this->getById($id, $project);
+
+        if ($entry === null) {
+            return $history;
+        }
+
+        // Check if this entry is superseded by another
+        $supersededBy = $entry['superseded_by'] ?? null;
+        if ($supersededBy !== null && $supersededBy !== '') {
+            $successor = $this->getById($supersededBy, $project);
+            if ($successor !== null) {
+                $history['superseded_by'] = $successor;
+            }
+        }
+
+        // Find entries that this entry superseded (entries whose superseded_by == this id)
+        $this->ensureCollection($project);
+        $filter = [
+            'must' => [
+                [
+                    'key' => 'superseded_by',
+                    'match' => ['value' => (string) $id],
+                ],
+            ],
+        ];
+
+        $response = $this->connector->send(
+            new ScrollPoints(
+                $this->getCollectionName($project),
+                100,
+                $filter,
+                null
+            )
+        );
+
+        if ($response->successful()) {
+            $data = $response->json();
+            $points = $data['result']['points'] ?? [];
+
+            $history['supersedes'] = array_map(fn (array $point): array => $this->mapPointToEntry($point), $points);
+        }
+
+        return $history;
+    }
+
+    /**
      * Search entries using semantic similarity.
      *
      * @param  array{
@@ -190,7 +334,8 @@ class QdrantService
      *     category?: string,
      *     module?: string,
      *     priority?: string,
-     *     status?: string
+     *     status?: string,
+     *     include_superseded?: bool
      * }  $filters
      * @return Collection<int, array{
      *     id: string|int,
@@ -207,7 +352,10 @@ class QdrantService
      *     created_at: string,
      *     updated_at: string,
      *     last_verified: ?string,
-     *     evidence: ?string
+     *     evidence: ?string,
+     *     superseded_by: ?string,
+     *     superseded_date: ?string,
+     *     superseded_reason: ?string
      * }>
      */
     public function search(
@@ -244,7 +392,10 @@ class QdrantService
      *     created_at: string,
      *     updated_at: string,
      *     last_verified: ?string,
-     *     evidence: ?string
+     *     evidence: ?string,
+     *     superseded_by: ?string,
+     *     superseded_date: ?string,
+     *     superseded_reason: ?string
      * }>
      */
     private function executeSearch(
@@ -282,27 +433,7 @@ class QdrantService
         $data = $response->json();
         $results = $data['result'] ?? [];
 
-        return collect($results)->map(function (array $result): array {
-            $payload = $result['payload'] ?? [];
-
-            return [
-                'id' => $result['id'],
-                'score' => $result['score'] ?? 0.0,
-                'title' => $payload['title'] ?? '',
-                'content' => $payload['content'] ?? '',
-                'tags' => $payload['tags'] ?? [],
-                'category' => $payload['category'] ?? null,
-                'module' => $payload['module'] ?? null,
-                'priority' => $payload['priority'] ?? null,
-                'status' => $payload['status'] ?? null,
-                'confidence' => $payload['confidence'] ?? 0,
-                'usage_count' => $payload['usage_count'] ?? 0,
-                'created_at' => $payload['created_at'] ?? '',
-                'updated_at' => $payload['updated_at'] ?? '',
-                'last_verified' => $payload['last_verified'] ?? null,
-                'evidence' => $payload['evidence'] ?? null,
-            ];
-        });
+        return collect($results)->map(fn (array $result): array => $this->mapResultToEntry($result));
     }
 
     /**
@@ -332,7 +463,10 @@ class QdrantService
      *     created_at: string,
      *     updated_at: string,
      *     last_verified: ?string,
-     *     evidence: ?string
+     *     evidence: ?string,
+     *     superseded_by: ?string,
+     *     superseded_date: ?string,
+     *     superseded_reason: ?string
      * }>
      */
     public function hybridSearch(
@@ -385,27 +519,7 @@ class QdrantService
         $data = $response->json();
         $points = $data['result']['points'] ?? [];
 
-        return collect($points)->map(function (array $point): array {
-            $payload = $point['payload'] ?? [];
-
-            return [
-                'id' => $point['id'],
-                'score' => $point['score'] ?? 0.0,
-                'title' => $payload['title'] ?? '',
-                'content' => $payload['content'] ?? '',
-                'tags' => $payload['tags'] ?? [],
-                'category' => $payload['category'] ?? null,
-                'module' => $payload['module'] ?? null,
-                'priority' => $payload['priority'] ?? null,
-                'status' => $payload['status'] ?? null,
-                'confidence' => $payload['confidence'] ?? 0,
-                'usage_count' => $payload['usage_count'] ?? 0,
-                'created_at' => $payload['created_at'] ?? '',
-                'updated_at' => $payload['updated_at'] ?? '',
-                'last_verified' => $payload['last_verified'] ?? null,
-                'evidence' => $payload['evidence'] ?? null,
-            ];
-        });
+        return collect($points)->map(fn (array $point): array => $this->mapResultToEntry($point));
     }
 
     /**
@@ -457,26 +571,7 @@ class QdrantService
         $data = $response->json();
         $points = $data['result']['points'] ?? [];
 
-        return collect($points)->map(function (array $point): array {
-            $payload = $point['payload'] ?? [];
-
-            return [
-                'id' => $point['id'],
-                'title' => $payload['title'] ?? '',
-                'content' => $payload['content'] ?? '',
-                'tags' => $payload['tags'] ?? [],
-                'category' => $payload['category'] ?? null,
-                'module' => $payload['module'] ?? null,
-                'priority' => $payload['priority'] ?? null,
-                'status' => $payload['status'] ?? null,
-                'confidence' => $payload['confidence'] ?? 0,
-                'usage_count' => $payload['usage_count'] ?? 0,
-                'created_at' => $payload['created_at'] ?? '',
-                'updated_at' => $payload['updated_at'] ?? '',
-                'last_verified' => $payload['last_verified'] ?? null,
-                'evidence' => $payload['evidence'] ?? null,
-            ];
-        });
+        return collect($points)->map(fn (array $point): array => $this->mapPointToEntry($point));
     }
 
     /**
@@ -518,7 +613,10 @@ class QdrantService
      *     created_at: string,
      *     updated_at: string,
      *     last_verified: ?string,
-     *     evidence: ?string
+     *     evidence: ?string,
+     *     superseded_by: ?string,
+     *     superseded_date: ?string,
+     *     superseded_reason: ?string
      * }|null
      */
     public function getById(string|int $id, string $project = 'default'): ?array
@@ -536,29 +634,11 @@ class QdrantService
         $data = $response->json();
         $points = $data['result'] ?? [];
 
-        if (empty($points)) {
+        if ($points === []) {
             return null;
         }
 
-        $point = $points[0];
-        $payload = $point['payload'] ?? [];
-
-        return [
-            'id' => $point['id'],
-            'title' => $payload['title'] ?? '',
-            'content' => $payload['content'] ?? '',
-            'tags' => $payload['tags'] ?? [],
-            'category' => $payload['category'] ?? null,
-            'module' => $payload['module'] ?? null,
-            'priority' => $payload['priority'] ?? null,
-            'status' => $payload['status'] ?? null,
-            'confidence' => $payload['confidence'] ?? 0,
-            'usage_count' => $payload['usage_count'] ?? 0,
-            'created_at' => $payload['created_at'] ?? '',
-            'updated_at' => $payload['updated_at'] ?? '',
-            'last_verified' => $payload['last_verified'] ?? null,
-            'evidence' => $payload['evidence'] ?? null,
-        ];
+        return $this->mapPointToEntry($points[0]);
     }
 
     /**
@@ -575,7 +655,7 @@ class QdrantService
         $entry['usage_count']++;
         $entry['updated_at'] = now()->toIso8601String();
 
-        return $this->upsert($entry, $project);
+        return $this->upsert($entry, $project, false);
     }
 
     /**
@@ -595,7 +675,7 @@ class QdrantService
         $entry = array_merge($entry, $fields);
         $entry['updated_at'] = now()->toIso8601String();
 
-        return $this->upsert($entry, $project);
+        return $this->upsert($entry, $project, false);
     }
 
     /**
@@ -631,17 +711,24 @@ class QdrantService
      *     category?: string,
      *     module?: string,
      *     priority?: string,
-     *     status?: string
+     *     status?: string,
+     *     include_superseded?: bool
      * }  $filters
      * @return array<string, mixed>|null
      */
     private function buildFilter(array $filters): ?array
     {
-        if ($filters === []) {
-            return null;
-        }
+        $includeSuperseded = (bool) ($filters['include_superseded'] ?? false);
+        unset($filters['include_superseded']);
 
         $must = [];
+
+        // Exclude superseded entries by default
+        if (! $includeSuperseded) {
+            $must[] = [
+                'is_empty' => ['key' => 'superseded_by'],
+            ];
+        }
 
         // Exact match filters
         foreach (['category', 'module', 'priority', 'status'] as $field) {
@@ -662,6 +749,69 @@ class QdrantService
         }
 
         return $must === [] ? null : ['must' => $must];
+    }
+
+    /**
+     * Map a Qdrant search result (with score) to an entry array.
+     *
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    private function mapResultToEntry(array $result): array
+    {
+        $payload = $result['payload'] ?? [];
+
+        return [
+            'id' => $result['id'],
+            'score' => $result['score'] ?? 0.0,
+            'title' => $payload['title'] ?? '',
+            'content' => $payload['content'] ?? '',
+            'tags' => $payload['tags'] ?? [],
+            'category' => $payload['category'] ?? null,
+            'module' => $payload['module'] ?? null,
+            'priority' => $payload['priority'] ?? null,
+            'status' => $payload['status'] ?? null,
+            'confidence' => $payload['confidence'] ?? 0,
+            'usage_count' => $payload['usage_count'] ?? 0,
+            'created_at' => $payload['created_at'] ?? '',
+            'updated_at' => $payload['updated_at'] ?? '',
+            'last_verified' => $payload['last_verified'] ?? null,
+            'evidence' => $payload['evidence'] ?? null,
+            'superseded_by' => $payload['superseded_by'] ?? null,
+            'superseded_date' => $payload['superseded_date'] ?? null,
+            'superseded_reason' => $payload['superseded_reason'] ?? null,
+        ];
+    }
+
+    /**
+     * Map a Qdrant point (without score) to an entry array.
+     *
+     * @param  array<string, mixed>  $point
+     * @return array<string, mixed>
+     */
+    private function mapPointToEntry(array $point): array
+    {
+        $payload = $point['payload'] ?? [];
+
+        return [
+            'id' => $point['id'],
+            'title' => $payload['title'] ?? '',
+            'content' => $payload['content'] ?? '',
+            'tags' => $payload['tags'] ?? [],
+            'category' => $payload['category'] ?? null,
+            'module' => $payload['module'] ?? null,
+            'priority' => $payload['priority'] ?? null,
+            'status' => $payload['status'] ?? null,
+            'confidence' => $payload['confidence'] ?? 0,
+            'usage_count' => $payload['usage_count'] ?? 0,
+            'created_at' => $payload['created_at'] ?? '',
+            'updated_at' => $payload['updated_at'] ?? '',
+            'last_verified' => $payload['last_verified'] ?? null,
+            'evidence' => $payload['evidence'] ?? null,
+            'superseded_by' => $payload['superseded_by'] ?? null,
+            'superseded_date' => $payload['superseded_date'] ?? null,
+            'superseded_reason' => $payload['superseded_reason'] ?? null,
+        ];
     }
 
     /**
