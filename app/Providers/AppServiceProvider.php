@@ -6,10 +6,12 @@ use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\HealthCheckInterface;
 use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
+use App\Services\EnhancementQueueService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
 use App\Services\OdinSyncService;
+use App\Services\OllamaService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
@@ -165,5 +167,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Health check service for service status commands
         $this->app->singleton(HealthCheckInterface::class, fn (): HealthCheckService => new HealthCheckService);
+
+        // Ollama service
+        $this->app->singleton(OllamaService::class, fn (): \App\Services\OllamaService => new OllamaService);
+
+        // Enhancement queue service
+        $this->app->singleton(EnhancementQueueService::class, fn ($app): \App\Services\EnhancementQueueService => new EnhancementQueueService(
+            $app->make(KnowledgePathService::class)
+        ));
     }
 }

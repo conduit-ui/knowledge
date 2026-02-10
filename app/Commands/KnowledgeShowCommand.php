@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
@@ -19,7 +20,7 @@ class KnowledgeShowCommand extends Command
 
     protected $description = 'Display full details of a knowledge entry';
 
-    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
+    public function handle(QdrantService $qdrant, EntryMetadataService $metadata, EnhancementQueueService $enhancementQueue): int
     {
         $id = $this->argument('id');
 
@@ -46,7 +47,7 @@ class KnowledgeShowCommand extends Command
 
         $qdrant->incrementUsage($id);
 
-        $this->renderEntry($entry, $metadata);
+        $this->renderEntry($entry, $metadata, $enhancementQueue);
 
         // Show supersession history
         $history = $qdrant->getSupersessionHistory($id);
@@ -58,7 +59,7 @@ class KnowledgeShowCommand extends Command
     /**
      * @param  array<string, mixed>  $entry
      */
-    private function renderEntry(array $entry, EntryMetadataService $metadata): void
+    private function renderEntry(array $entry, EntryMetadataService $metadata, EnhancementQueueService $enhancementQueue): void
     {
         $this->newLine();
 
@@ -111,6 +112,17 @@ class KnowledgeShowCommand extends Command
             $rows[] = ['Superseded Reason', $entry['superseded_reason'] ?? 'N/A'];
         }
 
+        // Enhancement status
+        $rows[] = ['Enhanced', $this->enhancementStatus($entry, $enhancementQueue)];
+
+        if (isset($entry['concepts']) && $entry['concepts'] !== []) {
+            $rows[] = ['Concepts', implode(', ', $entry['concepts'])];
+        }
+
+        if (isset($entry['summary']) && $entry['summary'] !== '') {
+            $rows[] = ['AI Summary', $entry['summary']];
+        }
+
         table(['Field', 'Value'], $rows);
 
         $this->newLine();
@@ -145,6 +157,24 @@ class KnowledgeShowCommand extends Command
                 $this->line("    <fg=cyan>[{$predecessor['id']}]</> {$predecessor['title']} <fg=gray>({$reason})</>");
             }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     */
+    private function enhancementStatus(array $entry, EnhancementQueueService $enhancementQueue): string
+    {
+        if (isset($entry['enhanced']) && $entry['enhanced'] === true) {
+            $enhancedAt = $entry['enhanced_at'] ?? 'Unknown';
+
+            return "<fg=green>Yes</> <fg=gray>({$enhancedAt})</>";
+        }
+
+        if ($enhancementQueue->isQueued($entry['id'])) {
+            return '<fg=yellow>Pending</>';
+        }
+
+        return '<fg=gray>No</>';
     }
 
     private function colorize(string $text, string $color): string
