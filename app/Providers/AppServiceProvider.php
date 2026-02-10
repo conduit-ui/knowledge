@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Services\DeletionTracker;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
 use App\Services\OdinSyncService;
@@ -115,6 +116,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Knowledge cache service
         $this->app->singleton(KnowledgeCacheService::class, fn (): \App\Services\KnowledgeCacheService => new KnowledgeCacheService);
+
+        // Deletion tracker service
+        $this->app->singleton(DeletionTracker::class, fn ($app): \App\Services\DeletionTracker => new DeletionTracker(
+            $app->make(KnowledgePathService::class)
+        ));
 
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(

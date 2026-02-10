@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Services\DeletionTracker;
 use App\Services\QdrantService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
@@ -12,16 +13,19 @@ beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 
+    $this->trackerMock = Mockery::mock(DeletionTracker::class);
+    $this->app->instance(DeletionTracker::class, $this->trackerMock);
+
     // Set up config for prefrontal API
     config(['services.prefrontal.token' => 'test-token']);
     config(['services.prefrontal.url' => 'http://test-api.local']);
 });
 
 describe('SyncCommand --delete option', function (): void {
-    it('fails when --delete is used without --push', function (): void {
+    it('fails when --delete is used without --push or --full-sync', function (): void {
         $this->artisan('sync', ['--delete' => true])
             ->assertFailed()
-            ->expectsOutput('The --delete option requires --push to be specified.');
+            ->expectsOutput('The --delete option requires --push or --full-sync to be specified.');
     });
 
     it('deletes orphaned cloud entries when --delete is used with --push', function (): void {
@@ -63,7 +67,12 @@ describe('SyncCommand --delete option', function (): void {
             ->with('', [], 10000)
             ->andReturn($localEntries);
 
+        // Mock tracker - no tracked deletions
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([]);
+
         // Create mock HTTP responses
+        // processTrackedDeletions returns early when tracker is empty (no HTTP call)
         $mockHandler = new MockHandler([
             // Push response
             new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
@@ -81,8 +90,74 @@ describe('SyncCommand --delete option', function (): void {
         $this->artisan('sync', ['--push' => true, '--delete' => true])
             ->assertSuccessful()
             ->expectsOutputToContain('Pushing local entries to cloud')
-            ->expectsOutputToContain('Deleting cloud entries not present locally')
+            ->expectsOutputToContain('Processing tracked deletions')
             ->expectsOutputToContain('1 orphaned cloud entries to delete');
+    });
+
+    it('processes tracked deletions when --delete is used with --push', function (): void {
+        $localEntries = collect([
+            [
+                'id' => 'local-1',
+                'title' => 'Entry 1',
+                'content' => 'Content 1',
+                'category' => 'testing',
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'status' => 'draft',
+                'confidence' => 50,
+            ],
+        ]);
+
+        $trackedUniqueId = hash('sha256', 'deleted-1-Deleted Entry');
+
+        $this->qdrantMock->shouldReceive('search')
+            ->with('', [], 10000)
+            ->andReturn($localEntries);
+
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([$trackedUniqueId => '2025-01-01T00:00:00+00:00']);
+
+        $this->trackerMock->shouldReceive('removeMany')
+            ->once()
+            ->with([$trackedUniqueId]);
+
+        $cloudEntries = [
+            'data' => [
+                [
+                    'id' => 99,
+                    'unique_id' => $trackedUniqueId,
+                    'title' => 'Deleted Entry',
+                ],
+                [
+                    'id' => 1,
+                    'unique_id' => hash('sha256', 'local-1-Entry 1'),
+                    'title' => 'Entry 1',
+                ],
+            ],
+        ];
+
+        $mockHandler = new MockHandler([
+            // Push response
+            new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
+            // Get cloud entries for tracked deletions
+            new Response(200, [], json_encode($cloudEntries)),
+            // Delete tracked entry
+            new Response(204),
+            // Get cloud entries for orphan check (after tracked deletion removed)
+            new Response(200, [], json_encode(['data' => [
+                ['id' => 1, 'unique_id' => hash('sha256', 'local-1-Entry 1'), 'title' => 'Entry 1'],
+            ]])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+
+        $this->app->instance(Client::class, $mockClient);
+
+        $this->artisan('sync', ['--push' => true, '--delete' => true])
+            ->assertSuccessful()
+            ->expectsOutputToContain('1 tracked deletions to propagate');
     });
 
     it('handles case when no cloud entries exist', function (): void {
@@ -105,11 +180,15 @@ describe('SyncCommand --delete option', function (): void {
             ->with('', [], 10000)
             ->andReturn($localEntries);
 
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([]);
+
         // Cloud has no entries with unique_id/id
         $cloudEntries = [
             'data' => [],
         ];
 
+        // processTrackedDeletions returns early when tracker is empty (no HTTP call)
         $mockHandler = new MockHandler([
             new Response(200, [], json_encode(['summary' => ['created' => 1, 'updated' => 0, 'failed' => 0]])),
             new Response(200, [], json_encode($cloudEntries)),
@@ -145,6 +224,9 @@ describe('SyncCommand --delete option', function (): void {
             ->with('', [], 10000)
             ->andReturn($localEntries);
 
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([]);
+
         // Cloud entry matches local
         $cloudEntries = [
             'data' => [
@@ -157,6 +239,7 @@ describe('SyncCommand --delete option', function (): void {
             ],
         ];
 
+        // processTrackedDeletions returns early when tracker is empty (no HTTP call)
         $mockHandler = new MockHandler([
             new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
             new Response(200, [], json_encode($cloudEntries)),
@@ -191,6 +274,10 @@ describe('SyncCommand --delete option', function (): void {
             ->with('', [], 10000)
             ->andReturn($localEntries);
 
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([]);
+
+        // processTrackedDeletions returns early when tracker is empty (no HTTP call)
         $mockHandler = new MockHandler([
             new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
             new Response(200, [], json_encode(['invalid' => 'response'])),
@@ -414,5 +501,188 @@ describe('SyncCommand two-way sync', function (): void {
             ->assertSuccessful()
             ->expectsOutputToContain('Starting two-way sync')
             ->expectsOutputToContain('Sync Summary');
+    });
+});
+
+describe('SyncCommand --full-sync option', function (): void {
+    it('performs push then deletes orphans and tracked deletions', function (): void {
+        $localEntries = collect([
+            [
+                'id' => 'local-1',
+                'title' => 'Entry 1',
+                'content' => 'Content 1',
+                'category' => 'testing',
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'status' => 'draft',
+                'confidence' => 50,
+            ],
+        ]);
+
+        $this->qdrantMock->shouldReceive('search')
+            ->with('', [], 10000)
+            ->andReturn($localEntries);
+
+        // No tracked deletions
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([]);
+
+        $cloudEntries = [
+            'data' => [
+                [
+                    'id' => 1,
+                    'unique_id' => hash('sha256', 'local-1-Entry 1'),
+                    'title' => 'Entry 1',
+                ],
+                [
+                    'id' => 2,
+                    'unique_id' => hash('sha256', 'orphan-Orphan'),
+                    'title' => 'Orphan',
+                ],
+            ],
+        ];
+
+        $mockHandler = new MockHandler([
+            // Push response
+            new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
+            // Get cloud entries for tracked deletions (empty tracker -> fetch cloud)
+            new Response(200, [], json_encode(['data' => []])),
+            // Get cloud entries for orphan check
+            new Response(200, [], json_encode($cloudEntries)),
+            // Delete orphan
+            new Response(204),
+        ]);
+
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+
+        $this->app->instance(Client::class, $mockClient);
+
+        $this->artisan('sync', ['--full-sync' => true])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Starting full sync')
+            ->expectsOutputToContain('Pushing local entries to cloud')
+            ->expectsOutputToContain('Comparing local vs cloud to find orphans');
+    });
+
+    it('handles tracked deletions not found in cloud', function (): void {
+        $localEntries = collect([
+            [
+                'id' => 'local-1',
+                'title' => 'Entry 1',
+                'content' => 'Content 1',
+                'category' => 'testing',
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'status' => 'draft',
+                'confidence' => 50,
+            ],
+        ]);
+
+        $this->qdrantMock->shouldReceive('search')
+            ->with('', [], 10000)
+            ->andReturn($localEntries);
+
+        // Tracked deletion for an entry not in cloud
+        $trackedUniqueId = hash('sha256', 'gone-1-Gone Entry');
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([$trackedUniqueId => '2025-01-01T00:00:00+00:00']);
+
+        $this->trackerMock->shouldReceive('removeMany')
+            ->once()
+            ->with([$trackedUniqueId]);
+
+        $cloudEntriesForTracker = [
+            'data' => [
+                [
+                    'id' => 1,
+                    'unique_id' => hash('sha256', 'local-1-Entry 1'),
+                    'title' => 'Entry 1',
+                ],
+            ],
+        ];
+
+        $cloudEntriesForOrphans = [
+            'data' => [
+                [
+                    'id' => 1,
+                    'unique_id' => hash('sha256', 'local-1-Entry 1'),
+                    'title' => 'Entry 1',
+                ],
+            ],
+        ];
+
+        $mockHandler = new MockHandler([
+            // Push response
+            new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
+            // Get cloud entries for tracked deletions
+            new Response(200, [], json_encode($cloudEntriesForTracker)),
+            // Get cloud entries for orphan check
+            new Response(200, [], json_encode($cloudEntriesForOrphans)),
+        ]);
+
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+
+        $this->app->instance(Client::class, $mockClient);
+
+        $this->artisan('sync', ['--full-sync' => true])
+            ->assertSuccessful()
+            ->expectsOutputToContain('1 tracked deletions to propagate')
+            ->expectsOutputToContain('No orphaned cloud entries to delete');
+    });
+
+    it('handles invalid API response during tracked deletion processing', function (): void {
+        $localEntries = collect([
+            [
+                'id' => 'local-1',
+                'title' => 'Entry 1',
+                'content' => 'Content 1',
+                'category' => 'testing',
+                'tags' => [],
+                'module' => null,
+                'priority' => 'medium',
+                'status' => 'draft',
+                'confidence' => 50,
+            ],
+        ]);
+
+        $this->qdrantMock->shouldReceive('search')
+            ->with('', [], 10000)
+            ->andReturn($localEntries);
+
+        $trackedUniqueId = hash('sha256', 'deleted-1-Deleted Entry');
+        $this->trackerMock->shouldReceive('all')
+            ->andReturn([$trackedUniqueId => '2025-01-01T00:00:00+00:00']);
+
+        $cloudEntries = [
+            'data' => [
+                [
+                    'id' => 1,
+                    'unique_id' => hash('sha256', 'local-1-Entry 1'),
+                    'title' => 'Entry 1',
+                ],
+            ],
+        ];
+
+        $mockHandler = new MockHandler([
+            // Push response
+            new Response(200, [], json_encode(['summary' => ['created' => 0, 'updated' => 1, 'failed' => 0]])),
+            // Invalid response for tracked deletions
+            new Response(200, [], json_encode(['invalid' => 'response'])),
+            // Get cloud entries for orphan check
+            new Response(200, [], json_encode($cloudEntries)),
+        ]);
+
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+
+        $this->app->instance(Client::class, $mockClient);
+
+        $this->artisan('sync', ['--full-sync' => true])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Invalid response from cloud API');
     });
 });
