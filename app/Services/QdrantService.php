@@ -17,6 +17,7 @@ use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
 use App\Integrations\Qdrant\Requests\GetPoints;
 use App\Integrations\Qdrant\Requests\HybridSearchPoints;
+use App\Integrations\Qdrant\Requests\ListCollections;
 use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
@@ -854,9 +855,36 @@ class QdrantService
     }
 
     /**
+     * List all knowledge collections from Qdrant.
+     *
+     * @return array<int, string> Collection names matching the knowledge_ prefix
+     *
+     * @codeCoverageIgnore Qdrant API integration - tested via integration tests
+     */
+    public function listCollections(): array
+    {
+        $response = $this->connector->send(new ListCollections);
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        $data = $response->json();
+        $collections = $data['result']['collections'] ?? [];
+
+        return array_values(array_filter(
+            array_map(
+                fn (array $collection): string => $collection['name'] ?? '',
+                $collections
+            ),
+            fn (string $name): bool => str_starts_with($name, 'knowledge_')
+        ));
+    }
+
+    /**
      * Get collection name for project namespace.
      */
-    private function getCollectionName(string $project): string
+    public function getCollectionName(string $project): string
     {
         return 'knowledge_'.str_replace(['/', '\\', ' '], '_', $project);
     }

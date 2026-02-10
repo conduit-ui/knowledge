@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
 use App\Services\QdrantService;
@@ -16,7 +17,12 @@ use function Laravel\Prompts\warning;
 
 class KnowledgeShowCommand extends Command
 {
-    protected $signature = 'show {id : The ID of the knowledge entry to display}';
+    use ResolvesProject;
+
+    protected $signature = 'show
+                            {id : The ID of the knowledge entry to display}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Display full details of a knowledge entry';
 
@@ -34,8 +40,10 @@ class KnowledgeShowCommand extends Command
             return self::FAILURE;
         } // @codeCoverageIgnoreEnd
 
+        $project = $this->resolveProject();
+
         $entry = spin(
-            fn (): ?array => $qdrant->getById($id),
+            fn (): ?array => $qdrant->getById($id, $project),
             'Fetching entry...'
         );
 
@@ -45,7 +53,7 @@ class KnowledgeShowCommand extends Command
             return self::FAILURE;
         }
 
-        $qdrant->incrementUsage($id);
+        $qdrant->incrementUsage($id, $project);
 
         $this->renderEntry($entry, $metadata, $enhancementQueue);
 

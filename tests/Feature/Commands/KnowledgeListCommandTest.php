@@ -7,6 +7,7 @@ use App\Services\QdrantService;
 beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
+    mockProjectDetector();
 });
 
 it('lists all entries', function (): void {

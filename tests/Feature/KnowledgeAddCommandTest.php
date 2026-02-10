@@ -21,6 +21,7 @@ beforeEach(function (): void {
     app()->instance(QdrantService::class, $this->qdrantService);
     app()->instance(WriteGateService::class, $this->writeGateService);
     app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+    mockProjectDetector();
 
     $this->enhancementQueue->shouldReceive('queue')->zeroOrMoreTimes();
 

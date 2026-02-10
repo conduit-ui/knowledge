@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Enums\SearchTier;
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\EntryMetadataService;
-use App\Services\TieredSearchService;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeSearchCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
@@ -24,14 +26,15 @@ class KnowledgeSearchCommand extends Command
                             {--limit=20 : Maximum number of results}
                             {--semantic : Use semantic search if available}
                             {--include-superseded : Include superseded entries in results}
-                            {--tier= : Force searching a specific tier (working, recent, structured, archive)}';
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string
      */
     protected $description = 'Search knowledge entries by keyword, tag, or category';
 
-    public function handle(TieredSearchService $tieredSearch, EntryMetadataService $metadata): int
+    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
     {
         $query = $this->argument('query');
         $tag = $this->option('tag');
@@ -42,25 +45,12 @@ class KnowledgeSearchCommand extends Command
         $limit = (int) $this->option('limit');
         $this->option('semantic');
         $includeSuperseded = (bool) $this->option('include-superseded');
-        $tierOption = $this->option('tier');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
             $this->error('Please provide at least one search parameter.');
 
             return self::FAILURE;
-        }
-
-        // Validate tier option
-        $forceTier = null;
-        if (is_string($tierOption) && $tierOption !== '') {
-            $forceTier = SearchTier::tryFrom($tierOption);
-            if ($forceTier === null) {
-                $validTiers = implode(', ', array_map(fn (SearchTier $t): string => $t->value, SearchTier::cases()));
-                $this->error("Invalid tier '{$tierOption}'. Valid tiers: {$validTiers}");
-
-                return self::FAILURE;
-            }
         }
 
         // Build filters for search
@@ -76,9 +66,24 @@ class KnowledgeSearchCommand extends Command
             $filters['include_superseded'] = true;
         }
 
-        // Use tiered search
+        // Use project-aware search
         $searchQuery = is_string($query) ? $query : '';
-        $results = $tieredSearch->search($searchQuery, $filters, $limit, $forceTier);
+
+        if ($this->isGlobal()) {
+            $collections = $qdrant->listCollections();
+            $results = collect();
+
+            foreach ($collections as $collection) {
+                $projectName = str_replace('knowledge_', '', $collection);
+                $projectResults = $qdrant->search($searchQuery, $filters, $limit, $projectName);
+                $results = $results->merge($projectResults->map(fn (array $entry): array => array_merge($entry, ['_project' => $projectName])));
+            }
+
+            $results = $results->sortByDesc('score')->take($limit)->values();
+        } else {
+            $project = $this->resolveProject();
+            $results = $qdrant->search($searchQuery, $filters, $limit, $project);
+        }
 
         if ($results->isEmpty()) {
             $this->line('No entries found.');
@@ -100,24 +105,13 @@ class KnowledgeSearchCommand extends Command
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
             $supersededBy = $entry['superseded_by'] ?? null;
-            $tierLabel = $entry['tier_label'] ?? null;
-            $tieredScore = $entry['tiered_score'] ?? null;
 
             $isStale = $metadata->isStale($entry);
             $effectiveConfidence = $metadata->calculateEffectiveConfidence($entry);
             $confidenceLevel = $metadata->confidenceLevel($effectiveConfidence);
 
-            $scoreDisplay = 'score: '.number_format($score, 2);
-            if ($tieredScore !== null) {
-                $scoreDisplay .= ' | ranked: '.number_format((float) $tieredScore, 2);
-            }
-
-            $tierDisplay = '';
-            if (is_string($tierLabel)) {
-                $tierDisplay = " <fg=magenta>[{$tierLabel}]</>";
-            }
-
-            $titleLine = "<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>({$scoreDisplay})</>{$tierDisplay}";
+            $projectLabel = isset($entry['_project']) ? " <fg=magenta>[{$entry['_project']}]</>" : '';
+            $titleLine = "<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>'.$projectLabel;
             if ($supersededBy !== null) {
                 $titleLine .= ' <fg=red>[SUPERSEDED]</>';
             }

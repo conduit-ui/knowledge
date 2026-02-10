@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\KnowledgeCacheService;
 use App\Services\OdinSyncService;
 use App\Services\QdrantService;
@@ -16,21 +17,27 @@ use function Laravel\Prompts\table;
 
 class KnowledgeStatsCommand extends Command
 {
-    protected $signature = 'stats';
+    use ResolvesProject;
+
+    protected $signature = 'stats
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Display analytics dashboard for knowledge entries';
 
     public function handle(QdrantService $qdrant, OdinSyncService $odinSync): int
     {
+        $project = $this->resolveProject();
+
         $total = spin(
-            fn (): int => $qdrant->count(),
+            fn (): int => $qdrant->count($project),
             'Loading knowledge base...'
         );
 
         // Get a sample of entries for category/status breakdown (limit to 1000 for performance)
-        $entries = $qdrant->scroll([], min($total, 1000));
+        $entries = $qdrant->scroll([], min($total, 1000), $project);
 
-        $this->renderDashboard($entries, $total);
+        $this->renderDashboard($entries, $total, $project);
 
         $cacheService = $qdrant->getCacheService();
         if ($cacheService instanceof KnowledgeCacheService) {
@@ -42,7 +49,7 @@ class KnowledgeStatsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function renderDashboard(Collection $entries, int $total): void
+    private function renderDashboard(Collection $entries, int $total, string $project): void
     {
         info("Knowledge Base: {$total} entries");
         $this->newLine();
@@ -51,10 +58,14 @@ class KnowledgeStatsCommand extends Command
         $totalUsage = $entries->sum('usage_count');
         $avgUsage = round($entries->avg('usage_count') ?? 0);
 
+        $collectionName = app(QdrantService::class)->getCollectionName($project);
+
         $this->line('<fg=gray>Overview</>');
         table(
             ['Metric', 'Value'],
             [
+                ['Project', $project],
+                ['Collection', $collectionName],
                 ['Total Entries', (string) $total],
                 ['Total Usage', (string) $totalUsage],
                 ['Avg Usage', (string) $avgUsage],

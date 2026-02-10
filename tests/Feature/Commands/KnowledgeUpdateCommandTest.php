@@ -7,6 +7,7 @@ use App\Services\QdrantService;
 beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
+    mockProjectDetector();
 });
 
 it('updates entry title', function (): void {
@@ -27,7 +28,7 @@ it('updates entry title', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-123')
+        ->with('test-id-123', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -60,7 +61,7 @@ it('updates entry content', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-456')
+        ->with('test-id-456', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -92,7 +93,7 @@ it('updates entry tags by replacing them', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-789')
+        ->with('test-id-789', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -124,7 +125,7 @@ it('adds tags to existing tags', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-add')
+        ->with('test-id-add', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -157,7 +158,7 @@ it('updates confidence level', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-conf')
+        ->with('test-id-conf', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -189,7 +190,7 @@ it('fails for invalid confidence', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-invalid')
+        ->with('test-id-invalid', 'default')
         ->andReturn($entry);
 
     $this->artisan('update', [
@@ -216,7 +217,7 @@ it('fails for invalid category', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-cat')
+        ->with('test-id-cat', 'default')
         ->andReturn($entry);
 
     $this->artisan('update', [
@@ -243,7 +244,7 @@ it('fails for invalid priority', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-pri')
+        ->with('test-id-pri', 'default')
         ->andReturn($entry);
 
     $this->artisan('update', [
@@ -270,7 +271,7 @@ it('fails for invalid status', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-stat')
+        ->with('test-id-stat', 'default')
         ->andReturn($entry);
 
     $this->artisan('update', [
@@ -282,7 +283,7 @@ it('fails for invalid status', function (): void {
 it('fails when entry not found', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('non-existent-id')
+        ->with('non-existent-id', 'default')
         ->andReturn(null);
 
     $this->artisan('update', [
@@ -309,7 +310,7 @@ it('fails when no updates provided', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-empty')
+        ->with('test-id-empty', 'default')
         ->andReturn($entry);
 
     $this->artisan('update', [
@@ -335,7 +336,7 @@ it('updates multiple fields at once', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-multi')
+        ->with('test-id-multi', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -373,7 +374,7 @@ it('updates category to valid value', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-category')
+        ->with('test-id-category', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')
@@ -405,7 +406,7 @@ it('updates timestamp on save', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('test-id-time')
+        ->with('test-id-time', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('upsert')

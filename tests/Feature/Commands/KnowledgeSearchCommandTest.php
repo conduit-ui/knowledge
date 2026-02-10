@@ -3,17 +3,19 @@
 declare(strict_types=1);
 
 use App\Services\EntryMetadataService;
-use App\Services\TieredSearchService;
+use App\Services\QdrantService;
 
 beforeEach(function (): void {
-    $this->mockTieredSearch = Mockery::mock(TieredSearchService::class);
-    $this->app->instance(TieredSearchService::class, $this->mockTieredSearch);
+    $this->mockQdrant = Mockery::mock(QdrantService::class);
+    $this->app->instance(QdrantService::class, $this->mockQdrant);
 
     $this->mockMetadata = Mockery::mock(EntryMetadataService::class);
     $this->mockMetadata->shouldReceive('isStale')->andReturn(false);
     $this->mockMetadata->shouldReceive('calculateEffectiveConfidence')->andReturn(80);
     $this->mockMetadata->shouldReceive('confidenceLevel')->andReturn('high');
     $this->app->instance(EntryMetadataService::class, $this->mockMetadata);
+
+    mockProjectDetector();
 });
 
 afterEach(function (): void {
@@ -21,9 +23,9 @@ afterEach(function (): void {
 });
 
 it('searches entries by keyword in title and content', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('timezone', [], 20, null)
+        ->with('timezone', [], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -39,9 +41,6 @@ it('searches entries by keyword in title and content', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'working',
-                'tier_label' => 'Working Context',
-                'tiered_score' => 0.85,
             ],
         ]));
 
@@ -52,9 +51,9 @@ it('searches entries by keyword in title and content', function (): void {
 });
 
 it('searches entries by tag', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('', ['tag' => 'blood.notifications'], 20, null)
+        ->with('', ['tag' => 'blood.notifications'], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -70,9 +69,6 @@ it('searches entries by tag', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'working',
-                'tier_label' => 'Working Context',
-                'tiered_score' => 0.68,
             ],
         ]));
 
@@ -82,9 +78,9 @@ it('searches entries by tag', function (): void {
 });
 
 it('searches entries by category', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('', ['category' => 'architecture'], 20, null)
+        ->with('', ['category' => 'architecture'], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -100,9 +96,6 @@ it('searches entries by category', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'structured',
-                'tier_label' => 'Structured Storage',
-                'tiered_score' => 0.76,
             ],
         ]));
 
@@ -112,9 +105,9 @@ it('searches entries by category', function (): void {
 });
 
 it('searches entries by category and module', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('', ['category' => 'architecture', 'module' => 'Blood'], 20, null)
+        ->with('', ['category' => 'architecture', 'module' => 'Blood'], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -130,9 +123,6 @@ it('searches entries by category and module', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'structured',
-                'tier_label' => 'Structured Storage',
-                'tiered_score' => 0.82,
             ],
         ]));
 
@@ -144,9 +134,9 @@ it('searches entries by category and module', function (): void {
 });
 
 it('searches entries by priority', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('', ['priority' => 'critical'], 20, null)
+        ->with('', ['priority' => 'critical'], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -162,9 +152,6 @@ it('searches entries by priority', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'structured',
-                'tier_label' => 'Structured Storage',
-                'tiered_score' => 0.93,
             ],
         ]));
 
@@ -174,9 +161,9 @@ it('searches entries by priority', function (): void {
 });
 
 it('searches entries by status', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('', ['status' => 'validated'], 20, null)
+        ->with('', ['status' => 'validated'], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -192,9 +179,6 @@ it('searches entries by status', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'structured',
-                'tier_label' => 'Structured Storage',
-                'tiered_score' => 0.74,
             ],
         ]));
 
@@ -204,9 +188,9 @@ it('searches entries by status', function (): void {
 });
 
 it('shows message when no results found', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('nonexistent', [], 20, null)
+        ->with('nonexistent', [], 20, 'default')
         ->andReturn(collect([]));
 
     $this->artisan('search', ['query' => 'nonexistent'])
@@ -215,13 +199,13 @@ it('shows message when no results found', function (): void {
 });
 
 it('searches with multiple filters', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('', [
             'category' => 'testing',
             'module' => 'Blood',
             'priority' => 'high',
-        ], 20, null)
+        ], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'entry-1',
@@ -237,9 +221,6 @@ it('searches with multiple filters', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'structured',
-                'tier_label' => 'Structured Storage',
-                'tiered_score' => 0.83,
             ],
         ]));
 
@@ -252,7 +233,7 @@ it('searches with multiple filters', function (): void {
 });
 
 it('requires at least one search parameter', function (): void {
-    $this->mockTieredSearch->shouldNotReceive('search');
+    $this->mockQdrant->shouldNotReceive('search');
 
     $this->artisan('search')
         ->assertFailed()
@@ -260,7 +241,7 @@ it('requires at least one search parameter', function (): void {
 });
 
 it('handles query with all filter types combined', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
         ->with('laravel', [
             'tag' => 'testing',
@@ -268,7 +249,7 @@ it('handles query with all filter types combined', function (): void {
             'module' => 'Core',
             'priority' => 'high',
             'status' => 'validated',
-        ], 20, null)
+        ], 20, 'default')
         ->andReturn(collect([]));
 
     $this->artisan('search', [
@@ -283,9 +264,9 @@ it('handles query with all filter types combined', function (): void {
 });
 
 it('uses semantic search by default', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('semantic', [], 20, null)
+        ->with('semantic', [], 20, 'default')
         ->andReturn(collect([]));
 
     $this->artisan('search', [
@@ -295,9 +276,9 @@ it('uses semantic search by default', function (): void {
 });
 
 it('handles entries with missing optional fields', function (): void {
-    $this->mockTieredSearch->shouldReceive('search')
+    $this->mockQdrant->shouldReceive('search')
         ->once()
-        ->with('minimal', [], 20, null)
+        ->with('minimal', [], 20, 'default')
         ->andReturn(collect([
             [
                 'id' => 'minimal-entry',
@@ -313,126 +294,10 @@ it('handles entries with missing optional fields', function (): void {
                 'usage_count' => 0,
                 'created_at' => '2025-01-01T00:00:00Z',
                 'updated_at' => '2025-01-01T00:00:00Z',
-                'tier' => 'working',
-                'tier_label' => 'Working Context',
-                'tiered_score' => 0.05,
             ],
         ]));
 
     $this->artisan('search', ['query' => 'minimal'])
         ->assertSuccessful()
         ->expectsOutputToContain('Category: N/A');
-});
-
-describe('--tier flag', function (): void {
-    it('passes working tier to tiered search', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->with('query', [], 20, \App\Enums\SearchTier::Working)
-            ->andReturn(collect([]));
-
-        $this->artisan('search', ['query' => 'query', '--tier' => 'working'])
-            ->assertSuccessful()
-            ->expectsOutput('No entries found.');
-    });
-
-    it('passes recent tier to tiered search', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->with('query', [], 20, \App\Enums\SearchTier::Recent)
-            ->andReturn(collect([]));
-
-        $this->artisan('search', ['query' => 'query', '--tier' => 'recent'])
-            ->assertSuccessful()
-            ->expectsOutput('No entries found.');
-    });
-
-    it('passes structured tier to tiered search', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->with('query', [], 20, \App\Enums\SearchTier::Structured)
-            ->andReturn(collect([]));
-
-        $this->artisan('search', ['query' => 'query', '--tier' => 'structured'])
-            ->assertSuccessful()
-            ->expectsOutput('No entries found.');
-    });
-
-    it('passes archive tier to tiered search', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->with('query', [], 20, \App\Enums\SearchTier::Archive)
-            ->andReturn(collect([]));
-
-        $this->artisan('search', ['query' => 'query', '--tier' => 'archive'])
-            ->assertSuccessful()
-            ->expectsOutput('No entries found.');
-    });
-
-    it('rejects invalid tier value', function (): void {
-        $this->mockTieredSearch->shouldNotReceive('search');
-
-        $this->artisan('search', ['query' => 'query', '--tier' => 'invalid'])
-            ->assertFailed();
-    });
-
-    it('displays tier label in results', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->andReturn(collect([
-                [
-                    'id' => 'uuid-1',
-                    'title' => 'Test Entry',
-                    'content' => 'Content',
-                    'category' => 'testing',
-                    'priority' => 'medium',
-                    'confidence' => 80,
-                    'module' => null,
-                    'tags' => [],
-                    'score' => 0.90,
-                    'status' => 'draft',
-                    'usage_count' => 0,
-                    'created_at' => '2026-02-09T00:00:00Z',
-                    'updated_at' => '2026-02-09T00:00:00Z',
-                    'tier' => 'working',
-                    'tier_label' => 'Working Context',
-                    'tiered_score' => 0.72,
-                ],
-            ]));
-
-        $this->artisan('search', ['query' => 'test', '--tier' => 'working'])
-            ->assertSuccessful()
-            ->expectsOutputToContain('Found 1 entry')
-            ->expectsOutputToContain('Test Entry');
-    });
-
-    it('displays ranked score in results', function (): void {
-        $this->mockTieredSearch->shouldReceive('search')
-            ->once()
-            ->andReturn(collect([
-                [
-                    'id' => 'uuid-1',
-                    'title' => 'Test Entry',
-                    'content' => 'Content',
-                    'category' => 'testing',
-                    'priority' => 'medium',
-                    'confidence' => 80,
-                    'module' => null,
-                    'tags' => [],
-                    'score' => 0.90,
-                    'status' => 'validated',
-                    'usage_count' => 0,
-                    'created_at' => '2025-01-01T00:00:00Z',
-                    'updated_at' => '2025-01-01T00:00:00Z',
-                    'tier' => 'structured',
-                    'tier_label' => 'Structured Storage',
-                    'tiered_score' => 0.65,
-                ],
-            ]));
-
-        $this->artisan('search', ['query' => 'test'])
-            ->assertSuccessful()
-            ->expectsOutputToContain('Found 1 entry')
-            ->expectsOutputToContain('Test Entry');
-    });
 });

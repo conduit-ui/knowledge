@@ -43,6 +43,19 @@ if (! function_exists('removeDirectory')) {
     }
 }
 
+if (! function_exists('mockProjectDetector')) {
+    /**
+     * Mock the ProjectDetectorService to return a fixed project name.
+     * Use in beforeEach() blocks for commands that use ResolvesProject trait.
+     */
+    function mockProjectDetector(string $project = 'default'): void
+    {
+        $mock = Mockery::mock(\App\Services\ProjectDetectorService::class);
+        $mock->shouldReceive('detect')->andReturn($project);
+        app()->instance(\App\Services\ProjectDetectorService::class, $mock);
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeArchiveCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
     protected $signature = 'archive
                             {id : The ID of the entry to archive}
-                            {--restore : Restore an archived entry}';
+                            {--restore : Restore an archived entry}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string
@@ -34,7 +39,8 @@ class KnowledgeArchiveCommand extends Command
             return self::FAILURE;
         }
 
-        $entry = $qdrant->getById((int) $id);
+        $project = $this->resolveProject();
+        $entry = $qdrant->getById((int) $id, $project);
 
         if ($entry === null) {
             $this->error("Entry not found with ID: {$id}");
@@ -67,7 +73,7 @@ class KnowledgeArchiveCommand extends Command
         $qdrant->updateFields((int) $entry['id'], [
             'status' => 'deprecated',
             'confidence' => 0,
-        ]);
+        ], $this->resolveProject());
 
         $this->info("Entry #{$entry['id']} has been archived.");
         $this->newLine();
@@ -95,7 +101,7 @@ class KnowledgeArchiveCommand extends Command
         $qdrant->updateFields((int) $entry['id'], [
             'status' => 'draft',
             'confidence' => 50,
-        ]);
+        ], $this->resolveProject());
 
         $this->info("Entry #{$entry['id']} has been restored.");
         $this->newLine();

@@ -12,6 +12,7 @@ describe('KnowledgeExportAllCommand', function (): void {
 
         app()->instance(QdrantService::class, $this->qdrant);
         app()->instance(MarkdownExporter::class, $this->markdownExporter);
+        mockProjectDetector();
 
         // Clean and recreate temp directory for tests
         if (is_dir('/tmp/export-all-tests')) {
@@ -57,7 +58,7 @@ describe('KnowledgeExportAllCommand', function (): void {
 
         $this->qdrant->shouldReceive('search')
             ->once()
-            ->with('', [], 10000)
+            ->with('', [], 10000, 'default')
             ->andReturn($entries);
 
         $this->markdownExporter->shouldReceive('exportArray')
@@ -92,7 +93,7 @@ describe('KnowledgeExportAllCommand', function (): void {
 
         $this->qdrant->shouldReceive('search')
             ->once()
-            ->with('', [], 10000)
+            ->with('', [], 10000, 'default')
             ->andReturn($entries);
 
         $this->artisan('export:all', [
@@ -123,7 +124,7 @@ describe('KnowledgeExportAllCommand', function (): void {
 
         $this->qdrant->shouldReceive('search')
             ->once()
-            ->with('', ['category' => 'tutorial'], 10000)
+            ->with('', ['category' => 'tutorial'], 10000, 'default')
             ->andReturn($entries);
 
         $this->markdownExporter->shouldReceive('exportArray')
@@ -141,7 +142,7 @@ describe('KnowledgeExportAllCommand', function (): void {
     it('warns when no entries found', function (): void {
         $this->qdrant->shouldReceive('search')
             ->once()
-            ->with('', [], 10000)
+            ->with('', [], 10000, 'default')
             ->andReturn(collect([]));
 
         $this->artisan('export:all', [

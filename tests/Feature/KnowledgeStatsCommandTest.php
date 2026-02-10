@@ -12,6 +12,7 @@ describe('KnowledgeStatsCommand', function (): void {
         $odinSync = mock(OdinSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
         app()->instance(OdinSyncService::class, $odinSync);
+        mockProjectDetector();
 
         // Mixed entries testing all display logic in a single test due to static caching
         $entries = collect([
@@ -44,16 +45,22 @@ describe('KnowledgeStatsCommand', function (): void {
             ],
         ]);
 
-        // Now uses count() instead of search('')
+        // Now uses count() with project parameter
         $qdrant->shouldReceive('count')
             ->once()
+            ->with('default')
             ->andReturn(3);
 
-        // Now uses scroll() to get sample entries
+        // Now uses scroll() with project parameter
         $qdrant->shouldReceive('scroll')
             ->once()
-            ->with([], 3)
+            ->with([], 3, 'default')
             ->andReturn($entries);
+
+        // getCollectionName is called for dashboard display
+        $qdrant->shouldReceive('getCollectionName')
+            ->with('default')
+            ->andReturn('knowledge_default');
 
         $qdrant->shouldReceive('getCacheService')
             ->once()
@@ -73,6 +80,7 @@ describe('KnowledgeStatsCommand', function (): void {
         $odinSync = mock(OdinSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
         app()->instance(OdinSyncService::class, $odinSync);
+        mockProjectDetector();
 
         $entries = collect([
             [
@@ -88,12 +96,17 @@ describe('KnowledgeStatsCommand', function (): void {
 
         $qdrant->shouldReceive('count')
             ->once()
+            ->with('default')
             ->andReturn(1);
 
         $qdrant->shouldReceive('scroll')
             ->once()
-            ->with([], 1)
+            ->with([], 1, 'default')
             ->andReturn($entries);
+
+        $qdrant->shouldReceive('getCollectionName')
+            ->with('default')
+            ->andReturn('knowledge_default');
 
         $qdrant->shouldReceive('getCacheService')
             ->once()
@@ -208,6 +221,7 @@ describe('KnowledgeStatsCommand', function (): void {
         $odinSync = mock(OdinSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
         app()->instance(OdinSyncService::class, $odinSync);
+        mockProjectDetector();
 
         $entries = collect([
             [
@@ -223,12 +237,17 @@ describe('KnowledgeStatsCommand', function (): void {
 
         $qdrant->shouldReceive('count')
             ->once()
+            ->with('default')
             ->andReturn(1);
 
         $qdrant->shouldReceive('scroll')
             ->once()
-            ->with([], 1)
+            ->with([], 1, 'default')
             ->andReturn($entries);
+
+        $qdrant->shouldReceive('getCollectionName')
+            ->with('default')
+            ->andReturn('knowledge_default');
 
         $qdrant->shouldReceive('getCacheService')
             ->once()

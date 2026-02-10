@@ -8,6 +8,7 @@ describe('KnowledgeArchiveCommand', function (): void {
     beforeEach(function (): void {
         $this->qdrant = mock(QdrantService::class);
         app()->instance(QdrantService::class, $this->qdrant);
+        mockProjectDetector();
     });
 
     it('validates entry ID is numeric', function (): void {
@@ -19,7 +20,7 @@ describe('KnowledgeArchiveCommand', function (): void {
     it('fails when entry not found', function (): void {
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(999)
+            ->with(999, 'default')
             ->andReturn(null);
 
         $this->artisan('archive', ['id' => '999'])
@@ -38,7 +39,7 @@ describe('KnowledgeArchiveCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->qdrant->shouldReceive('updateFields')
@@ -46,7 +47,7 @@ describe('KnowledgeArchiveCommand', function (): void {
             ->with(1, [
                 'status' => 'deprecated',
                 'confidence' => 0,
-            ]);
+            ], 'default');
 
         $this->artisan('archive', ['id' => '1'])
             ->expectsOutputToContain('Entry #1 has been archived.')
@@ -67,7 +68,7 @@ describe('KnowledgeArchiveCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->artisan('archive', ['id' => '1'])
@@ -86,7 +87,7 @@ describe('KnowledgeArchiveCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->qdrant->shouldReceive('updateFields')
@@ -94,7 +95,7 @@ describe('KnowledgeArchiveCommand', function (): void {
             ->with(1, [
                 'status' => 'draft',
                 'confidence' => 50,
-            ]);
+            ], 'default');
 
         $this->artisan('archive', ['id' => '1', '--restore' => true])
             ->expectsOutputToContain('Entry #1 has been restored.')
@@ -116,7 +117,7 @@ describe('KnowledgeArchiveCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->artisan('archive', ['id' => '1', '--restore' => true])
@@ -135,7 +136,7 @@ describe('KnowledgeArchiveCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(2)
+            ->with(2, 'default')
             ->andReturn($entry);
 
         $this->qdrant->shouldReceive('updateFields')
@@ -143,7 +144,7 @@ describe('KnowledgeArchiveCommand', function (): void {
             ->with(2, [
                 'status' => 'deprecated',
                 'confidence' => 0,
-            ]);
+            ], 'default');
 
         $this->artisan('archive', ['id' => '2'])
             ->expectsOutputToContain('Entry #2 has been archived.')

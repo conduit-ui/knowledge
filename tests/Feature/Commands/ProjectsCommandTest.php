@@ -2,56 +2,60 @@
 
 declare(strict_types=1);
 
-use App\Services\OdinSyncService;
+use App\Services\ProjectDetectorService;
+use App\Services\QdrantService;
 
 beforeEach(function (): void {
-    $this->odinMock = Mockery::mock(OdinSyncService::class);
-    $this->app->instance(OdinSyncService::class, $this->odinMock);
+    $this->qdrantMock = Mockery::mock(QdrantService::class);
+    $this->app->instance(QdrantService::class, $this->qdrantMock);
+
+    $this->detectorMock = Mockery::mock(ProjectDetectorService::class);
+    $this->app->instance(ProjectDetectorService::class, $this->detectorMock);
 });
 
-describe('ProjectsCommand', function (): void {
-    it('shows local info when --local flag is used', function (): void {
-        $this->artisan('projects', ['--local' => true])
-            ->assertSuccessful()
-            ->expectsOutput('Local project listing requires Qdrant collection enumeration.');
-    });
+it('lists all project knowledge bases', function (): void {
+    $this->detectorMock->shouldReceive('detect')->andReturn('knowledge');
 
-    it('fails when odin sync is disabled', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(false);
+    $this->qdrantMock->shouldReceive('listCollections')
+        ->once()
+        ->andReturn(['knowledge_knowledge', 'knowledge_other-project']);
 
-        $this->artisan('projects')
-            ->assertFailed()
-            ->expectsOutput('Odin sync is disabled. Set ODIN_SYNC_ENABLED=true to enable.');
-    });
+    $this->qdrantMock->shouldReceive('count')
+        ->with('knowledge')
+        ->andReturn(42);
 
-    it('warns when Odin is unreachable', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(false);
+    $this->qdrantMock->shouldReceive('count')
+        ->with('other-project')
+        ->andReturn(15);
 
-        $this->artisan('projects')
-            ->assertSuccessful()
-            ->expectsOutput('Odin server is not reachable. Cannot list remote projects.');
-    });
+    $this->artisan('projects')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Project Knowledge Bases');
+});
 
-    it('shows empty projects message', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('listProjects')->once()->andReturn([]);
+it('shows warning when no projects exist', function (): void {
+    $this->detectorMock->shouldReceive('detect')->andReturn('default');
 
-        $this->artisan('projects')
-            ->assertSuccessful()
-            ->expectsOutput('No projects found on Odin server.');
-    });
+    $this->qdrantMock->shouldReceive('listCollections')
+        ->once()
+        ->andReturn([]);
 
-    it('displays projects table', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('listProjects')->once()->andReturn([
-            ['name' => 'project-alpha', 'entry_count' => 42, 'last_synced' => '2025-06-01T12:00:00+00:00'],
-            ['name' => 'project-beta', 'entry_count' => 15, 'last_synced' => null],
-        ]);
+    $this->artisan('projects')
+        ->assertSuccessful();
+});
 
-        $this->artisan('projects')
-            ->assertSuccessful();
-    });
+it('shows current project indicator', function (): void {
+    $this->detectorMock->shouldReceive('detect')->andReturn('my-project');
+
+    $this->qdrantMock->shouldReceive('listCollections')
+        ->once()
+        ->andReturn(['knowledge_my-project']);
+
+    $this->qdrantMock->shouldReceive('count')
+        ->with('my-project')
+        ->andReturn(10);
+
+    $this->artisan('projects')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Current project: my-project');
 });
