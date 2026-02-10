@@ -7,6 +7,7 @@ use App\Contracts\HealthCheckInterface;
 use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
 use App\Services\EnhancementQueueService;
+use App\Services\EntryMetadataService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
@@ -15,6 +16,7 @@ use App\Services\OllamaService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
+use App\Services\TieredSearchService;
 use App\Services\WriteGateService;
 use Illuminate\Support\ServiceProvider;
 
@@ -153,6 +155,12 @@ class AppServiceProvider extends ServiceProvider
             (int) config('search.qdrant.cache_ttl', 604800),
             (bool) config('search.qdrant.secure', false),
             cacheService: $app->make(KnowledgeCacheService::class)
+        ));
+
+        // Tiered search service
+        $this->app->singleton(TieredSearchService::class, fn ($app): \App\Services\TieredSearchService => new TieredSearchService(
+            $app->make(QdrantService::class),
+            $app->make(EntryMetadataService::class),
         ));
 
         // Odin sync service

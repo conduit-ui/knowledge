@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Enums\SearchTier;
 use App\Services\EntryMetadataService;
-use App\Services\QdrantService;
+use App\Services\TieredSearchService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeSearchCommand extends Command
@@ -22,14 +23,15 @@ class KnowledgeSearchCommand extends Command
                             {--status= : Filter by status}
                             {--limit=20 : Maximum number of results}
                             {--semantic : Use semantic search if available}
-                            {--include-superseded : Include superseded entries in results}';
+                            {--include-superseded : Include superseded entries in results}
+                            {--tier= : Force searching a specific tier (working, recent, structured, archive)}';
 
     /**
      * @var string
      */
     protected $description = 'Search knowledge entries by keyword, tag, or category';
 
-    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
+    public function handle(TieredSearchService $tieredSearch, EntryMetadataService $metadata): int
     {
         $query = $this->argument('query');
         $tag = $this->option('tag');
@@ -40,6 +42,7 @@ class KnowledgeSearchCommand extends Command
         $limit = (int) $this->option('limit');
         $this->option('semantic');
         $includeSuperseded = (bool) $this->option('include-superseded');
+        $tierOption = $this->option('tier');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
@@ -48,7 +51,19 @@ class KnowledgeSearchCommand extends Command
             return self::FAILURE;
         }
 
-        // Build filters for Qdrant search
+        // Validate tier option
+        $forceTier = null;
+        if (is_string($tierOption) && $tierOption !== '') {
+            $forceTier = SearchTier::tryFrom($tierOption);
+            if ($forceTier === null) {
+                $validTiers = implode(', ', array_map(fn (SearchTier $t): string => $t->value, SearchTier::cases()));
+                $this->error("Invalid tier '{$tierOption}'. Valid tiers: {$validTiers}");
+
+                return self::FAILURE;
+            }
+        }
+
+        // Build filters for search
         $filters = array_filter([
             'tag' => is_string($tag) ? $tag : null,
             'category' => is_string($category) ? $category : null,
@@ -61,9 +76,9 @@ class KnowledgeSearchCommand extends Command
             $filters['include_superseded'] = true;
         }
 
-        // Use Qdrant for semantic search (always)
+        // Use tiered search
         $searchQuery = is_string($query) ? $query : '';
-        $results = $qdrant->search($searchQuery, $filters, $limit);
+        $results = $tieredSearch->search($searchQuery, $filters, $limit, $forceTier);
 
         if ($results->isEmpty()) {
             $this->line('No entries found.');
@@ -85,12 +100,24 @@ class KnowledgeSearchCommand extends Command
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
             $supersededBy = $entry['superseded_by'] ?? null;
+            $tierLabel = $entry['tier_label'] ?? null;
+            $tieredScore = $entry['tiered_score'] ?? null;
 
             $isStale = $metadata->isStale($entry);
             $effectiveConfidence = $metadata->calculateEffectiveConfidence($entry);
             $confidenceLevel = $metadata->confidenceLevel($effectiveConfidence);
 
-            $titleLine = "<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>';
+            $scoreDisplay = 'score: '.number_format($score, 2);
+            if ($tieredScore !== null) {
+                $scoreDisplay .= ' | ranked: '.number_format((float) $tieredScore, 2);
+            }
+
+            $tierDisplay = '';
+            if (is_string($tierLabel)) {
+                $tierDisplay = " <fg=magenta>[{$tierLabel}]</>";
+            }
+
+            $titleLine = "<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>({$scoreDisplay})</>{$tierDisplay}";
             if ($supersededBy !== null) {
                 $titleLine .= ' <fg=red>[SUPERSEDED]</>';
             }
