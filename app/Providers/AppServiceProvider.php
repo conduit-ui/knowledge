@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
+use App\Services\OdinSyncService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
@@ -123,6 +124,11 @@ class AppServiceProvider extends ServiceProvider
             (int) config('search.qdrant.cache_ttl', 604800),
             (bool) config('search.qdrant.secure', false),
             cacheService: $app->make(KnowledgeCacheService::class)
+        ));
+
+        // Odin sync service
+        $this->app->singleton(OdinSyncService::class, fn ($app): \App\Services\OdinSyncService => new OdinSyncService(
+            $app->make(KnowledgePathService::class)
         ));
     }
 }

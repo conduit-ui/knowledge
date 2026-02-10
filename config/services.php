@@ -17,4 +17,23 @@ return [
         'token' => env('PREFRONTAL_API_TOKEN'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Odin Sync Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for background sync with the Odin centralized Qdrant
+    | server. Operations are queued locally and synced when Odin is available.
+    | Last-write-wins conflict resolution based on updated_at timestamps.
+    |
+    */
+
+    'odin' => [
+        'enabled' => env('ODIN_SYNC_ENABLED', true),
+        'url' => env('ODIN_URL', 'http://100.68.122.24:8080'),
+        'token' => env('ODIN_API_TOKEN', env('PREFRONTAL_API_TOKEN')),
+        'timeout' => env('ODIN_TIMEOUT', 10),
+        'batch_size' => env('ODIN_BATCH_SIZE', 50),
+    ],
+
 ];
