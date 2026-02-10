@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
@@ -111,13 +112,17 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
+        // Knowledge cache service
+        $this->app->singleton(KnowledgeCacheService::class, fn (): \App\Services\KnowledgeCacheService => new KnowledgeCacheService);
+
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
             $app->make(EmbeddingServiceInterface::class),
             (int) config('search.embedding_dimension', 1024),
             (float) config('search.minimum_similarity', 0.7),
             (int) config('search.qdrant.cache_ttl', 604800),
-            (bool) config('search.qdrant.secure', false)
+            (bool) config('search.qdrant.secure', false),
+            cacheService: $app->make(KnowledgeCacheService::class)
         ));
     }
 }

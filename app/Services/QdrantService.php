@@ -36,6 +36,7 @@ class QdrantService
         private readonly int $cacheTtl = 604800, // 7 days
         private readonly bool $secure = false,
         private readonly bool $hybridEnabled = false,
+        private readonly ?KnowledgeCacheService $cacheService = null,
     ) {
         $this->connector = new QdrantConnector(
             host: config('search.qdrant.host', 'localhost'),
@@ -51,6 +52,14 @@ class QdrantService
     public function setSparseEmbeddingService(SparseEmbeddingServiceInterface $service): void
     {
         $this->sparseEmbeddingService = $service;
+    }
+
+    /**
+     * Get the cache service instance.
+     */
+    public function getCacheService(): ?KnowledgeCacheService
+    {
+        return $this->cacheService;
     }
 
     /**
@@ -164,6 +173,8 @@ class QdrantService
             throw UpsertException::withReason($error['status']['error'] ?? json_encode($error));
         }
 
+        $this->cacheService?->invalidateOnMutation();
+
         return true;
     }
 
@@ -198,6 +209,41 @@ class QdrantService
         array $filters = [],
         int $limit = 20,
         string $project = 'default'
+    ): Collection {
+        if ($this->cacheService instanceof KnowledgeCacheService) {
+            $cached = $this->cacheService->rememberSearch($query, $filters, $limit, $project, fn (): array => $this->executeSearch($query, $filters, $limit, $project)->toArray());
+
+            return collect($cached);
+        }
+
+        return $this->executeSearch($query, $filters, $limit, $project);
+    }
+
+    /**
+     * Execute the actual search against Qdrant.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, array{
+     *     id: string|int,
+     *     score: float,
+     *     title: string,
+     *     content: string,
+     *     tags: array<string>,
+     *     category: ?string,
+     *     module: ?string,
+     *     priority: ?string,
+     *     status: ?string,
+     *     confidence: int,
+     *     usage_count: int,
+     *     created_at: string,
+     *     updated_at: string
+     * }>
+     */
+    private function executeSearch(
+        string $query,
+        array $filters,
+        int $limit,
+        string $project
     ): Collection {
         $this->ensureCollection($project);
 
@@ -428,7 +474,13 @@ class QdrantService
             new DeletePoints($this->getCollectionName($project), $ids)
         );
 
-        return $response->successful();
+        if ($response->successful()) {
+            $this->cacheService?->invalidateOnMutation();
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -535,6 +587,10 @@ class QdrantService
             return $this->embeddingService->generate($text);
         }
 
+        if ($this->cacheService instanceof KnowledgeCacheService) {
+            return $this->cacheService->rememberEmbedding($text, fn (): array => $this->embeddingService->generate($text));
+        }
+
         $cacheKey = 'embedding:'.hash('xxh128', $text);
 
         /** @var array<float> */
@@ -592,6 +648,23 @@ class QdrantService
      * @codeCoverageIgnore Qdrant API integration - tested via integration tests
      */
     public function count(string $project = 'default'): int
+    {
+        if ($this->cacheService instanceof KnowledgeCacheService) {
+            /** @var array{points_count: int} $stats */
+            $stats = $this->cacheService->rememberStats($project, fn (): array => ['points_count' => $this->executeCount($project)]);
+
+            return $stats['points_count'];
+        }
+
+        return $this->executeCount($project);
+    }
+
+    /**
+     * Execute the actual count query against Qdrant.
+     *
+     * @codeCoverageIgnore Qdrant API integration - tested via integration tests
+     */
+    private function executeCount(string $project): int
     {
         $this->ensureCollection($project);
 
