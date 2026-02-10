@@ -115,7 +115,9 @@ class QdrantService
      *     confidence?: int,
      *     usage_count?: int,
      *     created_at?: string,
-     *     updated_at?: string
+     *     updated_at?: string,
+     *     last_verified?: string|null,
+     *     evidence?: string|null
      * }  $entry
      */
     public function upsert(array $entry, string $project = 'default', bool $checkDuplicates = true): bool
@@ -143,6 +145,8 @@ class QdrantService
             'usage_count' => $entry['usage_count'] ?? 0,
             'created_at' => $entry['created_at'] ?? now()->toIso8601String(),
             'updated_at' => $entry['updated_at'] ?? now()->toIso8601String(),
+            'last_verified' => $entry['last_verified'] ?? null,
+            'evidence' => $entry['evidence'] ?? null,
         ];
 
         // Build point with appropriate vector format
@@ -201,7 +205,9 @@ class QdrantService
      *     confidence: int,
      *     usage_count: int,
      *     created_at: string,
-     *     updated_at: string
+     *     updated_at: string,
+     *     last_verified: ?string,
+     *     evidence: ?string
      * }>
      */
     public function search(
@@ -236,7 +242,9 @@ class QdrantService
      *     confidence: int,
      *     usage_count: int,
      *     created_at: string,
-     *     updated_at: string
+     *     updated_at: string,
+     *     last_verified: ?string,
+     *     evidence: ?string
      * }>
      */
     private function executeSearch(
@@ -291,6 +299,8 @@ class QdrantService
                 'usage_count' => $payload['usage_count'] ?? 0,
                 'created_at' => $payload['created_at'] ?? '',
                 'updated_at' => $payload['updated_at'] ?? '',
+                'last_verified' => $payload['last_verified'] ?? null,
+                'evidence' => $payload['evidence'] ?? null,
             ];
         });
     }
@@ -320,7 +330,9 @@ class QdrantService
      *     confidence: int,
      *     usage_count: int,
      *     created_at: string,
-     *     updated_at: string
+     *     updated_at: string,
+     *     last_verified: ?string,
+     *     evidence: ?string
      * }>
      */
     public function hybridSearch(
@@ -390,6 +402,8 @@ class QdrantService
                 'usage_count' => $payload['usage_count'] ?? 0,
                 'created_at' => $payload['created_at'] ?? '',
                 'updated_at' => $payload['updated_at'] ?? '',
+                'last_verified' => $payload['last_verified'] ?? null,
+                'evidence' => $payload['evidence'] ?? null,
             ];
         });
     }
@@ -410,7 +424,9 @@ class QdrantService
      *     confidence: int,
      *     usage_count: int,
      *     created_at: string,
-     *     updated_at: string
+     *     updated_at: string,
+     *     last_verified: ?string,
+     *     evidence: ?string
      * }>
      *
      * @codeCoverageIgnore Qdrant API integration - tested via integration tests
@@ -457,6 +473,8 @@ class QdrantService
                 'usage_count' => $payload['usage_count'] ?? 0,
                 'created_at' => $payload['created_at'] ?? '',
                 'updated_at' => $payload['updated_at'] ?? '',
+                'last_verified' => $payload['last_verified'] ?? null,
+                'evidence' => $payload['evidence'] ?? null,
             ];
         });
     }
@@ -498,7 +516,9 @@ class QdrantService
      *     confidence: int,
      *     usage_count: int,
      *     created_at: string,
-     *     updated_at: string
+     *     updated_at: string,
+     *     last_verified: ?string,
+     *     evidence: ?string
      * }|null
      */
     public function getById(string|int $id, string $project = 'default'): ?array
@@ -536,6 +556,8 @@ class QdrantService
             'usage_count' => $payload['usage_count'] ?? 0,
             'created_at' => $payload['created_at'] ?? '',
             'updated_at' => $payload['updated_at'] ?? '',
+            'last_verified' => $payload['last_verified'] ?? null,
+            'evidence' => $payload['evidence'] ?? null,
         ];
     }
 

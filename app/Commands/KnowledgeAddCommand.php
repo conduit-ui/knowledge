@@ -30,6 +30,7 @@ class KnowledgeAddCommand extends Command
                             {--ticket= : Related ticket number}
                             {--author= : Author name}
                             {--status=draft : Status (draft, validated, deprecated)}
+                            {--evidence= : Supporting evidence or reference for this entry}
                             {--repo= : Repository URL or path}
                             {--branch= : Git branch name}
                             {--commit= : Git commit hash}
@@ -68,6 +69,8 @@ class KnowledgeAddCommand extends Command
         $author = is_string($this->option('author')) ? $this->option('author') : null;
         /** @var string $status */
         $status = is_string($this->option('status')) ? $this->option('status') : 'draft';
+        /** @var string|null $evidence */
+        $evidence = is_string($this->option('evidence')) ? $this->option('evidence') : null;
         /** @var string|null $repo */
         $repo = is_string($this->option('repo')) ? $this->option('repo') : null;
         /** @var string|null $branch */
@@ -124,6 +127,8 @@ class KnowledgeAddCommand extends Command
             'source' => $source,
             'ticket' => $ticket,
             'status' => $status,
+            'evidence' => $evidence,
+            'last_verified' => now()->toIso8601String(),
         ];
 
         if (is_string($tags) && $tags !== '') {

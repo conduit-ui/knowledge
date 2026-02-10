@@ -37,10 +37,11 @@ class KnowledgeValidateCommand extends Command
         // Calculate new confidence (boosted by validation)
         $newConfidence = min(100, $oldConfidence + 20);
 
-        // Update entry with validated status
+        // Update entry with validated status and verification timestamp
         $qdrant->updateFields($id, [
             'status' => 'validated',
             'confidence' => $newConfidence,
+            'last_verified' => now()->toIso8601String(),
         ]);
 
         $this->info("Entry #{$id} validated successfully!");

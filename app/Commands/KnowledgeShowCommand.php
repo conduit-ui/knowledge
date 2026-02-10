@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\EntryMetadataService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
+use function Laravel\Prompts\warning;
 
 class KnowledgeShowCommand extends Command
 {
@@ -17,7 +19,7 @@ class KnowledgeShowCommand extends Command
 
     protected $description = 'Display full details of a knowledge entry';
 
-    public function handle(QdrantService $qdrant): int
+    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
     {
         $id = $this->argument('id');
 
@@ -38,28 +40,40 @@ class KnowledgeShowCommand extends Command
 
         $qdrant->incrementUsage($id);
 
-        $this->renderEntry($entry);
+        $this->renderEntry($entry, $metadata);
 
         return self::SUCCESS;
     }
 
-    private function renderEntry(array $entry): void
+    private function renderEntry(array $entry, EntryMetadataService $metadata): void
     {
         $this->newLine();
         $this->line("<fg=cyan;options=bold>{$entry['title']}</>");
         $this->line("<fg=gray>ID: {$entry['id']}</>");
         $this->newLine();
 
+        // Staleness warning
+        if ($metadata->isStale($entry)) {
+            $days = $metadata->daysSinceVerification($entry);
+            warning("This entry has not been verified in {$days} days and may be outdated.");
+            $this->newLine();
+        }
+
         $this->line($entry['content']);
         $this->newLine();
+
+        $effectiveConfidence = $metadata->calculateEffectiveConfidence($entry);
+        $confidenceLevel = $metadata->confidenceLevel($effectiveConfidence);
 
         // Metadata table
         $rows = [
             ['Category', $entry['category'] ?? 'N/A'],
             ['Priority', $this->colorize($entry['priority'], $this->priorityColor($entry['priority']))],
             ['Status', $this->colorize($entry['status'], $this->statusColor($entry['status']))],
-            ['Confidence', $this->colorize("{$entry['confidence']}%", $this->confidenceColor($entry['confidence']))],
+            ['Confidence', $this->colorize("{$effectiveConfidence}% ({$confidenceLevel})", $this->confidenceColor($effectiveConfidence))],
             ['Usage', (string) $entry['usage_count']],
+            ['Last Verified', $entry['last_verified'] ?? 'Never'],
+            ['Evidence', $entry['evidence'] ?? 'N/A'],
         ];
 
         if ($entry['module']) {

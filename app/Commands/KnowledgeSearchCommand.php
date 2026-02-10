@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\EntryMetadataService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
@@ -27,7 +28,7 @@ class KnowledgeSearchCommand extends Command
      */
     protected $description = 'Search knowledge entries by keyword, tag, or category';
 
-    public function handle(QdrantService $qdrant): int
+    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
     {
         $query = $this->argument('query');
         $tag = $this->option('tag');
@@ -78,8 +79,18 @@ class KnowledgeSearchCommand extends Command
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
 
+            $isStale = $metadata->isStale($entry);
+            $effectiveConfidence = $metadata->calculateEffectiveConfidence($entry);
+            $confidenceLevel = $metadata->confidenceLevel($effectiveConfidence);
+
             $this->line("<fg=cyan>[{$id}]</> <fg=green>{$title}</> <fg=yellow>(score: ".number_format($score, 2).')</>');
-            $this->line('Category: '.$category." | Priority: {$priority} | Confidence: {$confidence}%");
+
+            if ($isStale) {
+                $days = $metadata->daysSinceVerification($entry);
+                $this->line("<fg=red>[STALE] Not verified in {$days} days - confidence degraded to {$effectiveConfidence}% ({$confidenceLevel})</>");
+            }
+
+            $this->line('Category: '.$category." | Priority: {$priority} | Confidence: {$effectiveConfidence}% ({$confidenceLevel})");
 
             if ($module !== null) {
                 $this->line("Module: {$module}");
