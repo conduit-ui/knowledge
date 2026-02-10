@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
@@ -134,6 +135,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Odin sync service
         $this->app->singleton(OdinSyncService::class, fn ($app): \App\Services\OdinSyncService => new OdinSyncService(
+            $app->make(KnowledgePathService::class)
+        ));
+
+        // Daily log staging service
+        $this->app->singleton(DailyLogService::class, fn ($app): \App\Services\DailyLogService => new DailyLogService(
             $app->make(KnowledgePathService::class)
         ));
     }
