@@ -32,10 +32,9 @@ it('validates an entry and boosts confidence', function (): void {
 
     $this->qdrantMock->shouldReceive('updateFields')
         ->once()
-        ->with('1', [
-            'status' => 'validated',
-            'confidence' => 80,
-        ])
+        ->with('1', Mockery::on(fn (array $fields): bool => $fields['status'] === 'validated'
+            && $fields['confidence'] === 80
+            && isset($fields['last_verified'])))
         ->andReturn(true);
 
     $this->artisan('validate', ['id' => '1'])
@@ -90,10 +89,9 @@ it('validates entry that is already validated', function (): void {
 
     $this->qdrantMock->shouldReceive('updateFields')
         ->once()
-        ->with('2', [
-            'status' => 'validated',
-            'confidence' => 100, // 90 + 20 = 110, capped at 100
-        ])
+        ->with('2', Mockery::on(fn (array $fields): bool => $fields['status'] === 'validated'
+            && $fields['confidence'] === 100
+            && isset($fields['last_verified'])))
         ->andReturn(true);
 
     $this->artisan('validate', ['id' => '2'])
@@ -123,10 +121,9 @@ it('displays validation date after validation', function (): void {
 
     $this->qdrantMock->shouldReceive('updateFields')
         ->once()
-        ->with('3', [
-            'status' => 'validated',
-            'confidence' => 90,
-        ])
+        ->with('3', Mockery::on(fn (array $fields): bool => $fields['status'] === 'validated'
+            && $fields['confidence'] === 90
+            && isset($fields['last_verified'])))
         ->andReturn(true);
 
     $this->artisan('validate', ['id' => '3'])
@@ -156,10 +153,9 @@ it('validates entry with high confidence', function (): void {
 
     $this->qdrantMock->shouldReceive('updateFields')
         ->once()
-        ->with('4', [
-            'status' => 'validated',
-            'confidence' => 100, // 95 + 20 = 115, capped at 100
-        ])
+        ->with('4', Mockery::on(fn (array $fields): bool => $fields['status'] === 'validated'
+            && $fields['confidence'] === 100
+            && isset($fields['last_verified'])))
         ->andReturn(true);
 
     $this->artisan('validate', ['id' => '4'])
@@ -190,10 +186,9 @@ it('validates entry with low confidence', function (): void {
 
     $this->qdrantMock->shouldReceive('updateFields')
         ->once()
-        ->with('5', [
-            'status' => 'validated',
-            'confidence' => 30, // 10 + 20 = 30
-        ])
+        ->with('5', Mockery::on(fn (array $fields): bool => $fields['status'] === 'validated'
+            && $fields['confidence'] === 30
+            && isset($fields['last_verified'])))
         ->andReturn(true);
 
     $this->artisan('validate', ['id' => '5'])

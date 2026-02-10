@@ -25,7 +25,8 @@ class KnowledgeUpdateCommand extends Command
                             {--confidence= : Confidence level (0-100)}
                             {--status= : Status (draft, validated, deprecated)}
                             {--module= : Module name}
-                            {--source= : Source URL or reference}';
+                            {--source= : Source URL or reference}
+                            {--evidence= : Supporting evidence or reference}';
 
     protected $description = 'Update an existing knowledge entry';
 
@@ -163,6 +164,14 @@ class KnowledgeUpdateCommand extends Command
         if ($source !== null) {
             $entry['source'] = $source;
             $updates[] = 'source';
+        }
+
+        // Update evidence if provided
+        /** @var string|null $evidence */
+        $evidence = is_string($this->option('evidence')) ? $this->option('evidence') : null;
+        if ($evidence !== null) {
+            $entry['evidence'] = $evidence;
+            $updates[] = 'evidence';
         }
         // @codeCoverageIgnoreEnd
 
