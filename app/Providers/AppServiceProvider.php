@@ -11,6 +11,7 @@ use App\Services\OdinSyncService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
+use App\Services\WriteGateService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -89,6 +90,20 @@ class AppServiceProvider extends ServiceProvider
         if (isset($userConfig['embeddings']['url']) && is_string($userConfig['embeddings']['url'])) {
             config(['search.qdrant.embedding_server' => $userConfig['embeddings']['url']]);
         }
+
+        // write_gate.criteria -> write-gate.criteria (per-project overrides)
+        if (isset($userConfig['write_gate']['criteria']) && is_array($userConfig['write_gate']['criteria'])) {
+            /** @var array<string, mixed> $criteriaOverrides */
+            $criteriaOverrides = $userConfig['write_gate']['criteria'];
+            /** @var array<string, bool> $currentCriteria */
+            $currentCriteria = config('write-gate.criteria', []);
+            foreach ($criteriaOverrides as $key => $value) {
+                if (is_string($key) && array_key_exists($key, $currentCriteria)) {
+                    $currentCriteria[$key] = (bool) $value;
+                }
+            }
+            config(['write-gate.criteria' => $currentCriteria]);
+        }
     }
 
     /**
@@ -122,6 +137,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(DeletionTracker::class, fn ($app): \App\Services\DeletionTracker => new DeletionTracker(
             $app->make(KnowledgePathService::class)
         ));
+
+        // Write gate service
+        $this->app->singleton(WriteGateService::class, fn (): \App\Services\WriteGateService => new WriteGateService);
 
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
