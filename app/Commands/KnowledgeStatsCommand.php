@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Services\KnowledgeCacheService;
+use App\Services\OdinSyncService;
 use App\Services\QdrantService;
 use Illuminate\Support\Collection;
 use LaravelZero\Framework\Commands\Command;
@@ -19,7 +20,7 @@ class KnowledgeStatsCommand extends Command
 
     protected $description = 'Display analytics dashboard for knowledge entries';
 
-    public function handle(QdrantService $qdrant): int
+    public function handle(QdrantService $qdrant, OdinSyncService $odinSync): int
     {
         $total = spin(
             fn (): int => $qdrant->count(),
@@ -35,6 +36,8 @@ class KnowledgeStatsCommand extends Command
         if ($cacheService instanceof KnowledgeCacheService) {
             $this->renderCacheMetrics($cacheService);
         }
+
+        $this->renderSyncStatus($odinSync);
 
         return self::SUCCESS;
     }
@@ -122,5 +125,32 @@ class KnowledgeStatsCommand extends Command
         }
 
         table(['Cache', 'Hits', 'Misses', 'Hit Rate'], $rows);
+    }
+
+    private function renderSyncStatus(OdinSyncService $odinSync): void
+    {
+        if (! $odinSync->isEnabled()) {
+            return;
+        }
+
+        $status = $odinSync->getStatus();
+
+        $statusColor = match ($status['status']) {
+            'synced' => 'green',
+            'error' => 'red',
+            'pending', 'partial' => 'yellow',
+            default => 'gray',
+        };
+
+        $this->newLine();
+        $this->line('<fg=gray>Odin Sync</>');
+        table(
+            ['Property', 'Value'],
+            [
+                ['Status', "<fg={$statusColor}>{$status['status']}</>"],
+                ['Pending', (string) $status['pending']],
+                ['Last Synced', $status['last_synced'] ?? 'Never'],
+            ]
+        );
     }
 }
