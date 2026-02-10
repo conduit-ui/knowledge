@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Services\KnowledgeCacheService;
 use App\Services\QdrantService;
 
 describe('KnowledgeStatsCommand', function (): void {
@@ -50,6 +51,52 @@ describe('KnowledgeStatsCommand', function (): void {
             ->once()
             ->with([], 3)
             ->andReturn($entries);
+
+        $qdrant->shouldReceive('getCacheService')
+            ->once()
+            ->andReturnNull();
+
+        $this->artisan('stats')
+            ->assertSuccessful();
+    });
+
+    it('displays cache metrics when cache service is available', function (): void {
+        $qdrant = mock(QdrantService::class);
+        $cacheService = mock(KnowledgeCacheService::class);
+        app()->instance(QdrantService::class, $qdrant);
+
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'Test Entry',
+                'content' => 'Content',
+                'category' => 'testing',
+                'status' => 'validated',
+                'usage_count' => 5,
+                'tags' => [],
+            ],
+        ]);
+
+        $qdrant->shouldReceive('count')
+            ->once()
+            ->andReturn(1);
+
+        $qdrant->shouldReceive('scroll')
+            ->once()
+            ->with([], 1)
+            ->andReturn($entries);
+
+        $qdrant->shouldReceive('getCacheService')
+            ->once()
+            ->andReturn($cacheService);
+
+        $cacheService->shouldReceive('getMetrics')
+            ->once()
+            ->andReturn([
+                'embedding' => ['hits' => 10, 'misses' => 5],
+                'search' => ['hits' => 20, 'misses' => 3],
+                'stats' => ['hits' => 8, 'misses' => 2],
+            ]);
 
         $this->artisan('stats')
             ->assertSuccessful();

@@ -186,6 +186,11 @@ parameters:
 			path: app/Services/QdrantService.php
 
 		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:executeSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
 			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
@@ -196,7 +201,7 @@ parameters:
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:search\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed, tags\\: mixed, category\\: mixed, module\\: mixed, priority\\: mixed, \\.\\.\\.\\}\\>\\.$#"
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:search\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<int, array\\<string, mixed\\>\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 

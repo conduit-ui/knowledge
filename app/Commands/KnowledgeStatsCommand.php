@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\KnowledgeCacheService;
 use App\Services\QdrantService;
 use Illuminate\Support\Collection;
 use LaravelZero\Framework\Commands\Command;
@@ -29,6 +30,11 @@ class KnowledgeStatsCommand extends Command
         $entries = $qdrant->scroll([], min($total, 1000));
 
         $this->renderDashboard($entries, $total);
+
+        $cacheService = $qdrant->getCacheService();
+        if ($cacheService instanceof KnowledgeCacheService) {
+            $this->renderCacheMetrics($cacheService);
+        }
 
         return self::SUCCESS;
     }
@@ -94,5 +100,27 @@ class KnowledgeStatsCommand extends Command
             $this->line('<fg=gray>Most Used</>');
             $this->line("  <fg=cyan>\"{$mostUsed['title']}\"</> ({$mostUsed['usage_count']} uses)");
         }
+    }
+
+    private function renderCacheMetrics(KnowledgeCacheService $cacheService): void
+    {
+        $metrics = $cacheService->getMetrics();
+
+        $this->newLine();
+        $this->line('<fg=gray>Cache Performance</>');
+
+        $rows = [];
+        foreach ($metrics as $type => $data) {
+            $total = $data['hits'] + $data['misses'];
+            $rate = $total > 0 ? round(($data['hits'] / $total) * 100) : 0;
+            $rows[] = [
+                ucfirst($type),
+                (string) $data['hits'],
+                (string) $data['misses'],
+                "{$rate}%",
+            ];
+        }
+
+        table(['Cache', 'Hits', 'Misses', 'Hit Rate'], $rows);
     }
 }
