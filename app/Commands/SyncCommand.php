@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Services\DeletionTracker;
 use App\Services\QdrantService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -18,7 +19,8 @@ class SyncCommand extends Command
     protected $signature = 'sync
                             {--pull : Pull entries from cloud only}
                             {--push : Push local entries to cloud only}
-                            {--delete : Delete cloud entries that do not exist locally (requires --push)}';
+                            {--delete : Delete cloud entries that do not exist locally (requires --push)}
+                            {--full-sync : Compare local vs cloud and remove orphaned cloud entries}';
 
     /**
      * @var string
@@ -29,15 +31,16 @@ class SyncCommand extends Command
 
     protected ?Client $client = null;
 
-    public function handle(QdrantService $qdrant): int
+    public function handle(QdrantService $qdrant, DeletionTracker $tracker): int
     {
         $pull = (bool) $this->option('pull');
         $push = (bool) $this->option('push');
         $delete = (bool) $this->option('delete');
+        $fullSync = (bool) $this->option('full-sync');
 
         // Validate --delete requires --push
-        if ($delete && ! $push) {
-            $this->error('The --delete option requires --push to be specified.');
+        if ($delete && ! $push && ! $fullSync) {
+            $this->error('The --delete option requires --push or --full-sync to be specified.');
 
             return self::FAILURE;
         }
@@ -58,6 +61,11 @@ class SyncCommand extends Command
             return self::FAILURE;
         }
         $this->baseUrl = $baseUrl;
+
+        // Full sync mode: push + delete orphans + process tracked deletions
+        if ($fullSync) {
+            return $this->handleFullSync($token, $qdrant, $tracker);
+        }
 
         // Default behavior: two-way sync (pull then push)
         if (! $pull && ! $push) {
@@ -86,12 +94,48 @@ class SyncCommand extends Command
 
             $deleteResult = ['deleted' => 0, 'failed' => 0];
             if ($delete) {
+                $this->info('Processing tracked deletions...');
+                $trackedResult = $this->processTrackedDeletions($token, $tracker);
+                $deleteResult['deleted'] += $trackedResult['deleted'];
+                $deleteResult['failed'] += $trackedResult['failed'];
+
                 $this->info('Deleting cloud entries not present locally...');
-                $deleteResult = $this->deleteOrphanedCloudEntries($token, $qdrant);
+                $orphanResult = $this->deleteOrphanedCloudEntries($token, $qdrant);
+                $deleteResult['deleted'] += $orphanResult['deleted'];
+                $deleteResult['failed'] += $orphanResult['failed'];
             }
 
             $this->displayPushSummary($result, $deleteResult);
         }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Handle full sync: push all entries, process tracked deletions, and remove orphans.
+     */
+    private function handleFullSync(string $token, QdrantService $qdrant, DeletionTracker $tracker): int
+    {
+        $this->info('Starting full sync (push + delete orphans)...');
+
+        // Push local entries
+        $this->info('Pushing local entries to cloud...');
+        $pushResult = $this->pushToCloud($token, $qdrant);
+
+        // Process tracked deletions
+        $this->info('Processing tracked deletions...');
+        $trackedResult = $this->processTrackedDeletions($token, $tracker);
+
+        // Delete orphaned cloud entries
+        $this->info('Comparing local vs cloud to find orphans...');
+        $orphanResult = $this->deleteOrphanedCloudEntries($token, $qdrant);
+
+        $deleteResult = [
+            'deleted' => $trackedResult['deleted'] + $orphanResult['deleted'],
+            'failed' => $trackedResult['failed'] + $orphanResult['failed'],
+        ];
+
+        $this->displayPushSummary($pushResult, $deleteResult);
 
         return self::SUCCESS;
     }
@@ -319,6 +363,98 @@ class SyncCommand extends Command
         }
 
         return ['sent' => $sent, 'created' => $created, 'updated' => $updated, 'failed' => $failed];
+    }
+
+    /**
+     * Process tracked deletions from the DeletionTracker.
+     *
+     * @return array{deleted: int, failed: int}
+     */
+    private function processTrackedDeletions(string $token, DeletionTracker $tracker): array
+    {
+        $deleted = 0;
+        $failed = 0;
+
+        $trackedDeletions = $tracker->all();
+
+        if ($trackedDeletions === []) {
+            $this->info('No tracked deletions to process.');
+
+            return ['deleted' => $deleted, 'failed' => $failed];
+        }
+
+        $this->info('Found '.count($trackedDeletions).' tracked deletions to propagate.');
+
+        // We need to find the cloud IDs for these unique_ids
+        try {
+            $response = $this->getClient()->get('/api/knowledge/entries', [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            // @codeCoverageIgnoreStart
+            if ($response->getStatusCode() !== 200) {
+                $this->error('Failed to fetch cloud entries for deletion propagation.');
+
+                return ['deleted' => $deleted, 'failed' => count($trackedDeletions)];
+            }
+            // @codeCoverageIgnoreEnd
+
+            $responseData = json_decode((string) $response->getBody(), true);
+
+            if (! is_array($responseData) || ! isset($responseData['data'])) {
+                $this->error('Invalid response from cloud API.');
+
+                return ['deleted' => $deleted, 'failed' => count($trackedDeletions)];
+            }
+
+            // Build map of cloud unique_ids to their cloud IDs
+            $cloudIdMap = [];
+            foreach ($responseData['data'] as $entry) {
+                if (isset($entry['unique_id']) && isset($entry['id'])) {
+                    $cloudIdMap[$entry['unique_id']] = $entry['id'];
+                }
+            }
+
+            $successfulDeletions = [];
+
+            foreach (array_keys($trackedDeletions) as $uniqueId) {
+                if (! isset($cloudIdMap[$uniqueId])) {
+                    // Entry doesn't exist in cloud, remove from tracker
+                    $successfulDeletions[] = $uniqueId;
+
+                    continue;
+                }
+
+                $cloudId = $cloudIdMap[$uniqueId];
+
+                try {
+                    $this->getClient()->delete("/api/knowledge/{$cloudId}", [
+                        'headers' => [
+                            'Authorization' => "Bearer {$token}",
+                        ],
+                    ]);
+
+                    $deleted++;
+                    $successfulDeletions[] = $uniqueId;
+                    // @codeCoverageIgnoreStart
+                } catch (GuzzleException) {
+                    $failed++;
+                }
+                // @codeCoverageIgnoreEnd
+            }
+
+            // Clear successfully propagated deletions from tracker
+            if ($successfulDeletions !== []) {
+                $tracker->removeMany($successfulDeletions);
+            }
+        } catch (GuzzleException $e) {
+            $this->error('Failed to process tracked deletions: '.$e->getMessage());
+            $failed += count($trackedDeletions);
+        }
+
+        return ['deleted' => $deleted, 'failed' => $failed];
     }
 
     /**
