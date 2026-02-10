@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Contracts\HealthCheckInterface;
 use App\Services\EmbeddingService;
+use App\Services\HealthCheckService;
 use App\Services\KnowledgePathService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
@@ -86,6 +88,12 @@ describe('AppServiceProvider', function (): void {
         $service = app(QdrantService::class);
 
         expect($service)->toBeInstanceOf(QdrantService::class);
+    });
+
+    it('registers HealthCheckService', function (): void {
+        $service = app(HealthCheckInterface::class);
+
+        expect($service)->toBeInstanceOf(HealthCheckService::class);
     });
 
     it('uses custom embedding server configuration for qdrant provider', function (): void {

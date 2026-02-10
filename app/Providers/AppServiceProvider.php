@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Contracts\HealthCheckInterface;
 use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
+use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
 use App\Services\OdinSyncService;
@@ -160,5 +162,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(DailyLogService::class, fn ($app): \App\Services\DailyLogService => new DailyLogService(
             $app->make(KnowledgePathService::class)
         ));
+
+        // Health check service for service status commands
+        $this->app->singleton(HealthCheckInterface::class, fn (): HealthCheckService => new HealthCheckService);
     }
 }
