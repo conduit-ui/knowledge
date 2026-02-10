@@ -5,10 +5,17 @@ declare(strict_types=1);
 use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
+use App\Services\WriteGateService;
 
 beforeEach(function (): void {
     $this->mockQdrant = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->mockQdrant);
+
+    $this->mockWriteGate = Mockery::mock(WriteGateService::class);
+    $this->mockWriteGate->shouldReceive('evaluate')
+        ->andReturn(['passed' => true, 'matched' => ['durable_facts'], 'reason' => ''])
+        ->byDefault();
+    $this->app->instance(WriteGateService::class, $this->mockWriteGate);
 });
 
 afterEach(function (): void {

@@ -7,6 +7,7 @@ namespace App\Commands;
 use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
+use App\Services\WriteGateService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
@@ -35,7 +36,7 @@ class KnowledgeAddCommand extends Command
                             {--branch= : Git branch name}
                             {--commit= : Git commit hash}
                             {--no-git : Skip automatic git context detection}
-                            {--force : Skip duplicate detection and force creation}';
+                            {--force : Skip write gate and duplicate detection}';
 
     protected $description = 'Add a new knowledge entry';
 
@@ -45,7 +46,7 @@ class KnowledgeAddCommand extends Command
 
     private const VALID_STATUSES = ['draft', 'validated', 'deprecated'];
 
-    public function handle(GitContextService $gitService, QdrantService $qdrant): int
+    public function handle(GitContextService $gitService, QdrantService $qdrant, WriteGateService $writeGate): int
     {
         /** @var string $title */
         $title = (string) $this->argument('title');
@@ -147,6 +148,16 @@ class KnowledgeAddCommand extends Command
             $data['branch'] = $branch;
             $data['commit'] = $commit;
             $data['author'] = $author;
+        }
+
+        // Write Gate: evaluate entry quality before persistence
+        if (! $force) {
+            $gateResult = $writeGate->evaluate($data);
+            if (! $gateResult['passed']) {
+                error('Write gate rejected entry: '.$gateResult['reason']);
+
+                return self::FAILURE;
+            }
         }
 
         // Generate unique ID

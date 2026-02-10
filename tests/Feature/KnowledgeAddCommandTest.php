@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 use App\Services\GitContextService;
 use App\Services\QdrantService;
+use App\Services\WriteGateService;
 
 beforeEach(function (): void {
     $this->gitService = mock(GitContextService::class);
     $this->qdrantService = mock(QdrantService::class);
+    $this->writeGateService = mock(WriteGateService::class);
+    $this->writeGateService->shouldReceive('evaluate')
+        ->andReturn(['passed' => true, 'matched' => ['durable_facts'], 'reason' => ''])
+        ->byDefault();
 
     app()->instance(GitContextService::class, $this->gitService);
     app()->instance(QdrantService::class, $this->qdrantService);
+    app()->instance(WriteGateService::class, $this->writeGateService);
 });
 
 it('creates a knowledge entry with required fields', function (): void {
@@ -200,4 +206,67 @@ it('creates entry with all optional fields', function (): void {
         '--ticket' => 'JIRA-123',
         '--status' => 'validated',
     ])->assertSuccessful();
+});
+
+describe('write gate integration', function (): void {
+    it('rejects entries that fail the write gate', function (): void {
+        $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+        $this->writeGateService->shouldReceive('evaluate')
+            ->once()
+            ->andReturn([
+                'passed' => false,
+                'matched' => [],
+                'reason' => 'Entry does not meet any write gate criteria. Use --force to bypass.',
+            ]);
+
+        $this->qdrantService->shouldNotReceive('upsert');
+
+        $this->artisan('add', [
+            'title' => 'Low value note',
+            '--content' => 'Talked to Bob about lunch',
+        ])->assertFailed();
+    });
+
+    it('bypasses write gate with --force flag', function (): void {
+        // Write gate should NOT be called when --force is used
+        $this->writeGateService->shouldNotReceive('evaluate');
+
+        $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+        $this->qdrantService->shouldReceive('upsert')
+            ->once()
+            ->andReturn(true);
+
+        $this->artisan('add', [
+            'title' => 'Forced entry',
+            '--content' => 'This bypasses the gate',
+            '--force' => true,
+        ])->assertSuccessful();
+    });
+
+    it('passes entry data to write gate for evaluation', function (): void {
+        $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+        $this->writeGateService->shouldReceive('evaluate')
+            ->once()
+            ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Architecture Decision'
+                && $data['content'] === 'We chose event sourcing because of auditability'
+                && $data['category'] === 'architecture'
+                && $data['priority'] === 'high'
+                && $data['confidence'] === 90))
+            ->andReturn(['passed' => true, 'matched' => ['decision_rationale', 'commitment_weight'], 'reason' => '']);
+
+        $this->qdrantService->shouldReceive('upsert')
+            ->once()
+            ->andReturn(true);
+
+        $this->artisan('add', [
+            'title' => 'Architecture Decision',
+            '--content' => 'We chose event sourcing because of auditability',
+            '--category' => 'architecture',
+            '--priority' => 'high',
+            '--confidence' => 90,
+        ])->assertSuccessful();
+    });
 });
