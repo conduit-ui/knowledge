@@ -54,6 +54,11 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 | `CorrectionService` | Multi-tier correction propagation |
 | `DailyLogService` | Entry staging before permanent storage |
 | `GitContextService` | Auto-detect git repo, branch, commit, author |
+| `TieredSearchService` | Narrow-to-wide retrieval across 4 search tiers |
+| `ProjectDetectorService` | Auto-detect project namespace from git repo |
+| `EnhancementQueueService` | File-based queue for async Ollama auto-tagging |
+| `OllamaService` | LLM integration for auto-tagging and query expansion |
+| `PatternDetectorService` | Detect duplicate/similar entries before persistence |
 
 ## TDD Workflow
 

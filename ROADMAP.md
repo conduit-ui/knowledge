@@ -32,29 +32,22 @@ Index and search codebases semantically via `index-code` and `search-code`.
 ### Context Command
 Semantic session context loading for AI tools — auto-injects relevant knowledge into Claude Code sessions.
 
----
+### CodeRabbit Review Extraction
+Extract CodeRabbit review findings from GitHub PRs and store as knowledge entries via `coderabbit:extract`.
 
-## Open PRs (Need Rebase)
+### Background Ollama Auto-Tagging
+Async auto-tagging via OllamaService with file-based enhancement queue. `know add` stays fast (<100ms), enhancement happens in background via `enhance:worker`.
 
-### Tiered Search (#120)
-Narrow-to-wide retrieval across four tiers: working context, recent, structured, archive. Early return on confident matches. **Status: merge conflict.**
+### Tiered Search
+Narrow-to-wide retrieval across four tiers: working context, recent, structured, archive. Early return on confident matches reduces latency.
 
-### Background Ollama Auto-Tagging (#118)
-Async auto-tagging via OllamaService with file-based enhancement queue. `know add` stays fast (<100ms), enhancement happens in background. **Status: merge conflict.**
-
-### CodeRabbit Review Extraction (#117)
-Extract CodeRabbit review findings from GitHub PRs and store as knowledge entries. **Status: CI failing (94.5% coverage, needs 95%).**
-
-### Project-Aware Namespacing (#109)
-Auto-detect git repo and create per-project Qdrant collections. `--project` and `--global` flags on all commands. **Status: merge conflict.**
+### Project-Aware Namespacing
+Auto-detect git repo and create per-project Qdrant collections. `--project` and `--global` flags on all commands for multi-project isolation.
 
 ---
 
 ## Future
 
 - **Smart Query Expansion**: Ollama-powered semantic query understanding (synonyms, related terms)
-- **Tiered Search**: Merge PR #120 — narrow-to-wide retrieval strategy
-- **Background Ollama Enhancement**: Merge PR #118 — async auto-tagging
-- **Project Namespacing**: Merge PR #109 — per-project collections
 - **PostgreSQL/Pluggable Vector Store**: Support alternative vector backends (#23)
 - **Agentify**: AI agents that monitor Claude Code conversations via hooks (#96)

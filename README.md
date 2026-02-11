@@ -22,6 +22,8 @@ Captures technical decisions, learnings, and context from your work. Retrieves e
 ```
 CLI (Laravel Zero)
     ↓
+Tiered Search (narrow-to-wide retrieval across 4 tiers)
+    ↓
 Qdrant (Vector DB - all storage)
     ├── Per-project collections (auto-detected from git)
     └── Payload-based metadata (JSON)
@@ -30,21 +32,23 @@ Redis (Cache layer - sub-200ms queries)
     ↓
 Embedding Server (sentence-transformers)
     ↓
-Ollama (optional - auto-tagging, query expansion)
+Ollama (optional - async auto-tagging via background queue)
     ↓
 Odin Sync (background sync to centralized server)
 ```
 
-No SQLite. No schema migrations. Pure vector storage.
+No SQLite. No schema migrations. Pure vector storage. Per-project isolation via auto-detected git namespaces.
 
 ## Commands
+
+All commands support `--project=<name>` to target a specific project namespace and `--global` to search across all projects. Project is auto-detected from the current git repository.
 
 ### Core Knowledge
 
 | Command | Description |
 |---------|-------------|
-| `add` | Add a knowledge entry (auto-detects git context) |
-| `search` | Semantic vector search with filters |
+| `add` | Add a knowledge entry (auto-detects git context, async Ollama tagging) |
+| `search` | Semantic vector search with tiered narrow-to-wide retrieval |
 | `show <id>` | Display entry details |
 | `entries` | List entries with filters |
 | `update <id>` | Update an existing entry |
@@ -63,6 +67,8 @@ No SQLite. No schema migrations. Pure vector storage.
 | `synthesize` | Generate daily synthesis of knowledge themes |
 | `stage` | Stage entries in daily log before permanent storage |
 | `promote` | Promote staged entries to permanent knowledge |
+| `enhance:worker` | Process the background Ollama enhancement queue |
+| `coderabbit:extract` | Extract CodeRabbit review findings from a GitHub PR |
 
 ### Infrastructure
 
