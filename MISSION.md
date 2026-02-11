@@ -85,7 +85,7 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 │  Odin (Centralized)                     │
 │  - Same stack as local                  │
 │  - Team knowledge repository            │
-│  - Exposed via Cloudflare Tunnels       │
+│  - Exposed via Tailscale mesh            │
 └─────────────────────────────────────────┘
 ```
 
