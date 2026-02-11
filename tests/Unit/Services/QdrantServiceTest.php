@@ -1513,3 +1513,85 @@ describe('getById with superseded fields', function (): void {
         expect($result['superseded_reason'])->toBeNull();
     });
 });
+
+describe('getCacheService', function (): void {
+    it('returns null when no cache service is configured', function (): void {
+        expect($this->service->getCacheService())->toBeNull();
+    });
+});
+
+describe('search with cache service', function (): void {
+    it('uses cache service rememberSearch when cache service is present', function (): void {
+        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $serviceWithCache = new QdrantService(
+            $this->mockEmbedding,
+            384,
+            0.7,
+            604800,
+            false,
+            false,
+            $mockCacheService,
+        );
+
+        // Inject mock connector
+        $reflection = new ReflectionClass($serviceWithCache);
+        $property = $reflection->getProperty('connector');
+        $property->setAccessible(true);
+        $property->setValue($serviceWithCache, $this->mockConnector);
+
+        $cachedResults = [
+            ['id' => 'cached-1', 'title' => 'Cached Result', 'score' => 0.95],
+        ];
+
+        $mockCacheService->shouldReceive('rememberSearch')
+            ->once()
+            ->with('test query', [], 20, 'default', Mockery::type('Closure'))
+            ->andReturn($cachedResults);
+
+        $result = $serviceWithCache->search('test query');
+
+        expect($result)->toHaveCount(1);
+        expect($result->first()['id'])->toBe('cached-1');
+    });
+});
+
+describe('getCachedEmbedding with cache service', function (): void {
+    it('uses cache service rememberEmbedding when cache service is present', function (): void {
+        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $serviceWithCache = new QdrantService(
+            $this->mockEmbedding,
+            384,
+            0.7,
+            604800,
+            false,
+            false,
+            $mockCacheService,
+        );
+
+        // Inject mock connector
+        $reflection = new ReflectionClass($serviceWithCache);
+        $connProp = $reflection->getProperty('connector');
+        $connProp->setAccessible(true);
+        $connProp->setValue($serviceWithCache, $this->mockConnector);
+
+        $embedding = array_fill(0, 384, 0.1);
+
+        // Mock cache service to return embedding
+        $mockCacheService->shouldReceive('rememberEmbedding')
+            ->once()
+            ->with('test text', Mockery::type('Closure'))
+            ->andReturn($embedding);
+
+        // Mock cache service for search (since search calls getCachedEmbedding)
+        $mockCacheService->shouldReceive('rememberSearch')
+            ->never();
+
+        // Use reflection to call the private getCachedEmbedding method
+        $method = $reflection->getMethod('getCachedEmbedding');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($serviceWithCache, 'test text');
+
+        expect($result)->toBe($embedding);
+    });
+});

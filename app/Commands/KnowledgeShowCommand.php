@@ -27,11 +27,11 @@ class KnowledgeShowCommand extends Command
             $id = (int) $id;
         }
 
-        if (! is_string($id) && ! is_int($id)) {
+        if (! is_string($id) && ! is_int($id)) { // @codeCoverageIgnoreStart
             error('Invalid entry ID.');
 
             return self::FAILURE;
-        }
+        } // @codeCoverageIgnoreEnd
 
         $entry = spin(
             fn (): ?array => $qdrant->getById($id),

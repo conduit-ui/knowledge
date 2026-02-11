@@ -242,8 +242,10 @@ class CodeRabbitService
 
     /**
      * @param  array<int, string>  $command
+     *
+     * @codeCoverageIgnore Process creation — overridden in tests
      */
-    private function runGhCommand(array $command): Process
+    protected function runGhCommand(array $command): Process
     {
         $cwd = $this->workingDirectory ?? getcwd();
 

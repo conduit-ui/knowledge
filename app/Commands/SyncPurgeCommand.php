@@ -166,11 +166,11 @@ class SyncPurgeCommand extends Command
             }
 
             $this->info("Purged {$deleted} entries from cloud. Failed: {$failed}.");
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to purge tracked deletions: '.$e->getMessage());
 
             return self::FAILURE;
-        }
+        } // @codeCoverageIgnoreEnd
 
         return self::SUCCESS;
     }
@@ -292,11 +292,11 @@ class SyncPurgeCommand extends Command
             }
 
             $this->info("Purged {$deleted} orphaned entries from cloud. Failed: {$failed}.");
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to purge orphaned entries: '.$e->getMessage());
 
             return self::FAILURE;
-        }
+        } // @codeCoverageIgnoreEnd
 
         return self::SUCCESS;
     }

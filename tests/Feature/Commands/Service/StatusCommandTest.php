@@ -244,5 +244,29 @@ describe('service:status command', function () {
             $this->artisan('service:status')
                 ->assertSuccessful();
         });
+
+        it('skips empty lines in docker compose output', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    output: '{"Service":"qdrant","State":"running"}'."\n\n".'{"Service":"redis","State":"running"}',
+                    exitCode: 0,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful();
+        });
+
+        it('handles unknown container state with default gray color', function () {
+            Process::fake([
+                '*docker*' => Process::result(
+                    output: '{"Service":"custom-svc","State":"restarting"}',
+                    exitCode: 0,
+                ),
+            ]);
+
+            $this->artisan('service:status')
+                ->assertSuccessful();
+        });
     });
 });

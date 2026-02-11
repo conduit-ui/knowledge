@@ -358,6 +358,17 @@ describe('WriteGateService', function (): void {
         });
     });
 
+    describe('loadCriteria fallback', function (): void {
+        it('falls back to defaultCriteria when config returns empty array', function (): void {
+            config(['write-gate.criteria' => []]);
+
+            // Instantiate without explicit criteria so it loads from config
+            $gate = new WriteGateService;
+
+            expect($gate->getEnabledCriteria())->toBe(WriteGateService::defaultCriteria());
+        });
+    });
+
     describe('getEnabledCriteria', function (): void {
         it('returns the configured criteria', function (): void {
             $criteria = [

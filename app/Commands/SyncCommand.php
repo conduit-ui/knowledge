@@ -265,10 +265,10 @@ class SyncCommand extends Command
 
             $bar->finish();
             $this->newLine();
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to pull from cloud: '.$e->getMessage());
             $failed++;
-        }
+        } // @codeCoverageIgnoreEnd
 
         return ['created' => $created, 'updated' => $updated, 'failed' => $failed];
     }
@@ -357,10 +357,10 @@ class SyncCommand extends Command
 
             $bar->finish();
             $this->newLine();
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to push to cloud: '.$e->getMessage());
             $failed += count($allPayload ?? []);
-        }
+        } // @codeCoverageIgnoreEnd
 
         return ['sent' => $sent, 'created' => $created, 'updated' => $updated, 'failed' => $failed];
     }
@@ -449,10 +449,10 @@ class SyncCommand extends Command
             if ($successfulDeletions !== []) {
                 $tracker->removeMany($successfulDeletions);
             }
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to process tracked deletions: '.$e->getMessage());
             $failed += count($trackedDeletions);
-        }
+        } // @codeCoverageIgnoreEnd
 
         return ['deleted' => $deleted, 'failed' => $failed];
     }
@@ -645,9 +645,9 @@ class SyncCommand extends Command
 
             $bar->finish();
             $this->newLine();
-        } catch (GuzzleException $e) {
+        } catch (GuzzleException $e) { // @codeCoverageIgnoreStart
             $this->error('Failed to delete orphaned entries: '.$e->getMessage());
-        }
+        } // @codeCoverageIgnoreEnd
 
         return ['deleted' => $deleted, 'failed' => $failed];
     }

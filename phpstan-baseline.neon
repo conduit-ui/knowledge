@@ -11,27 +11,27 @@ parameters:
 			path: app/Commands/InsightsCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$project of method App\\\\Services\\\\QdrantService\\:\\:ensureCollection\\(\\) expects string, array\\|bool\\|string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$project of method App\\\\Services\\\\QdrantService\\:\\:ensureCollection\\(\\) expects string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/InstallCommand.php
 
 		-
-			message: "#^Part \\$project \\(array\\|bool\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
+			message: "#^Part \\$project \\(array\\|bool\\|float\\|int\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
 			count: 1
 			path: app/Commands/InstallCommand.php
 
 		-
-			message: "#^Cannot cast array\\|bool\\|string\\|null to string\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeAddCommand.php
-
-		-
-			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\{title\\: string, content\\: non\\-empty\\-string, category\\: 'architecture'\\|'debugging'\\|'deployment'\\|'security'\\|'testing'\\|null, module\\: string\\|null, priority\\: 'critical'\\|'high'\\|'low'\\|'medium', confidence\\: int, source\\: string\\|null, ticket\\: string\\|null, \\.\\.\\.\\} given\\.$#"
+			message: "#^Cannot cast array\\|bool\\|float\\|int\\|string\\|null to string\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
 
 		-
 			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\<string, mixed\\> given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeAddCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\{title\\: string, content\\: non\\-empty\\-string, category\\: 'architecture'\\|'debugging'\\|'deployment'\\|'security'\\|'testing'\\|null, module\\: string\\|null, priority\\: 'critical'\\|'high'\\|'low'\\|'medium', confidence\\: int, source\\: string\\|null, ticket\\: string\\|null, \\.\\.\\.\\} given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
 
@@ -66,17 +66,17 @@ parameters:
 			path: app/Commands/KnowledgeStatsCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeValidateCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:updateFields\\(\\) expects int\\|string, array\\|bool\\|string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:updateFields\\(\\) expects int\\|string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeValidateCommand.php
 
 		-
-			message: "#^Part \\$id \\(array\\|bool\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
+			message: "#^Part \\$id \\(array\\|bool\\|float\\|int\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
 			count: 2
 			path: app/Commands/KnowledgeValidateCommand.php
 
@@ -171,22 +171,22 @@ parameters:
 			path: app/Services/QdrantService.php
 
 		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
-			count: 1
-			path: app/Services/QdrantService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:scroll\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
-			count: 1
-			path: app/Services/QdrantService.php
-
-		-
 			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:findSimilar\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\{id\\: mixed, score\\: mixed, title\\: mixed, content\\: mixed\\}\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 
 		-
 			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) should return array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\|null but returns array\\<string, mixed\\>\\.$#"
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:hybridSearch\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, score\\: float, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
+			count: 1
+			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\QdrantService\\:\\:scroll\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\: array\\<string\\>, category\\: string\\|null, module\\: string\\|null, priority\\: string\\|null, status\\: string\\|null, \\.\\.\\.\\}\\> but returns Illuminate\\\\Support\\\\Collection\\<\\(int\\|string\\), array\\<string, mixed\\>\\>\\.$#"
 			count: 1
 			path: app/Services/QdrantService.php
 

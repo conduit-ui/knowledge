@@ -318,6 +318,29 @@ it('returns empty for scandir failure on non-dir staging', function (): void {
     expect($this->service->listDailyLogs())->toBe([]);
 });
 
+it('appends new section when staging entry into log file missing that section', function (): void {
+    $stagingDir = $this->tempDir.'/staging';
+    mkdir($stagingDir, 0755, true);
+
+    // Create a minimal daily log file that is missing the "Notes" section
+    $logPath = $stagingDir.'/2026-02-10.md';
+    $content = "# Daily Log: 2026-02-10\n\n## Decisions\n\n## Corrections\n\n## Commitments\n";
+    file_put_contents($logPath, $content);
+
+    // Stage an entry into the "Notes" section which doesn't exist in the file
+    $id = $this->service->stage([
+        'title' => 'Missing Section Entry',
+        'content' => 'This should create a Notes section.',
+        'section' => 'Notes',
+    ]);
+
+    expect($id)->toBeString()->not->toBeEmpty();
+
+    $updatedContent = (string) file_get_contents($logPath);
+    expect($updatedContent)->toContain('## Notes');
+    expect($updatedContent)->toContain('Missing Section Entry');
+});
+
 it('ignores non-date files in staging directory', function (): void {
     $stagingDir = $this->tempDir.'/staging';
     mkdir($stagingDir, 0755, true);
