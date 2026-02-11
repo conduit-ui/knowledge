@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Services\QdrantService;
+use App\Services\TieredSearchService;
 
 describe('KnowledgeSearchCommand', function (): void {
     beforeEach(function (): void {
-        $this->qdrantService = mock(QdrantService::class);
+        $this->tieredSearch = mock(TieredSearchService::class);
 
-        app()->instance(QdrantService::class, $this->qdrantService);
+        app()->instance(TieredSearchService::class, $this->tieredSearch);
     });
 
     it('requires at least one parameter', function (): void {
@@ -18,9 +18,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('finds entries by keyword', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('Laravel', [], 20)
+            ->with('Laravel', [], 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -33,6 +33,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.90,
                 ],
             ]));
 
@@ -43,9 +46,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('filters by tag', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('', ['tag' => 'php'], 20)
+            ->with('', ['tag' => 'php'], 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-2',
@@ -58,6 +61,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 90,
                     'score' => 0.90,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.81,
                 ],
             ]));
 
@@ -68,9 +74,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('filters by category', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('', ['category' => 'tutorial'], 20)
+            ->with('', ['category' => 'tutorial'], 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -83,6 +89,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.90,
                 ],
             ]));
 
@@ -93,7 +102,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('shows no results message', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([]));
 
@@ -103,9 +112,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('supports semantic flag', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('Laravel', [], 20)
+            ->with('Laravel', [], 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -118,6 +127,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.90,
                 ],
             ]));
 
@@ -131,9 +143,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('combines query and filters', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('Laravel', ['category' => 'tutorial'], 20)
+            ->with('Laravel', ['category' => 'tutorial'], 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -146,6 +158,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.90,
                 ],
             ]));
 
@@ -159,7 +174,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('shows entry details', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
@@ -173,6 +188,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'validated',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'structured',
+                    'tier_label' => 'Structured Storage',
+                    'tiered_score' => 0.90,
                 ],
             ]));
 
@@ -184,7 +202,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('truncates long content', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
@@ -198,6 +216,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 100,
                     'score' => 0.85,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.85,
                 ],
             ]));
 
@@ -207,7 +228,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('displays multiple search results', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
@@ -221,6 +242,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 95,
                     'score' => 0.95,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.90,
                 ],
                 [
                     'id' => 'uuid-2',
@@ -233,6 +257,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 90,
                     'score' => 0.85,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.76,
                 ],
             ]));
 
@@ -244,7 +271,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('supports multiple filters simultaneously', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->with('', [
                 'category' => 'testing',
@@ -252,7 +279,7 @@ describe('KnowledgeSearchCommand', function (): void {
                 'priority' => 'high',
                 'status' => 'validated',
                 'tag' => 'laravel',
-            ], 20)
+            ], 20, null)
             ->andReturn(collect([]));
 
         $this->artisan('search', [
@@ -267,7 +294,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('handles empty tags array gracefully', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
@@ -281,6 +308,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'status' => 'draft',
                     'confidence' => 50,
                     'score' => 0.75,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.37,
                 ],
             ]));
 
@@ -290,7 +320,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('displays score in results', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
@@ -305,6 +335,9 @@ describe('KnowledgeSearchCommand', function (): void {
                     'confidence' => 80,
                     'score' => 0.92,
                     'superseded_by' => null,
+                    'tier' => 'working',
+                    'tier_label' => 'Working Context',
+                    'tiered_score' => 0.73,
                 ],
             ]));
 
@@ -314,9 +347,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('passes include_superseded filter when flag is set', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('test', Mockery::on(fn ($filters): bool => isset($filters['include_superseded']) && $filters['include_superseded'] === true), 20)
+            ->with('test', Mockery::on(fn ($filters): bool => isset($filters['include_superseded']) && $filters['include_superseded'] === true), 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -344,9 +377,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('does not pass include_superseded by default', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('test', [], 20)
+            ->with('test', [], 20, null)
             ->andReturn(collect([]));
 
         $this->artisan('search', ['query' => 'test'])
@@ -354,7 +387,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('shows superseded indicator on superseded entries', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [

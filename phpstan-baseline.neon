@@ -41,6 +41,11 @@ parameters:
 			path: app/Commands/KnowledgeListCommand.php
 
 		-
+			message: "#^Parameter \\#2 \\$filters of method App\\\\Services\\\\TieredSearchService\\:\\:search\\(\\) expects array\\<string, string\\>, array\\<string, string\\|true\\> given\\.$#"
+			count: 1
+			path: app/Commands/KnowledgeSearchCommand.php
+
+		-
 			message: "#^Variable \\$tags in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeSearchCommand.php
@@ -224,3 +229,8 @@ parameters:
 			message: "#^Unable to resolve the template type TValue in call to function collect$#"
 			count: 4
 			path: app/Services/QdrantService.php
+
+		-
+			message: "#^Parameter \\#2 \\$filters of method App\\\\Services\\\\QdrantService\\:\\:search\\(\\) expects array\\{tag\\?\\: string, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, include_superseded\\?\\: bool\\}, array\\<string, string\\> given\\.$#"
+			count: 1
+			path: app/Services/TieredSearchService.php
