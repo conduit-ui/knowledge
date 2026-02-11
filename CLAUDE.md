@@ -1,51 +1,63 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this repository.
 
 ## What This Is
 
-AI-powered knowledge base CLI tool with semantic search and ChromaDB integration. Built as a standalone Laravel Zero application.
+Knowledge CLI — an AI-powered knowledge base with semantic search, Qdrant vector storage, and Ollama intelligence. Built as a Laravel Zero CLI application.
+
+**Entry point**: `./know` (not `artisan`)
 
 ## Commands
 
 ```bash
-composer test              # Run all tests
+composer test              # Run all tests (Pest, parallel)
 composer test-coverage     # Run with coverage report
-composer format            # Format code
+composer format            # Format code (Laravel Pint)
 composer analyse           # Static analysis (PHPStan level 8)
-./know {command}           # Run CLI command
 ./know list                # List all available commands
 ```
 
-Run a single test file:
+Run a single test:
 ```bash
-vendor/bin/pest tests/Feature/YourTest.php
+vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 ```
-
-## Quality Standards (Non-Negotiable)
-
-- **100% test coverage** enforced by Synapse Sentinel gate
-- **PHPStan level 8** with strict rules
-- **Laravel Pint** code style (Laravel preset)
-- **Auto-merge** after certification passes
 
 ## Architecture
 
-- **Entry point**: `./know` (not `artisan`)
-- **Commands**: `app/Commands/` - extend `LaravelZero\Framework\Commands\Command`
-- **Tests**: `tests/Feature/` and `tests/Unit/` - use Pest
-- **Services**: Register in `config/app.php` providers array
+- **Storage**: Qdrant vector database only (no SQLite, no Eloquent models)
+- **Cache**: Redis via KnowledgeCacheService
+- **Embeddings**: sentence-transformers via EmbeddingService
+- **LLM**: Ollama via OllamaService (optional, for auto-tagging)
+- **HTTP**: Saloon connectors in `app/Integrations/Qdrant/`
+- **Commands**: `app/Commands/` — extend `LaravelZero\Framework\Commands\Command`
+- **Services**: `app/Services/` — registered in `app/Providers/AppServiceProvider.php`
+- **Tests**: `tests/Feature/` and `tests/Unit/` — Pest framework
+
+## Quality Standards (Non-Negotiable)
+
+- **95% test coverage** enforced by Sentinel Gate CI
+- **PHPStan level 8** with strict rules
+- **Laravel Pint** code style (Laravel preset)
+- **Auto-merge** after Sentinel Gate certification passes
+
+## Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `QdrantService` | All vector DB operations (upsert, search, delete, collections) |
+| `EmbeddingService` | Text-to-vector conversion |
+| `KnowledgeCacheService` | Redis caching for sub-200ms queries |
+| `OdinSyncService` | Background sync to centralized Odin server |
+| `WriteGateService` | Filters knowledge quality before persistence |
+| `EntryMetadataService` | Staleness detection, confidence degradation |
+| `CorrectionService` | Multi-tier correction propagation |
+| `DailyLogService` | Entry staging before permanent storage |
+| `GitContextService` | Auto-detect git repo, branch, commit, author |
 
 ## TDD Workflow
 
 1. Write failing test (RED)
 2. Make test pass (GREEN)
 3. Refactor if needed
-4. Push PR - auto-merges after Sentinel gate passes
-
-## Testing Commands
-
-```php
-$this->artisan('command-name')->assertSuccessful();
-$this->artisan('command-name', ['argument' => 'value'])->assertExitCode(0);
-```
+4. Push PR — auto-merges after Sentinel Gate passes

@@ -1,342 +1,192 @@
-# Knowledge
+# Knowledge CLI
 
-AI-powered knowledge base with semantic search and ChromaDB integration.
+AI-powered knowledge base with semantic search, Qdrant vector storage, and Ollama intelligence.
 
-## Vision
+## What It Does
 
-Build an intelligent knowledge management system that:
-- **Semantic Search**: Find knowledge by meaning, not just keywords (ChromaDB)
-- **AI-Powered**: Confidence scoring, relevance ranking, smart suggestions
-- **Git Integration**: Automatic context capture, knowledge attribution, evolution tracking
-- **Test-Driven**: 100% coverage enforced via Synapse Sentinel
-- **Quality-First**: Maximum static analysis (PHPStan level 8)
-
-## Features
-
-### Git Context Integration
-
-Automatically capture and track git metadata for knowledge attribution:
-
-- **Auto-detection**: Automatically captures repo, branch, commit, and author when adding entries
-- **Knowledge Attribution**: "Git blame" for knowledge - see who documented what and when
-- **Evolution Tracking**: Track how knowledge changes across commits and branches
-- **Cross-repo Support**: Store full repository URLs for knowledge shared across projects
-
-#### Commands
+Captures technical decisions, learnings, and context from your work. Retrieves exactly what you need via semantic search — especially for AI pair programming with Claude Code.
 
 ```bash
-# Add entry with automatic git context detection
-./know knowledge:add "Fix Database Connection" --content="Always check .env configuration"
+# Add knowledge
+./know add "Database Connection Fix" --content="Check .env before debugging migrations" --tags=debugging,database
 
-# Skip git detection for sensitive repositories
-./know knowledge:add "API Keys" --content="Store in vault" --no-git
+# Semantic search
+./know search "how to fix database issues"
 
-# Manual git field overrides
-./know knowledge:add "Config" --content="..." --repo="custom/repo" --branch="main"
-
-# Display current git context
-./know knowledge:git:context
-
-# List entries from a specific commit
-./know knowledge:git:entries abc123def456
-
-# List entries by author
-./know knowledge:git:author "John Doe"
+# Show entry details
+./know show <uuid>
 ```
 
-#### Auto-Detection Behavior
+## Architecture
 
-When you run `knowledge:add` in a git repository:
+```
+CLI (Laravel Zero)
+    ↓
+Qdrant (Vector DB - all storage)
+    ├── Per-project collections (auto-detected from git)
+    └── Payload-based metadata (JSON)
+    ↓
+Redis (Cache layer - sub-200ms queries)
+    ↓
+Embedding Server (sentence-transformers)
+    ↓
+Ollama (optional - auto-tagging, query expansion)
+    ↓
+Odin Sync (background sync to centralized server)
+```
 
-1. **Repository**: Detects remote origin URL (falls back to local path)
-2. **Branch**: Captures current branch name
-3. **Commit**: Records current commit hash (full SHA-1)
-4. **Author**: Uses git config user.name
+No SQLite. No schema migrations. Pure vector storage.
 
-To disable auto-detection, use the `--no-git` flag.
+## Commands
 
-#### Manual Overrides
+### Core Knowledge
 
-You can override auto-detected values:
+| Command | Description |
+|---------|-------------|
+| `add` | Add a knowledge entry (auto-detects git context) |
+| `search` | Semantic vector search with filters |
+| `show <id>` | Display entry details |
+| `entries` | List entries with filters |
+| `update <id>` | Update an existing entry |
+| `validate <id>` | Mark entry as validated (boosts confidence) |
+| `archive <id>` | Soft-delete an entry |
+| `export <id>` | Export a single entry |
+| `export:all` | Bulk export all entries |
+| `correct` | Correct/update knowledge with multi-tier propagation |
+
+### Intelligence
+
+| Command | Description |
+|---------|-------------|
+| `context` | Load semantic session context for AI tools |
+| `insights` | AI-generated insights from your knowledge base |
+| `synthesize` | Generate daily synthesis of knowledge themes |
+| `stage` | Stage entries in daily log before permanent storage |
+| `promote` | Promote staged entries to permanent knowledge |
+
+### Infrastructure
+
+| Command | Description |
+|---------|-------------|
+| `install` | Initialize Qdrant collection |
+| `config` | Manage configuration |
+| `stats` | Analytics dashboard |
+| `search:status` | Search infrastructure health check |
+| `agent:status` | Dependency health checks (Qdrant, Redis, Ollama, Embeddings) |
+| `maintain` | Run maintenance tasks |
+| `projects` | List all project knowledge bases |
+
+### Services (Docker)
+
+| Command | Description |
+|---------|-------------|
+| `service:up` | Start Qdrant, Redis, embedding server |
+| `service:down` | Stop services |
+| `service:status` | Health check all services |
+| `service:logs` | View service logs |
+
+### Sync
+
+| Command | Description |
+|---------|-------------|
+| `sync` | Bidirectional sync (--push / --pull) |
+| `sync:odin` | Background sync to Odin central server |
+| `sync:purge` | Purge sync queue |
+
+### Code Intelligence
+
+| Command | Description |
+|---------|-------------|
+| `index-code` | Index codebase for semantic code search |
+| `search-code` | Semantic search across indexed code |
+| `git:context` | Display current git context |
+
+## Quick Start
+
+### 1. Start Services
 
 ```bash
-./know knowledge:add "Title" \
-  --content="Content here" \
-  --repo="https://github.com/org/repo" \
-  --branch="feature/new-feature" \
-  --commit="abc123def456" \
-  --author="Jane Smith"
+# Docker compose (Qdrant + embedding server)
+make up
+
+# Or manually
+docker compose up -d
 ```
 
-#### Non-Git Directories
+This starts:
+- **Qdrant** on `http://localhost:6333` — Vector database
+- **Embedding Server** on `http://localhost:8001` — sentence-transformers (all-MiniLM-L6-v2)
 
-The tool gracefully handles non-git directories:
-- No errors or warnings
-- Git fields remain null
-- All other functionality works normally
-
-#### Git Hooks Integration
-
-You can integrate with git hooks for automatic knowledge capture:
-
-**Post-commit hook example** (`.git/hooks/post-commit`):
+### 2. Initialize
 
 ```bash
-#!/bin/bash
-# Automatically prompt for knowledge entry after each commit
-
-echo "Would you like to document this commit? (y/n)"
-read -r response
-
-if [[ "$response" =~ ^[Yy]$ ]]; then
-    ./know knowledge:add "$(git log -1 --pretty=%s)" \
-        --content="$(git log -1 --pretty=%B)" \
-        --category=debugging
-fi
+./know install
 ```
 
-**Pre-push hook example** (`.git/hooks/pre-push`):
+### 3. Add Knowledge
 
 ```bash
-#!/bin/bash
-# Check for undocumented commits
+# With automatic git context detection
+./know add "Fix Auth Timeout" --content="Increase token TTL in config/auth.php" --tags=auth,debugging
 
-UNDOCUMENTED=$(git log origin/main..HEAD --format="%H" | while read commit; do
-    if ! ./know knowledge:git:entries "$commit" | grep -q "Total entries: 0"; then
-        echo "$commit"
-    fi
-done)
-
-if [ -n "$UNDOCUMENTED" ]; then
-    echo "Warning: Some commits lack knowledge entries"
-    echo "$UNDOCUMENTED"
-fi
+# Skip git detection
+./know add "API Keys" --content="Store in vault, never in .env" --no-git
 ```
 
-### Confidence Scoring & Usage Analytics
-
-Track knowledge quality and usage over time:
+### 4. Search
 
 ```bash
-# Validate an entry (boosts confidence)
-./know knowledge:validate 1
+# Semantic search
+./know search "authentication timeout issues"
 
-# View stale entries needing review
-./know knowledge:stale
-
-# Display analytics dashboard
-./know knowledge:stats
+# With filters
+./know search --category=debugging --tag=auth --limit=5
 ```
 
-### Collections
+## Configuration
 
-Organize knowledge into logical groups:
+`.env` file:
 
-```bash
-# Create a collection
-./know knowledge:collection:create "Deployment Runbook" --description="Production deployment steps"
-
-# Add entries to collection
-./know knowledge:collection:add "Deployment Runbook" 1
-./know knowledge:collection:add "Deployment Runbook" 2 --sort-order=10
-
-# View collection
-./know knowledge:collection:show "Deployment Runbook"
-
-# List all collections
-./know knowledge:collection:list
+```env
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+EMBEDDING_SERVER_URL=http://localhost:8001
+REDIS_HOST=localhost
+REDIS_PORT=6379
+OLLAMA_HOST=http://localhost:11434
 ```
 
-### Search & Discovery
+### Odin (Production)
 
-```bash
-# Search by keyword
-./know knowledge:search --keyword="database"
-
-# Search by tag
-./know knowledge:search --tag="sql"
-
-# Search by category and priority
-./know knowledge:search --category="debugging" --priority="critical"
-
-# List entries with filters
-./know knowledge:list --category=testing --limit=10 --min-confidence=75
-```
+Uses `docker-compose.odin.yml` with Tailscale networking for centralized knowledge sync.
 
 ## Development
 
 ```bash
-# Install dependencies
-composer install
-
-# Run tests
-composer test
-
-# Run tests with coverage
-composer test-coverage
-
-# Format code
-composer format
-
-# Static analysis
-composer analyse
-
-# Run single test file
-vendor/bin/pest tests/Feature/GitContextServiceTest.php
+composer install          # Install dependencies
+composer test             # Run tests (Pest, parallel)
+composer test-coverage    # Run with coverage report
+composer format           # Format code (Laravel Pint)
+composer analyse          # Static analysis (PHPStan level 8)
 ```
 
 ## Quality Standards
 
-- **Test Coverage**: 100% (enforced by Synapse Sentinel)
-- **Static Analysis**: PHPStan Level 8
+- **Test Coverage**: 95% minimum (enforced by Sentinel Gate CI)
+- **Static Analysis**: PHPStan Level 8 with strict rules
 - **Code Style**: Laravel Pint (Laravel preset)
-- **Auto-Merge**: PRs auto-merge after certification
+- **CI/CD**: Sentinel Gate auto-merges PRs after certification
 
-## Architecture
+## Stack
 
-### Services
-
-**GitContextService** - Git metadata detection and retrieval
-- Detects git repositories using `git rev-parse`
-- Retrieves branch, commit, author information
-- Handles non-git directories gracefully
-- Supports custom working directories for testing
-
-**ConfidenceService** - Knowledge quality scoring
-- Age-based confidence decay
-- Validation boosts
-- Stale entry detection
-
-**CollectionService** - Knowledge organization
-- Create and manage collections
-- Add/remove entries with sort ordering
-- Duplicate prevention
-
-### Models
-
-- **Entry** - Knowledge entries with git metadata, confidence scores, usage tracking
-- **Collection** - Groups of related entries
-- **Tag** - Normalized tags with usage counts
-- **Relationship** - Links between entries (related-to, supersedes, depends-on)
-
-## Status
-
-Active development. Core features implemented:
-- Database schema and models
-- Basic CLI commands
-- Collections support
-- Git context integration
-- Confidence scoring and analytics
-
-### Semantic Search with ChromaDB
-
-Advanced vector-based semantic search for finding knowledge by meaning:
-
-#### Quick Start (Docker)
-
-Start both ChromaDB and the embedding server with a single command:
-
-```bash
-# Start services
-make up
-
-# Check status
-make status
-
-# View logs
-make logs
-
-# Stop services
-make down
-```
-
-This starts:
-- **ChromaDB** on `http://localhost:8000` - Vector database for semantic search
-- **Embedding Server** on `http://localhost:8001` - Sentence-transformers (all-MiniLM-L6-v2)
-
-#### Manual Installation (Alternative)
-
-If you prefer not to use Docker:
-
-```bash
-# Install ChromaDB server
-pip install chromadb
-chroma run --path ./chroma_data
-
-# In another terminal, start embedding server
-pip install flask sentence-transformers gunicorn
-python docker/embedding-server/server.py
-```
-
-#### Configuration
-
-Enable ChromaDB in your `.env` file:
-
-```env
-SEMANTIC_SEARCH_ENABLED=true
-EMBEDDING_PROVIDER=chromadb
-CHROMADB_ENABLED=true
-CHROMADB_HOST=localhost
-CHROMADB_PORT=8000
-CHROMADB_EMBEDDING_SERVER=http://localhost:8001
-CHROMADB_EMBEDDING_MODEL=all-MiniLM-L6-v2
-```
-
-#### Usage
-
-Once configured, semantic search automatically works with the existing search commands:
-
-```bash
-# Semantic search will automatically be used
-./know knowledge:search --keyword="database connection issues"
-
-# Results are ranked by semantic similarity and confidence
-# Falls back to keyword search if ChromaDB is unavailable
-```
-
-#### How It Works
-
-1. When you add/update entries, embeddings are generated and stored in both:
-   - ChromaDB vector database (for fast similarity search)
-   - SQLite database (as JSON, for fallback)
-
-2. Search queries are:
-   - Converted to embedding vectors
-   - Compared against indexed entries using cosine similarity
-   - Ranked by: `similarity_score * (confidence / 100)`
-   - Filtered by metadata (category, tags, status, etc.)
-
-3. If ChromaDB is unavailable:
-   - Automatically falls back to SQLite-based semantic search
-   - Or keyword search if no embeddings are available
-
-#### Architecture
-
-**ChromaDBClient** - ChromaDB REST API client
-- Collection management
-- Document indexing (add/update/delete)
-- Vector similarity search
-
-**ChromaDBEmbeddingService** - Text embedding generation
-- Generates embedding vectors using specified model
-- Calculates cosine similarity between vectors
-- Graceful error handling
-
-**ChromaDBIndexService** - Index management
-- Indexes entries on create/update
-- Removes entries on delete
-- Batch indexing support
-- Automatic embedding generation and storage
-
-**SemanticSearchService** - Hybrid search orchestration
-- ChromaDB search (when available)
-- SQLite fallback search
-- Keyword search fallback
-- Metadata filtering (category, tags, module, priority, status)
-
-Coming soon:
-- Export and publishing
-- Web interface
+- **Runtime**: PHP 8.2+, Laravel Zero
+- **Vector DB**: Qdrant (Rust)
+- **Cache**: Redis
+- **Embeddings**: sentence-transformers (Python/FastAPI)
+- **LLM**: Ollama (optional, for auto-tagging and query expansion)
+- **HTTP Client**: Saloon
+- **Testing**: Pest
+- **CI**: GitHub Actions (Sentinel Gate)
 
 ## License
 

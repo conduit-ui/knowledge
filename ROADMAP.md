@@ -1,194 +1,60 @@
-# Knowledge CLI - 100x Productivity Roadmap
+# Knowledge CLI - Roadmap
 
-## Critical Path: 5 Issues to Ship
+## Completed
 
-These 5 issues transform knowledge from "productivity tracker with ChromaDB" to "AI-first semantic context engine."
+### Pure Qdrant Vector Storage
+Replaced SQLite entirely with Qdrant-only architecture. No schema migrations, no Eloquent models. All data stored as vector payloads.
 
----
+### Redis Caching Layer
+KnowledgeCacheService provides sub-200ms query responses through aggressive caching of embeddings, search results, and collection stats.
 
-## Issue #1: Pure Qdrant Vector Storage
+### Odin Background Sync
+OdinSyncService syncs knowledge to centralized Odin server. Includes deletion propagation, sync purge, and bidirectional push/pull.
 
-**Goal**: Replace SQLite entirely with Qdrant-only architecture
+### Entry Metadata & Staleness Detection
+EntryMetadataService tracks entry freshness with confidence degradation over time. Superseded marking instead of destructive overwrites.
 
-**Why**: Eliminate schema complexity, migrations, and dual-database maintenance
+### Write Gate
+WriteGateService filters knowledge before persistence — prevents low-quality or duplicate entries from polluting the knowledge base.
 
-**Tasks**:
-- [ ] Add `qdrant/php-client` composer package
-- [ ] Create `QdrantService` with collection management
-- [ ] Store full entry data in Qdrant payloads (no SQLite)
-- [ ] Implement upsert/delete/query operations
-- [ ] Create Qdrant collection per project namespace (auto-detected from git)
-- [ ] Delete all SQLite migrations and models
-- [ ] Update all commands to use QdrantService instead of Eloquent
+### Correction Protocol
+Multi-tier correction propagation. When knowledge is corrected, related entries are identified and updated.
 
-**Success Criteria**:
-- `know add` stores directly to Qdrant
-- `know search` queries Qdrant only
-- Zero SQL queries in codebase
-- Migrations directory deleted
+### Daily Log Staging
+DailyLogService stages entries before permanent storage. Entries can be reviewed and promoted via `stage` and `promote` commands.
 
-**Files to modify**:
-- `app/Services/QdrantService.php` (new)
-- `app/Commands/KnowledgeAddCommand.php`
-- `app/Commands/KnowledgeSearchCommand.php`
-- Delete: `database/migrations/*`, `app/Models/*`
+### Service Management
+Full Docker service lifecycle: `service:up`, `service:down`, `service:status`, `service:logs`.
 
----
+### Code Indexing
+Index and search codebases semantically via `index-code` and `search-code`.
 
-## Issue #2: Redis Caching Layer
-
-**Goal**: Sub-200ms query responses through aggressive caching
-
-**Why**: Read-optimized for instant AI context injection
-
-**Tasks**:
-- [ ] Cache embeddings (key: hash of text, TTL: 7 days)
-- [ ] Cache search results (key: query hash, TTL: 1 hour)
-- [ ] Cache Qdrant collection stats (TTL: 5 minutes)
-- [ ] Implement cache warming on startup
-- [ ] Add cache invalidation on entry updates
-- [ ] Monitor cache hit rates in `know stats`
-
-**Success Criteria**:
-- Cached query < 50ms (90th percentile)
-- Uncached query < 200ms (90th percentile)
-- 80%+ cache hit rate in normal usage
-- `know stats` shows cache metrics
-
-**Files to modify**:
-- `app/Services/CacheService.php` (new)
-- `app/Services/EmbeddingService.php`
-- `app/Commands/KnowledgeSearchCommand.php`
-- `app/Commands/KnowledgeStatsCommand.php`
+### Context Command
+Semantic session context loading for AI tools — auto-injects relevant knowledge into Claude Code sessions.
 
 ---
 
-## Issue #3: Background Ollama Enhancement
+## Open PRs (Need Rebase)
 
-**Goal**: Auto-tag and enhance entries without blocking writes
+### Tiered Search (#120)
+Narrow-to-wide retrieval across four tiers: working context, recent, structured, archive. Early return on confident matches. **Status: merge conflict.**
 
-**Why**: Instant writes, smart organization happens async
+### Background Ollama Auto-Tagging (#118)
+Async auto-tagging via OllamaService with file-based enhancement queue. `know add` stays fast (<100ms), enhancement happens in background. **Status: merge conflict.**
 
-**Tasks**:
-- [ ] Create enhancement queue (Redis-backed)
-- [ ] Background worker processes queue
-- [ ] Ollama generates: tags, category, concepts, summary
-- [ ] Store enhancements back to Qdrant payload
-- [ ] Skip enhancement if Ollama unavailable (degrade gracefully)
-- [ ] Add `--skip-enhance` flag for fast writes
-- [ ] Show enhancement status in `know show <id>`
+### CodeRabbit Review Extraction (#117)
+Extract CodeRabbit review findings from GitHub PRs and store as knowledge entries. **Status: CI failing (94.5% coverage, needs 95%).**
 
-**Success Criteria**:
-- `know add` returns in < 100ms
-- Enhancement completes within 10 seconds
-- Entries enhanced even if Ollama is slow
-- Graceful degradation when Ollama offline
-
-**Files to modify**:
-- `app/Services/EnhancementQueue.php` (new)
-- `app/Services/OllamaService.php` (fix bugs)
-- `app/Commands/KnowledgeAddCommand.php`
-- `app/Commands/KnowledgeShowCommand.php`
+### Project-Aware Namespacing (#109)
+Auto-detect git repo and create per-project Qdrant collections. `--project` and `--global` flags on all commands. **Status: merge conflict.**
 
 ---
 
-## Issue #4: Smart Query Expansion
+## Future
 
-**Goal**: Ollama-powered semantic query understanding
-
-**Why**: Find relevant knowledge even with imperfect queries
-
-**Tasks**:
-- [ ] Expand user query with synonyms/related terms via Ollama
-- [ ] Generate multiple embedding variations
-- [ ] Query Qdrant with all variations
-- [ ] Merge and de-duplicate results
-- [ ] Rank by semantic similarity + recency
-- [ ] Show "searched for: X, Y, Z" to user
-- [ ] Cache expanded queries (Redis)
-
-**Success Criteria**:
-- `know search "redis"` finds entries about "cache", "key-value store"
-- Relevant results even with typos or informal language
-- Query expansion < 500ms (cached) or < 2s (uncached)
-- Top 3 results are relevant 80%+ of the time
-
-**Files to modify**:
-- `app/Services/QueryExpansionService.php` (new)
-- `app/Services/OllamaService.php`
-- `app/Commands/KnowledgeSearchCommand.php`
-
----
-
-## Issue #5: Project-Aware Namespacing
-
-**Goal**: Auto-detect git repo, create per-project knowledge collections
-
-**Why**: Context-specific results, no noise from other projects
-
-**Tasks**:
-- [ ] Detect git repo name from `git remote -v`
-- [ ] Create Qdrant collection: `knowledge_{repo_name}`
-- [ ] Auto-switch collection based on current directory
-- [ ] Add `--project=` flag to override
-- [ ] Add `--global` flag to search all projects
-- [ ] Show current project in `know stats`
-- [ ] List all projects in `know projects` (new command)
-
-**Success Criteria**:
-- Each git repo gets its own namespace automatically
-- `know search` only returns results from current project
-- `know search --global` searches all projects
-- `know projects` lists all knowledge bases
-
-**Files to modify**:
-- `app/Services/ProjectDetectionService.php` (new)
-- `app/Services/QdrantService.php`
-- All search/add commands
-- `app/Commands/ProjectsCommand.php` (new)
-
----
-
-## Bonus Issue #6: Odin Sync (Post-MVP)
-
-**Goal**: Background sync to centralized Odin server
-
-**Why**: Team knowledge sharing, backup, multi-machine access
-
-**Tasks**:
-- [ ] Background sync queue (writes to Odin Qdrant)
-- [ ] Conflict resolution (last-write-wins)
-- [ ] Pull fresh results during search if Odin available
-- [ ] `know sync` command for manual sync
-- [ ] Show sync status in `know stats`
-
-**Success Criteria**:
-- Writes queue for sync every 5 minutes
-- Search checks Odin for fresh results
-- Fully functional offline
-- Team members see each other's knowledge
-
----
-
-## Implementation Order
-
-1. **Issue #1** (Qdrant) - Foundation, blocks everything else
-2. **Issue #5** (Projects) - Must happen before adding real data
-3. **Issue #2** (Caching) - Performance boost
-4. **Issue #3** (Enhancement) - Auto-organization
-5. **Issue #4** (Query expansion) - Smart search
-6. **Issue #6** (Sync) - Team collaboration
-
-## Timeline Estimate
-
-- Week 1: Issue #1 + #5 (Foundation)
-- Week 2: Issue #2 + #3 (Performance + Intelligence)
-- Week 3: Issue #4 (Smart search)
-- Week 4: Issue #6 (Sync to Odin)
-
-**MVP: Issues #1, #2, #5** = Functional vector knowledge base
-**100x Productivity: All 6 issues** = AI-first context engine
-
----
-
-*Next step: Delete productivity commands, implement Issue #1*
+- **Smart Query Expansion**: Ollama-powered semantic query understanding (synonyms, related terms)
+- **Tiered Search**: Merge PR #120 — narrow-to-wide retrieval strategy
+- **Background Ollama Enhancement**: Merge PR #118 — async auto-tagging
+- **Project Namespacing**: Merge PR #109 — per-project collections
+- **PostgreSQL/Pluggable Vector Store**: Support alternative vector backends (#23)
+- **Agentify**: AI agents that monitor Claude Code conversations via hooks (#96)
