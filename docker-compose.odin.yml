@@ -1,11 +1,20 @@
+# Production/centralized server deployment
+# Binds to a specific network interface (e.g. Tailscale, VPN, LAN)
+#
+# Usage:
+#   BIND_ADDR=100.68.122.24 docker compose -f docker-compose.odin.yml up -d
+#
+# Set BIND_ADDR to your server's interface IP (Tailscale, LAN, etc.)
+# Defaults to 127.0.0.1 (localhost only) if not set.
+
 services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: knowledge-qdrant
     restart: unless-stopped
     ports:
-      - "100.68.122.24:6333:6333"  # HTTP API - Tailscale only
-      - "100.68.122.24:6334:6334"  # gRPC API - Tailscale only
+      - "${BIND_ADDR:-127.0.0.1}:6333:6333"
+      - "${BIND_ADDR:-127.0.0.1}:6334:6334"
     volumes:
       - qdrant_storage:/qdrant/storage
     environment:
@@ -22,7 +31,7 @@ services:
     container_name: knowledge-redis
     restart: unless-stopped
     ports:
-      - "100.68.122.24:6380:6379"  # Tailscale only
+      - "${BIND_ADDR:-127.0.0.1}:6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
@@ -39,7 +48,7 @@ services:
     container_name: knowledge-embeddings
     restart: unless-stopped
     ports:
-      - "100.68.122.24:8001:8001"  # Tailscale only
+      - "${BIND_ADDR:-127.0.0.1}:8001:8001"
     volumes:
       - embedding_cache:/root/.cache
     environment:

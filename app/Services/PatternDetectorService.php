@@ -155,17 +155,12 @@ class PatternDetectorService
     {
         $projects = [];
 
-        // Match common project patterns
-        $patterns = [
-            '/\b(conduit-\w+)\b/i',
-            '/\b(synapse-\w+)\b/i',
-            '/\b(the-shit)\b/i',
-            '/\b(pstrax-\w+)\b/i',
-            '/\b(jordanpartridge[\w\-]*)\b/i',
-            '/\b(knowledge)\b/i',
-            '/\b(prefrontal-cortex)\b/i',
-            '/\b(vision)\b/i',
-            '/\b(odin)\b/i',
+        // Match project patterns from config, with fallback generic patterns
+        /** @var array<string> $configPatterns */
+        $configPatterns = config('search.project_patterns', []);
+
+        $patterns = $configPatterns !== [] ? $configPatterns : [
+            '/\b([\w]+-[\w]+(?:-[\w]+)*)\b/',  // hyphenated project names (e.g. my-project)
         ];
 
         foreach ($patterns as $pattern) {
