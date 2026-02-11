@@ -11,6 +11,10 @@ beforeEach(function (): void {
     $this->metadataService = mock(EntryMetadataService::class);
     $this->enhancementQueue = mock(EnhancementQueueService::class);
 
+    $this->qdrantService->shouldReceive('getSupersessionHistory')
+        ->andReturn(['supersedes' => [], 'superseded_by' => null])
+        ->byDefault();
+
     app()->instance(QdrantService::class, $this->qdrantService);
     app()->instance(EntryMetadataService::class, $this->metadataService);
     app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
