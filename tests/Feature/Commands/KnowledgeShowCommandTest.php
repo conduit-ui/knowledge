@@ -221,12 +221,12 @@ it('shows superseded indicator for superseded entries', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('10')
+        ->with('10', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('10')
+        ->with('10', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
@@ -268,12 +268,12 @@ it('shows supersession history when entry supersedes others', function (): void 
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('11')
+        ->with('11', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('11')
+        ->with('11', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
@@ -319,12 +319,12 @@ it('does not show supersession history when none exists', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('12')
+        ->with('12', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('12')
+        ->with('12', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
