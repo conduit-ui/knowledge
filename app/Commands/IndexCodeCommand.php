@@ -24,14 +24,8 @@ class IndexCodeCommand extends Command
 
     protected $description = 'Index code files for semantic search';
 
-    private const DEFAULT_PATHS = [
-        '/home/jordan/projects/knowledge',
-        '/home/jordan/prefrontal-cortex',
-        '/home/jordan/packages/api-gateway',
-        '/home/jordan/packages/conduit-ui',
-        '/home/jordan/packages/monitor',
-        '/home/jordan/Sites/jordanpartridge.us',
-    ];
+    /** @var array<string> */
+    private const DEFAULT_PATHS = [];
 
     public function handle(CodeIndexerService $indexer): int
     {

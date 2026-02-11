@@ -13,7 +13,7 @@ return [
     */
 
     'prefrontal' => [
-        'url' => env('PREFRONTAL_API_URL', 'http://100.68.122.24:8080'),
+        'url' => env('PREFRONTAL_API_URL'),
         'token' => env('PREFRONTAL_API_TOKEN'),
     ],
 
@@ -29,8 +29,8 @@ return [
     */
 
     'odin' => [
-        'enabled' => env('ODIN_SYNC_ENABLED', true),
-        'url' => env('ODIN_URL', 'http://100.68.122.24:8080'),
+        'enabled' => env('ODIN_SYNC_ENABLED', false),
+        'url' => env('ODIN_URL'),
         'token' => env('ODIN_API_TOKEN', env('PREFRONTAL_API_TOKEN')),
         'timeout' => env('ODIN_TIMEOUT', 10),
         'batch_size' => env('ODIN_BATCH_SIZE', 50),

@@ -90,6 +90,21 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Project Pattern Detection
+    |--------------------------------------------------------------------------
+    |
+    | Regex patterns for detecting project names in knowledge entries.
+    | Used by PatternDetectorService to extract project associations.
+    | Leave empty to use a generic hyphenated-name pattern.
+    |
+    | Example: ['/\b(my-project)\b/i', '/\b(other-app)\b/i']
+    |
+    */
+
+    'project_patterns' => [],
+
     'ollama' => [
         'enabled' => env('OLLAMA_ENABLED', true),
         'host' => env('OLLAMA_HOST', 'localhost'),
