@@ -347,9 +347,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('passes include_superseded filter when flag is set', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('test', Mockery::on(fn ($filters): bool => isset($filters['include_superseded']) && $filters['include_superseded'] === true), 20)
+            ->with('test', Mockery::on(fn ($filters): bool => isset($filters['include_superseded']) && $filters['include_superseded'] === true), 20, null)
             ->andReturn(collect([
                 [
                     'id' => 'uuid-1',
@@ -377,9 +377,9 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('does not pass include_superseded by default', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
-            ->with('test', [], 20)
+            ->with('test', [], 20, null)
             ->andReturn(collect([]));
 
         $this->artisan('search', ['query' => 'test'])
@@ -387,7 +387,7 @@ describe('KnowledgeSearchCommand', function (): void {
     });
 
     it('shows superseded indicator on superseded entries', function (): void {
-        $this->qdrantService->shouldReceive('search')
+        $this->tieredSearch->shouldReceive('search')
             ->once()
             ->andReturn(collect([
                 [
