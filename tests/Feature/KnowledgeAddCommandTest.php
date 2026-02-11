@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Exceptions\Qdrant\DuplicateEntryException;
+use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 use App\Services\WriteGateService;
@@ -14,10 +15,16 @@ beforeEach(function (): void {
     $this->writeGateService->shouldReceive('evaluate')
         ->andReturn(['passed' => true, 'matched' => ['durable_facts'], 'reason' => ''])
         ->byDefault();
+    $this->enhancementQueue = mock(EnhancementQueueService::class);
 
     app()->instance(GitContextService::class, $this->gitService);
     app()->instance(QdrantService::class, $this->qdrantService);
     app()->instance(WriteGateService::class, $this->writeGateService);
+    app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+
+    $this->enhancementQueue->shouldReceive('queue')->zeroOrMoreTimes();
+
+    config(['search.ollama.enabled' => true]);
 });
 
 it('creates a knowledge entry with required fields', function (): void {
@@ -176,6 +183,67 @@ it('handles Qdrant upsert failure gracefully', function (): void {
         'title' => 'Failed Entry',
         '--content' => 'This will fail',
     ])->assertFailed();
+});
+
+it('queues entry for enhancement by default', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
+
+    // Reset the default expectation and set a specific one
+    $this->enhancementQueue = mock(EnhancementQueueService::class);
+    app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+
+    $this->enhancementQueue->shouldReceive('queue')
+        ->once()
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Enhanced Entry'));
+
+    $this->artisan('add', [
+        'title' => 'Enhanced Entry',
+        '--content' => 'Content to enhance',
+    ])->assertSuccessful();
+});
+
+it('skips enhancement queue with --skip-enhance flag', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
+
+    // Reset the default expectation and set a specific one
+    $this->enhancementQueue = mock(EnhancementQueueService::class);
+    app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+
+    $this->enhancementQueue->shouldNotReceive('queue');
+
+    $this->artisan('add', [
+        'title' => 'Fast Entry',
+        '--content' => 'Fast content',
+        '--skip-enhance' => true,
+    ])->assertSuccessful();
+});
+
+it('skips enhancement queue when Ollama is disabled', function (): void {
+    config(['search.ollama.enabled' => false]);
+
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
+
+    $this->enhancementQueue = mock(EnhancementQueueService::class);
+    app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+
+    $this->enhancementQueue->shouldNotReceive('queue');
+
+    $this->artisan('add', [
+        'title' => 'No Ollama Entry',
+        '--content' => 'Content without Ollama',
+    ])->assertSuccessful();
 });
 
 it('creates entry with all optional fields', function (): void {
