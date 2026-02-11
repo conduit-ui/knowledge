@@ -19,21 +19,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Odin Sync Configuration
+    | Remote Sync Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration for background sync with the Odin centralized Qdrant
-    | server. Operations are queued locally and synced when Odin is available.
+    | Configuration for background sync with a centralized Qdrant
+    | server. Operations are queued locally and synced when the remote server is available.
     | Last-write-wins conflict resolution based on updated_at timestamps.
     |
     */
 
-    'odin' => [
-        'enabled' => env('ODIN_SYNC_ENABLED', false),
-        'url' => env('ODIN_URL'),
-        'token' => env('ODIN_API_TOKEN', env('PREFRONTAL_API_TOKEN')),
-        'timeout' => env('ODIN_TIMEOUT', 10),
-        'batch_size' => env('ODIN_BATCH_SIZE', 50),
+    'remote' => [
+        'enabled' => env('REMOTE_SYNC_ENABLED', false),
+        'url' => env('REMOTE_SYNC_URL'),
+        'token' => env('REMOTE_SYNC_TOKEN', env('PREFRONTAL_API_TOKEN')),
+        'timeout' => env('REMOTE_SYNC_TIMEOUT', 10),
+        'batch_size' => env('REMOTE_SYNC_BATCH_SIZE', 50),
     ],
 
 ];

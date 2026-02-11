@@ -34,7 +34,7 @@ Embedding Server (sentence-transformers)
     ↓
 Ollama (optional - async auto-tagging via background queue)
     ↓
-Odin Sync (background sync to centralized server)
+Remote Sync (optional - background sync to centralized server)
 ```
 
 No SQLite. No schema migrations. Pure vector storage. Per-project isolation via auto-detected git namespaces.
@@ -96,7 +96,7 @@ All commands support `--project=<name>` to target a specific project namespace a
 | Command | Description |
 |---------|-------------|
 | `sync` | Bidirectional sync (--push / --pull) |
-| `sync:odin` | Background sync to Odin central server |
+| `sync:remote` | Background sync to centralized remote server |
 | `sync:purge` | Purge sync queue |
 
 ### Code Intelligence
@@ -162,9 +162,9 @@ REDIS_PORT=6379
 OLLAMA_HOST=http://localhost:11434
 ```
 
-### Odin (Production)
+### Remote Server (Production)
 
-Uses `docker-compose.odin.yml` with Tailscale networking for centralized knowledge sync.
+Uses `docker-compose.remote.yml` to bind services to a specific network interface (e.g. Tailscale, VPN, LAN) for centralized knowledge sync across multiple machines.
 
 ## Development
 

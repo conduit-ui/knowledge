@@ -14,7 +14,7 @@ use function Termwind\render;
 class StatusCommand extends Command
 {
     protected $signature = 'service:status
-                            {--odin : Use Odin (remote) configuration}';
+                            {--remote : Use remote configuration}';
 
     protected $description = 'Check service health status';
 
@@ -26,11 +26,11 @@ class StatusCommand extends Command
 
     public function handle(): int
     {
-        $composeFile = $this->option('odin') === true
-            ? 'docker-compose.odin.yml'
+        $composeFile = $this->option('remote') === true
+            ? 'docker-compose.remote.yml'
             : 'docker-compose.yml';
 
-        $environment = $this->option('odin') === true ? 'Odin (Remote)' : 'Local';
+        $environment = $this->option('remote') === true ? 'Remote' : 'Local';
 
         // Perform health checks with spinner
         $healthData = spin(

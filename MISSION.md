@@ -16,7 +16,7 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 
 ### 2. Offline-First, Sync-Later
 - **Local Qdrant**: Full functionality without network
-- **Background sync**: Queue writes, sync to Odin every N minutes
+- **Background sync**: Queue writes, sync to remote server every N minutes
 - **Read-optimized**: Instant local reads, async writes to central DB
 - **Graceful degradation**: Always functional, network optional
 
@@ -82,10 +82,10 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
                │ Background sync
                ▼
 ┌─────────────────────────────────────────┐
-│  Odin (Centralized)                     │
+│  Remote Server (Centralized)             │
 │  - Same stack as local                  │
-│  - Team knowledge repository            │
-│  - Exposed via Tailscale mesh            │
+│  - Team/shared knowledge repository     │
+│  - Exposed via VPN, Tailscale, or LAN   │
 └─────────────────────────────────────────┘
 ```
 

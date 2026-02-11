@@ -8,8 +8,8 @@ Replaced SQLite entirely with Qdrant-only architecture. No schema migrations, no
 ### Redis Caching Layer
 KnowledgeCacheService provides sub-200ms query responses through aggressive caching of embeddings, search results, and collection stats.
 
-### Odin Background Sync
-OdinSyncService syncs knowledge to centralized Odin server. Includes deletion propagation, sync purge, and bidirectional push/pull.
+### Remote Background Sync
+RemoteSyncService syncs knowledge to a centralized remote server. Includes deletion propagation, sync purge, and bidirectional push/pull. Useful for home labs and teams sharing a knowledge base.
 
 ### Entry Metadata & Staleness Detection
 EntryMetadataService tracks entry freshness with confidence degradation over time. Superseded marking instead of destructive overwrites.

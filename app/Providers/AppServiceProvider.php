@@ -12,10 +12,10 @@ use App\Services\GitContextService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
-use App\Services\OdinSyncService;
 use App\Services\OllamaService;
 use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
+use App\Services\RemoteSyncService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
 use App\Services\TieredSearchService;
@@ -170,8 +170,8 @@ class AppServiceProvider extends ServiceProvider
             $app->make(EntryMetadataService::class),
         ));
 
-        // Odin sync service
-        $this->app->singleton(OdinSyncService::class, fn ($app): \App\Services\OdinSyncService => new OdinSyncService(
+        // Remote sync service
+        $this->app->singleton(RemoteSyncService::class, fn ($app): \App\Services\RemoteSyncService => new RemoteSyncService(
             $app->make(KnowledgePathService::class)
         ));
 

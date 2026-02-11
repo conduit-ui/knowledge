@@ -3,49 +3,49 @@
 declare(strict_types=1);
 
 use App\Services\KnowledgePathService;
-use App\Services\OdinSyncService;
+use App\Services\RemoteSyncService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 
 beforeEach(function (): void {
-    $this->tempDir = sys_get_temp_dir().'/odin_sync_test_'.uniqid();
+    $this->tempDir = sys_get_temp_dir().'/remote_sync_test_'.uniqid();
     mkdir($this->tempDir, 0755, true);
 
     $this->pathService = Mockery::mock(KnowledgePathService::class);
     $this->pathService->shouldReceive('getKnowledgeDirectory')
         ->andReturn($this->tempDir);
 
-    config(['services.odin.enabled' => true]);
-    config(['services.odin.url' => 'http://test-odin.local']);
-    config(['services.odin.token' => 'test-token']);
-    config(['services.odin.timeout' => 5]);
-    config(['services.odin.batch_size' => 50]);
+    config(['services.remote.enabled' => true]);
+    config(['services.remote.url' => 'http://test-remote.local']);
+    config(['services.remote.token' => 'test-token']);
+    config(['services.remote.timeout' => 5]);
+    config(['services.remote.batch_size' => 50]);
 });
 
 afterEach(function (): void {
     removeDirectory($this->tempDir);
 });
 
-describe('OdinSyncService configuration', function (): void {
+describe('RemoteSyncService configuration', function (): void {
     it('reports enabled when config is true', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isEnabled())->toBeTrue();
     });
 
     it('reports disabled when config is false', function (): void {
-        config(['services.odin.enabled' => false]);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.enabled' => false]);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isEnabled())->toBeFalse();
     });
 });
 
-describe('OdinSyncService queue operations', function (): void {
+describe('RemoteSyncService queue operations', function (): void {
     it('queues an entry for sync', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $entry = [
             'id' => 'test-1',
@@ -59,8 +59,8 @@ describe('OdinSyncService queue operations', function (): void {
     });
 
     it('does not queue when disabled', function (): void {
-        config(['services.odin.enabled' => false]);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.enabled' => false]);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => 'test-1', 'title' => 'Test', 'content' => 'Content']);
 
@@ -68,7 +68,7 @@ describe('OdinSyncService queue operations', function (): void {
     });
 
     it('queues multiple entries', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'First', 'content' => 'Content 1']);
         $service->queueForSync(['id' => '2', 'title' => 'Second', 'content' => 'Content 2']);
@@ -78,7 +78,7 @@ describe('OdinSyncService queue operations', function (): void {
     });
 
     it('clears the queue', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
         expect($service->getPendingCount())->toBe(1);
@@ -88,22 +88,22 @@ describe('OdinSyncService queue operations', function (): void {
     });
 
     it('handles empty queue file gracefully', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->getPendingCount())->toBe(0);
     });
 
     it('handles corrupted queue file gracefully', function (): void {
         file_put_contents($this->tempDir.'/sync_queue.json', 'not-valid-json');
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->getPendingCount())->toBe(0);
     });
 });
 
-describe('OdinSyncService processQueue', function (): void {
+describe('RemoteSyncService processQueue', function (): void {
     it('processes empty queue', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $result = $service->processQueue();
 
@@ -111,8 +111,8 @@ describe('OdinSyncService processQueue', function (): void {
     });
 
     it('returns remaining when no token is set', function (): void {
-        config(['services.odin.token' => '']);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.token' => '']);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
         $result = $service->processQueue();
@@ -129,7 +129,7 @@ describe('OdinSyncService processQueue', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test Entry', 'content' => 'Content']);
         $result = $service->processQueue();
@@ -149,7 +149,7 @@ describe('OdinSyncService processQueue', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test Entry', 'content' => 'Content']);
         $result = $service->processQueue();
@@ -169,7 +169,7 @@ describe('OdinSyncService processQueue', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test Entry', 'content' => 'Content'], 'delete');
         $result = $service->processQueue();
@@ -189,7 +189,7 @@ describe('OdinSyncService processQueue', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content'], 'delete');
         $result = $service->processQueue();
@@ -202,9 +202,9 @@ describe('OdinSyncService processQueue', function (): void {
     });
 });
 
-describe('OdinSyncService conflict resolution', function (): void {
+describe('RemoteSyncService conflict resolution', function (): void {
     it('picks local when local is newer', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local', 'updated_at' => '2025-06-01T12:00:00+00:00'];
         $remote = ['title' => 'Remote', 'updated_at' => '2025-05-01T12:00:00+00:00'];
@@ -215,7 +215,7 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 
     it('picks remote when remote is newer', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local', 'updated_at' => '2025-05-01T12:00:00+00:00'];
         $remote = ['title' => 'Remote', 'updated_at' => '2025-06-01T12:00:00+00:00'];
@@ -226,7 +226,7 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 
     it('picks local when timestamps are equal', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local', 'updated_at' => '2025-06-01T12:00:00+00:00'];
         $remote = ['title' => 'Remote', 'updated_at' => '2025-06-01T12:00:00+00:00'];
@@ -237,7 +237,7 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 
     it('picks local when both timestamps are empty', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local'];
         $remote = ['title' => 'Remote'];
@@ -248,7 +248,7 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 
     it('picks remote when local timestamp is empty', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local'];
         $remote = ['title' => 'Remote', 'updated_at' => '2025-06-01T12:00:00+00:00'];
@@ -259,7 +259,7 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 
     it('picks local when remote timestamp is empty', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $local = ['title' => 'Local', 'updated_at' => '2025-06-01T12:00:00+00:00'];
         $remote = ['title' => 'Remote'];
@@ -270,9 +270,9 @@ describe('OdinSyncService conflict resolution', function (): void {
     });
 });
 
-describe('OdinSyncService status', function (): void {
+describe('RemoteSyncService status', function (): void {
     it('returns default status when no status file exists', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $status = $service->getStatus();
 
@@ -283,7 +283,7 @@ describe('OdinSyncService status', function (): void {
     });
 
     it('returns pending status when queue has items', function (): void {
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
         $status = $service->getStatus();
@@ -301,7 +301,7 @@ describe('OdinSyncService status', function (): void {
             'last_error' => null,
         ]));
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         // Add items to queue - this makes the queue non-empty
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
@@ -315,7 +315,7 @@ describe('OdinSyncService status', function (): void {
 
     it('handles corrupted status file gracefully', function (): void {
         file_put_contents($this->tempDir.'/sync_status.json', 'not-valid-json');
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         $status = $service->getStatus();
 
@@ -330,7 +330,7 @@ describe('OdinSyncService status', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
         $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
         $service->processQueue();
 
@@ -342,17 +342,17 @@ describe('OdinSyncService status', function (): void {
     });
 });
 
-describe('OdinSyncService connectivity', function (): void {
+describe('RemoteSyncService connectivity', function (): void {
     it('reports unavailable when URL is empty', function (): void {
-        config(['services.odin.url' => '']);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.url' => '']);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isAvailable())->toBeFalse();
     });
 
     it('reports unavailable when token is empty', function (): void {
-        config(['services.odin.token' => '']);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.token' => '']);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isAvailable())->toBeFalse();
     });
@@ -365,7 +365,7 @@ describe('OdinSyncService connectivity', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isAvailable())->toBeTrue();
 
@@ -380,7 +380,7 @@ describe('OdinSyncService connectivity', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->isAvailable())->toBeFalse();
 
@@ -388,15 +388,15 @@ describe('OdinSyncService connectivity', function (): void {
     });
 });
 
-describe('OdinSyncService pull', function (): void {
+describe('RemoteSyncService pull', function (): void {
     it('returns empty when token is missing', function (): void {
-        config(['services.odin.token' => '']);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.token' => '']);
+        $service = new RemoteSyncService($this->pathService);
 
-        expect($service->pullFromOdin())->toBe([]);
+        expect($service->pullFromRemote())->toBe([]);
     });
 
-    it('pulls entries from Odin', function (): void {
+    it('pulls entries from remote', function (): void {
         $entries = [
             'data' => [
                 ['title' => 'Entry 1', 'content' => 'Content 1'],
@@ -411,8 +411,8 @@ describe('OdinSyncService pull', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
-        $result = $service->pullFromOdin('myproject');
+        $service = new RemoteSyncService($this->pathService);
+        $result = $service->pullFromRemote('myproject');
 
         expect($result)->toHaveCount(2);
         expect($result[0]['title'])->toBe('Entry 1');
@@ -428,8 +428,8 @@ describe('OdinSyncService pull', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
-        $result = $service->pullFromOdin();
+        $service = new RemoteSyncService($this->pathService);
+        $result = $service->pullFromRemote();
 
         expect($result)->toBe([]);
 
@@ -444,8 +444,8 @@ describe('OdinSyncService pull', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
-        $result = $service->pullFromOdin();
+        $service = new RemoteSyncService($this->pathService);
+        $result = $service->pullFromRemote();
 
         expect($result)->toBe([]);
 
@@ -453,15 +453,15 @@ describe('OdinSyncService pull', function (): void {
     });
 });
 
-describe('OdinSyncService listProjects', function (): void {
+describe('RemoteSyncService listProjects', function (): void {
     it('returns empty when token is missing', function (): void {
-        config(['services.odin.token' => '']);
-        $service = new OdinSyncService($this->pathService);
+        config(['services.remote.token' => '']);
+        $service = new RemoteSyncService($this->pathService);
 
         expect($service->listProjects())->toBe([]);
     });
 
-    it('returns projects list from Odin', function (): void {
+    it('returns projects list from remote', function (): void {
         $projects = [
             'data' => [
                 ['name' => 'project-a', 'entry_count' => 10, 'last_synced' => '2025-06-01'],
@@ -476,7 +476,7 @@ describe('OdinSyncService listProjects', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
         $result = $service->listProjects();
 
         expect($result)->toHaveCount(2);
@@ -493,7 +493,7 @@ describe('OdinSyncService listProjects', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
         $result = $service->listProjects();
 
         expect($result)->toBe([]);
@@ -509,7 +509,7 @@ describe('OdinSyncService listProjects', function (): void {
         $mockClient = new Client(['handler' => $handlerStack]);
         app()->instance(Client::class, $mockClient);
 
-        $service = new OdinSyncService($this->pathService);
+        $service = new RemoteSyncService($this->pathService);
         $result = $service->listProjects();
 
         expect($result)->toBe([]);

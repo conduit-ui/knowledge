@@ -2,7 +2,7 @@
 # Binds to a specific network interface (e.g. Tailscale, VPN, LAN)
 #
 # Usage:
-#   BIND_ADDR=100.68.122.24 docker compose -f docker-compose.odin.yml up -d
+#   BIND_ADDR=192.168.1.100 docker compose -f docker-compose.remote.yml up -d
 #
 # Set BIND_ADDR to your server's interface IP (Tailscale, LAN, etc.)
 # Defaults to 127.0.0.1 (localhost only) if not set.

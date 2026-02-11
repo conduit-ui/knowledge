@@ -26,7 +26,7 @@ describe('service:logs command', function () {
             }
         });
 
-        it('fails when odin docker-compose file does not exist', function () {
+        it('fails when remote docker-compose file does not exist', function () {
             $tempDir = sys_get_temp_dir().'/know-test-'.uniqid();
             mkdir($tempDir, 0755, true);
             $this->app->setBasePath($tempDir);
@@ -34,7 +34,7 @@ describe('service:logs command', function () {
             try {
                 $this->artisan('service:logs', [
                     'service' => 'qdrant',
-                    '--odin' => true,
+                    '--remote' => true,
                 ])
                     ->assertFailed();
             } finally {
@@ -69,11 +69,11 @@ describe('service:logs command', function () {
             Process::assertRan(fn ($process) => in_array('--tail=100', $process->command));
         });
 
-        it('uses odin compose file when odin flag is set', function () {
-            $this->artisan('service:logs', ['service' => 'qdrant', '--odin' => true])
+        it('uses remote compose file when remote flag is set', function () {
+            $this->artisan('service:logs', ['service' => 'qdrant', '--remote' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command));
         });
 
         it('returns exit code from docker compose', function () {
@@ -122,7 +122,7 @@ describe('service:logs command', function () {
             expect($signature)->toContain('{service?');
             expect($signature)->toContain('--f|follow');
             expect($signature)->toContain('--tail=50');
-            expect($signature)->toContain('--odin');
+            expect($signature)->toContain('--remote');
         });
 
         it('has correct description', function () {

@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Services\OdinSyncService;
 use App\Services\QdrantService;
+use App\Services\RemoteSyncService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
-class OdinSyncCommand extends Command
+class RemoteSyncCommand extends Command
 {
     /**
      * @var string
      */
-    protected $signature = 'sync:odin
-                            {--push : Push queued entries to Odin}
-                            {--pull : Pull entries from Odin}
+    protected $signature = 'sync:remote
+                            {--push : Push queued entries to remote server}
+                            {--pull : Pull entries from remote server}
                             {--status : Show sync status only}
                             {--clear : Clear the sync queue}
                             {--project=default : Project namespace to sync}';
@@ -24,26 +24,26 @@ class OdinSyncCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'Synchronize knowledge with Odin centralized server';
+    protected $description = 'Synchronize knowledge with remote centralized server';
 
-    public function handle(OdinSyncService $odinSync, QdrantService $qdrant): int
+    public function handle(RemoteSyncService $remoteSync, QdrantService $qdrant): int
     {
-        if (! $odinSync->isEnabled()) {
-            $this->error('Odin sync is disabled. Set ODIN_SYNC_ENABLED=true to enable.');
+        if (! $remoteSync->isEnabled()) {
+            $this->error('Remote sync is disabled. Set REMOTE_SYNC_ENABLED=true to enable.');
 
             return self::FAILURE;
         }
 
         // Status-only mode
         if ((bool) $this->option('status')) {
-            $this->displayStatus($odinSync);
+            $this->displayStatus($remoteSync);
 
             return self::SUCCESS;
         }
 
         // Clear queue
         if ((bool) $this->option('clear')) {
-            $odinSync->clearQueue();
+            $remoteSync->clearQueue();
             $this->info('Sync queue cleared.');
 
             return self::SUCCESS;
@@ -61,19 +61,19 @@ class OdinSyncCommand extends Command
         }
 
         // Check connectivity
-        $this->line('Checking Odin connectivity...');
-        $available = $odinSync->isAvailable();
+        $this->line('Checking remote server connectivity...');
+        $available = $remoteSync->isAvailable();
 
         if (! $available) {
-            $this->warn('Odin server is not reachable. Operations will remain queued for later sync.');
+            $this->warn('Remote server is not reachable. Operations will remain queued for later sync.');
 
-            $status = $odinSync->getStatus();
+            $status = $remoteSync->getStatus();
             $this->line("Pending operations: {$status['pending']}");
 
             return self::SUCCESS;
         }
 
-        $this->info('Odin server connected.');
+        $this->info('Remote server connected.');
 
         $pushResult = ['synced' => 0, 'failed' => 0, 'remaining' => 0];
         $pullCount = 0;
@@ -81,14 +81,14 @@ class OdinSyncCommand extends Command
         // Push queued items
         if ($push) {
             $this->line('Processing sync queue...');
-            $pushResult = $odinSync->processQueue();
+            $pushResult = $remoteSync->processQueue();
         }
 
-        // Pull from Odin
+        // Pull from remote server
         if ($pull) {
-            $this->line("Pulling entries from Odin for project '{$project}'...");
-            $entries = $odinSync->pullFromOdin($project);
-            $pullCount = $this->mergeEntries($entries, $qdrant, $odinSync, $project);
+            $this->line("Pulling entries from remote server for project '{$project}'...");
+            $entries = $remoteSync->pullFromRemote($project);
+            $pullCount = $this->mergeEntries($entries, $qdrant, $remoteSync, $project);
         }
 
         $this->displaySyncSummary($pushResult, $pullCount, $pull);
@@ -104,7 +104,7 @@ class OdinSyncCommand extends Command
     private function mergeEntries(
         array $remoteEntries,
         QdrantService $qdrant,
-        OdinSyncService $odinSync,
+        RemoteSyncService $remoteSync,
         string $project,
     ): int {
         $merged = 0;
@@ -121,14 +121,14 @@ class OdinSyncCommand extends Command
 
             if ($local !== null) {
                 // Conflict resolution: last-write-wins
-                $winner = $odinSync->resolveConflict($local, $remote);
+                $winner = $remoteSync->resolveConflict($local, $remote);
                 if ($winner === $remote) {
                     $entry = $this->buildEntryFromRemote($remote, $local['id']);
                     $qdrant->upsert($entry, $project);
                     $merged++;
                 }
             } else {
-                // New entry from Odin
+                // New entry from remote server
                 $entry = $this->buildEntryFromRemote($remote, Str::uuid()->toString());
                 $qdrant->upsert($entry, $project);
                 $merged++;
@@ -173,9 +173,9 @@ class OdinSyncCommand extends Command
         return $entry;
     }
 
-    private function displayStatus(OdinSyncService $odinSync): void
+    private function displayStatus(RemoteSyncService $remoteSync): void
     {
-        $status = $odinSync->getStatus();
+        $status = $remoteSync->getStatus();
 
         $statusColor = match ($status['status']) {
             'synced' => 'green',
@@ -185,7 +185,7 @@ class OdinSyncCommand extends Command
         };
 
         $this->newLine();
-        $this->line('<fg=gray>Odin Sync Status</>');
+        $this->line('<fg=gray>Remote Sync Status</>');
         $this->table(
             ['Property', 'Value'],
             [
@@ -193,7 +193,7 @@ class OdinSyncCommand extends Command
                 ['Pending Operations', (string) $status['pending']],
                 ['Last Synced', $status['last_synced'] ?? 'Never'],
                 ['Last Error', $status['last_error'] ?? 'None'],
-                ['Odin URL', (string) config('services.odin.url', 'Not configured')],
+                ['Remote URL', (string) config('services.remote.url', 'Not configured')],
             ]
         );
     }
@@ -204,7 +204,7 @@ class OdinSyncCommand extends Command
     private function displaySyncSummary(array $pushResult, int $pullCount, bool $pulled): void
     {
         $this->newLine();
-        $this->info('=== Odin Sync Summary ===');
+        $this->info('=== Remote Sync Summary ===');
 
         $rows = [
             ['Pushed (synced)', (string) $pushResult['synced']],
