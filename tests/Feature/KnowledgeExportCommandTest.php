@@ -12,6 +12,7 @@ describe('KnowledgeExportCommand', function (): void {
 
         app()->instance(QdrantService::class, $this->qdrant);
         app()->instance(MarkdownExporter::class, $this->markdownExporter);
+        mockProjectDetector();
 
         // Create temp directory for tests
         if (! is_dir('/tmp/export-tests')) {
@@ -36,7 +37,7 @@ describe('KnowledgeExportCommand', function (): void {
     it('fails when entry not found', function (): void {
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(999)
+            ->with(999, 'default')
             ->andReturn(null);
 
         $this->artisan('export', ['id' => '999'])
@@ -59,7 +60,7 @@ describe('KnowledgeExportCommand', function (): void {
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->markdownExporter->shouldReceive('exportArray')
@@ -93,7 +94,7 @@ Test content')
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $this->markdownExporter->shouldReceive('exportArray')
@@ -129,7 +130,7 @@ Test content');
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(1)
+            ->with(1, 'default')
             ->andReturn($entry);
 
         $expectedJson = json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -159,7 +160,7 @@ Test content');
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(2)
+            ->with(2, 'default')
             ->andReturn($entry);
 
         $this->artisan('export', [
@@ -192,7 +193,7 @@ Test content');
 
         $this->qdrant->shouldReceive('getById')
             ->once()
-            ->with(3)
+            ->with(3, 'default')
             ->andReturn($entry);
 
         $this->markdownExporter->shouldReceive('exportArray')

@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\MarkdownExporter;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeExportAllCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
     protected $signature = 'export:all
                             {--format=markdown : Export format (markdown, json)}
                             {--output=./docs : Output directory path}
-                            {--category= : Export only entries from a specific category}';
+                            {--category= : Export only entries from a specific category}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string
@@ -39,7 +44,7 @@ class KnowledgeExportAllCommand extends Command
         }
 
         // Get all entries (use high limit)
-        $entries = $qdrant->search('', $filters, 10000);
+        $entries = $qdrant->search('', $filters, 10000, $this->resolveProject());
 
         if ($entries->isEmpty()) {
             $this->warn('No entries found to export.');

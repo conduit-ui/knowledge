@@ -8,11 +8,13 @@ use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
 use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
+use App\Services\GitContextService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
 use App\Services\OdinSyncService;
 use App\Services\OllamaService;
+use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
 use App\Services\StubEmbeddingService;
@@ -146,6 +148,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Write gate service
         $this->app->singleton(WriteGateService::class, fn (): \App\Services\WriteGateService => new WriteGateService);
+
+        // Project detector service
+        $this->app->singleton(ProjectDetectorService::class, fn ($app): ProjectDetectorService => new ProjectDetectorService(
+            $app->make(GitContextService::class)
+        ));
 
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(

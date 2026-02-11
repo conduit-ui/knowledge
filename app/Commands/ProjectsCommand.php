@@ -4,63 +4,57 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Services\OdinSyncService;
+use App\Services\ProjectDetectorService;
+use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
+use function Laravel\Prompts\table;
+use function Laravel\Prompts\warning;
 
 class ProjectsCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected $signature = 'projects
-                            {--local : Show only local project collections}';
+    protected $signature = 'projects';
 
-    /**
-     * @var string
-     */
-    protected $description = 'List synced knowledge base projects from Odin';
+    protected $description = 'List all project knowledge bases';
 
-    public function handle(OdinSyncService $odinSync): int
+    public function handle(QdrantService $qdrant, ProjectDetectorService $detector): int
     {
-        if ((bool) $this->option('local')) {
-            $this->info('Local project listing requires Qdrant collection enumeration.');
-            $this->line('Use "know stats" to see current project statistics.');
+        $currentProject = $detector->detect();
+
+        $collections = spin(
+            fn (): array => $qdrant->listCollections(),
+            'Fetching project collections...'
+        );
+
+        if ($collections === []) {
+            warning('No project knowledge bases found.');
 
             return self::SUCCESS;
         }
 
-        if (! $odinSync->isEnabled()) {
-            $this->error('Odin sync is disabled. Set ODIN_SYNC_ENABLED=true to enable.');
-
-            return self::FAILURE;
-        }
-
-        $this->line('Fetching projects from Odin...');
-
-        if (! $odinSync->isAvailable()) {
-            $this->warn('Odin server is not reachable. Cannot list remote projects.');
-
-            return self::SUCCESS;
-        }
-
-        $projects = $odinSync->listProjects();
-
-        if ($projects === []) {
-            $this->info('No projects found on Odin server.');
-
-            return self::SUCCESS;
-        }
+        info('Project Knowledge Bases');
+        $this->newLine();
 
         $rows = [];
-        foreach ($projects as $project) {
+        foreach ($collections as $collection) {
+            $projectName = str_replace('knowledge_', '', $collection);
+            $isCurrent = $projectName === $currentProject ? ' (current)' : '';
+
+            $count = $qdrant->count($projectName);
+
             $rows[] = [
-                $project['name'],
-                (string) $project['entry_count'],
-                $project['last_synced'] ?? 'Never',
+                $projectName.$isCurrent,
+                $collection,
+                (string) $count,
             ];
         }
 
-        $this->table(['Project', 'Entries', 'Last Synced'], $rows);
+        table(['Project', 'Collection', 'Entries'], $rows);
+
+        $this->newLine();
+        $this->line("<fg=gray>Current project: <fg=cyan>{$currentProject}</></>");
 
         return self::SUCCESS;
     }

@@ -16,6 +16,7 @@ beforeEach(function (): void {
         ->andReturn(['passed' => true, 'matched' => ['durable_facts'], 'reason' => ''])
         ->byDefault();
     $this->app->instance(WriteGateService::class, $this->mockWriteGate);
+    mockProjectDetector();
 });
 
 afterEach(function (): void {

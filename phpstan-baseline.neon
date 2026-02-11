@@ -41,11 +41,6 @@ parameters:
 			path: app/Commands/KnowledgeListCommand.php
 
 		-
-			message: "#^Parameter \\#2 \\$filters of method App\\\\Services\\\\TieredSearchService\\:\\:search\\(\\) expects array\\<string, string\\>, array\\<string, string\\|true\\> given\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeSearchCommand.php
-
-		-
 			message: "#^Variable \\$tags in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeSearchCommand.php

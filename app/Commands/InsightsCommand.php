@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\PatternDetectorService;
 use App\Services\QdrantService;
 use App\Services\ThemeClassifierService;
@@ -17,11 +18,15 @@ use function Laravel\Prompts\warning;
 
 class InsightsCommand extends Command
 {
+    use ResolvesProject;
+
     protected $signature = 'insights
                             {--themes : Show theme classification analysis}
                             {--patterns : Show pattern detection analysis}
                             {--classify-entry= : Classify a specific entry by ID}
-                            {--limit=100 : Number of entries to analyze}';
+                            {--limit=100 : Number of entries to analyze}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Analyze knowledge base for themes, patterns, and insights';
 

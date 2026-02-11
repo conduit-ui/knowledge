@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\MarkdownExporter;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
 class KnowledgeExportCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
     protected $signature = 'export
                             {id : The ID of the knowledge entry to export}
                             {--format=markdown : Export format (markdown, json)}
-                            {--output= : Output file path (default: stdout)}';
+                            {--output= : Output file path (default: stdout)}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string
@@ -39,7 +44,7 @@ class KnowledgeExportCommand extends Command
             return self::FAILURE;
         }
 
-        $entry = app(QdrantService::class)->getById((int) $id);
+        $entry = app(QdrantService::class)->getById((int) $id, $this->resolveProject());
 
         if ($entry === null) {
             $this->error('Entry not found.');

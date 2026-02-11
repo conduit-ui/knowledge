@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
@@ -14,6 +15,8 @@ use function Laravel\Prompts\table;
 
 class KnowledgeUpdateCommand extends Command
 {
+    use ResolvesProject;
+
     protected $signature = 'update
                             {id : The ID of the knowledge entry to update}
                             {--title= : New title}
@@ -26,7 +29,9 @@ class KnowledgeUpdateCommand extends Command
                             {--status= : Status (draft, validated, deprecated)}
                             {--module= : Module name}
                             {--source= : Source URL or reference}
-                            {--evidence= : Supporting evidence or reference}';
+                            {--evidence= : Supporting evidence or reference}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Update an existing knowledge entry';
 
@@ -48,9 +53,11 @@ class KnowledgeUpdateCommand extends Command
         // @codeCoverageIgnoreEnd
         $id = $idArg;
 
+        $project = $this->resolveProject();
+
         // Fetch existing entry
         $entry = spin(
-            fn (): ?array => $qdrant->getById($id),
+            fn (): ?array => $qdrant->getById($id, $project),
             'Fetching entry...'
         );
 
@@ -190,7 +197,7 @@ class KnowledgeUpdateCommand extends Command
 
         // Save to Qdrant
         $success = spin(
-            fn (): bool => $qdrant->upsert($normalizedEntry),
+            fn (): bool => $qdrant->upsert($normalizedEntry, $project),
             'Updating knowledge entry...'
         );
 

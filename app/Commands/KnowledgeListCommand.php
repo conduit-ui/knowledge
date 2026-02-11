@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
@@ -13,6 +14,8 @@ use function Laravel\Prompts\table;
 
 class KnowledgeListCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
@@ -22,7 +25,9 @@ class KnowledgeListCommand extends Command
                             {--status= : Filter by status}
                             {--module= : Filter by module}
                             {--limit=20 : Maximum number of entries to display}
-                            {--offset= : Skip N entries (use point ID for pagination)}';
+                            {--offset= : Skip N entries (use point ID for pagination)}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string
@@ -51,7 +56,7 @@ class KnowledgeListCommand extends Command
 
         // Use scroll to get entries (no vector search needed)
         $results = spin(
-            fn (): \Illuminate\Support\Collection => $qdrant->scroll($filters, $limit, 'default', $parsedOffset),
+            fn (): \Illuminate\Support\Collection => $qdrant->scroll($filters, $limit, $this->resolveProject(), $parsedOffset),
             'Fetching entries...'
         );
 

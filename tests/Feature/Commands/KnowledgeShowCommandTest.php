@@ -7,6 +7,7 @@ use App\Services\QdrantService;
 beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
+    mockProjectDetector();
 
     // Default: no supersession history (overridden in specific tests)
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
@@ -32,12 +33,12 @@ it('shows full details of an entry', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('1')
+        ->with(1, 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('1')
+        ->with(1, 'default')
         ->andReturn(true);
 
     $this->artisan('show', ['id' => '1'])
@@ -64,12 +65,12 @@ it('shows entry with minimal fields', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('2')
+        ->with(2, 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('2')
+        ->with(2, 'default')
         ->andReturn(true);
 
     $this->artisan('show', ['id' => '2'])
@@ -96,12 +97,12 @@ it('shows usage statistics', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('3')
+        ->with(3, 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('3')
+        ->with(3, 'default')
         ->andReturn(true);
 
     $this->artisan('show', ['id' => '3'])
@@ -127,12 +128,12 @@ it('increments usage count when viewing', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('4')
+        ->with(4, 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('4')
+        ->with(4, 'default')
         ->andReturn(true);
 
     $this->artisan('show', ['id' => '4'])
@@ -142,7 +143,7 @@ it('increments usage count when viewing', function (): void {
 it('shows error when entry not found', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('9999')
+        ->with(9999, 'default')
         ->andReturn(null);
 
     $this->artisan('show', ['id' => '9999'])
@@ -153,7 +154,7 @@ it('shows error when entry not found', function (): void {
 it('validates id must be numeric', function (): void {
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('abc')
+        ->with('abc', 'default')
         ->andReturn(null);
 
     $this->artisan('show', ['id' => 'abc'])
@@ -178,12 +179,12 @@ it('shows timestamps', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('5')
+        ->with(5, 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('5')
+        ->with(5, 'default')
         ->andReturn(true);
 
     // Just verify command runs successfully - timestamps render via Laravel Prompts
@@ -220,12 +221,12 @@ it('shows superseded indicator for superseded entries', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('10')
+        ->with('10', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('10')
+        ->with('10', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
@@ -267,12 +268,12 @@ it('shows supersession history when entry supersedes others', function (): void 
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('11')
+        ->with('11', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('11')
+        ->with('11', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')
@@ -318,12 +319,12 @@ it('does not show supersession history when none exists', function (): void {
 
     $this->qdrantMock->shouldReceive('getById')
         ->once()
-        ->with('12')
+        ->with('12', 'default')
         ->andReturn($entry);
 
     $this->qdrantMock->shouldReceive('incrementUsage')
         ->once()
-        ->with('12')
+        ->with('12', 'default')
         ->andReturn(true);
 
     $this->qdrantMock->shouldReceive('getSupersessionHistory')

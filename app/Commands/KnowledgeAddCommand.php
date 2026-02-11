@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
@@ -20,6 +21,8 @@ use function Laravel\Prompts\warning;
 
 class KnowledgeAddCommand extends Command
 {
+    use ResolvesProject;
+
     protected $signature = 'add
                             {title : The title of the knowledge entry}
                             {--content= : The content of the knowledge entry}
@@ -38,7 +41,9 @@ class KnowledgeAddCommand extends Command
                             {--commit= : Git commit hash}
                             {--no-git : Skip automatic git context detection}
                             {--force : Skip write gate and duplicate detection}
-                            {--skip-enhance : Skip queueing for Ollama enhancement}';
+                            {--skip-enhance : Skip queueing for Ollama enhancement}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Add a new knowledge entry';
 
@@ -172,7 +177,7 @@ class KnowledgeAddCommand extends Command
         $checkDuplicates = ! $force;
         try {
             $success = spin(
-                fn (): bool => $qdrant->upsert($data, 'default', $checkDuplicates),
+                fn (): bool => $qdrant->upsert($data, $this->resolveProject(), $checkDuplicates),
                 'Storing knowledge entry...'
             );
 

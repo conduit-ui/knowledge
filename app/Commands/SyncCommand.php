@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\DeletionTracker;
 use App\Services\QdrantService;
 use GuzzleHttp\Client;
@@ -13,6 +14,8 @@ use LaravelZero\Framework\Commands\Command;
 
 class SyncCommand extends Command
 {
+    use ResolvesProject;
+
     /**
      * @var string
      */
@@ -20,7 +23,9 @@ class SyncCommand extends Command
                             {--pull : Pull entries from cloud only}
                             {--push : Push local entries to cloud only}
                             {--delete : Delete cloud entries that do not exist locally (requires --push)}
-                            {--full-sync : Compare local vs cloud and remove orphaned cloud entries}';
+                            {--full-sync : Compare local vs cloud and remove orphaned cloud entries}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     /**
      * @var string

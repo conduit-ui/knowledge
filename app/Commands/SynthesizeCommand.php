@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\ResolvesProject;
 use App\Services\QdrantService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -17,6 +18,8 @@ use function Laravel\Prompts\warning;
 
 class SynthesizeCommand extends Command
 {
+    use ResolvesProject;
+
     protected $signature = 'synthesize
                             {--dedupe : Find and merge duplicate entries}
                             {--digest : Generate a daily digest entry}
@@ -24,7 +27,9 @@ class SynthesizeCommand extends Command
                             {--dry-run : Show what would be done without making changes}
                             {--similarity=0.92 : Similarity threshold for deduplication (0.0-1.0)}
                             {--stale-days=30 : Days before low-confidence entries are considered stale}
-                            {--confidence-floor=50 : Confidence threshold for stale detection}';
+                            {--confidence-floor=50 : Confidence threshold for stale detection}
+                            {--project= : Override project namespace}
+                            {--global : Search across all projects}';
 
     protected $description = 'Synthesize knowledge: dedupe, digest, and archive stale entries';
 
