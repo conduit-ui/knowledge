@@ -115,6 +115,94 @@ describe('KnowledgeStatsCommand', function (): void {
             ->assertSuccessful();
     });
 
+    it('displays odin sync status with unknown status using gray color', function (): void {
+        $qdrant = mock(QdrantService::class);
+        $odinSync = mock(OdinSyncService::class);
+        app()->instance(QdrantService::class, $qdrant);
+        app()->instance(OdinSyncService::class, $odinSync);
+
+        $entries = collect([
+            [
+                'id' => 1,
+                'title' => 'Test Entry',
+                'content' => 'Content',
+                'category' => 'testing',
+                'status' => 'validated',
+                'usage_count' => 5,
+                'tags' => [],
+            ],
+        ]);
+
+        $qdrant->shouldReceive('count')
+            ->once()
+            ->andReturn(1);
+
+        $qdrant->shouldReceive('scroll')
+            ->once()
+            ->with([], 1)
+            ->andReturn($entries);
+
+        $qdrant->shouldReceive('getCacheService')
+            ->once()
+            ->andReturnNull();
+
+        $odinSync->shouldReceive('isEnabled')
+            ->once()
+            ->andReturn(true);
+
+        $odinSync->shouldReceive('getStatus')
+            ->once()
+            ->andReturn([
+                'status' => 'unknown-status',
+                'pending' => 0,
+                'last_synced' => null,
+                'last_error' => null,
+            ]);
+
+        $this->artisan('stats')
+            ->assertSuccessful();
+    });
+
+    it('displays odin sync error status in red', function (): void {
+        $qdrant = mock(QdrantService::class);
+        $odinSync = mock(OdinSyncService::class);
+        app()->instance(QdrantService::class, $qdrant);
+        app()->instance(OdinSyncService::class, $odinSync);
+
+        $qdrant->shouldReceive('count')->once()->andReturn(0);
+        $qdrant->shouldReceive('scroll')->once()->andReturn(collect([]));
+        $qdrant->shouldReceive('getCacheService')->once()->andReturnNull();
+        $odinSync->shouldReceive('isEnabled')->once()->andReturn(true);
+        $odinSync->shouldReceive('getStatus')->once()->andReturn([
+            'status' => 'error',
+            'pending' => 0,
+            'last_synced' => null,
+            'last_error' => 'Connection refused',
+        ]);
+
+        $this->artisan('stats')->assertSuccessful();
+    });
+
+    it('displays odin sync pending status in yellow', function (): void {
+        $qdrant = mock(QdrantService::class);
+        $odinSync = mock(OdinSyncService::class);
+        app()->instance(QdrantService::class, $qdrant);
+        app()->instance(OdinSyncService::class, $odinSync);
+
+        $qdrant->shouldReceive('count')->once()->andReturn(0);
+        $qdrant->shouldReceive('scroll')->once()->andReturn(collect([]));
+        $qdrant->shouldReceive('getCacheService')->once()->andReturnNull();
+        $odinSync->shouldReceive('isEnabled')->once()->andReturn(true);
+        $odinSync->shouldReceive('getStatus')->once()->andReturn([
+            'status' => 'pending',
+            'pending' => 5,
+            'last_synced' => null,
+            'last_error' => null,
+        ]);
+
+        $this->artisan('stats')->assertSuccessful();
+    });
+
     it('displays odin sync status when enabled', function (): void {
         $qdrant = mock(QdrantService::class);
         $odinSync = mock(OdinSyncService::class);

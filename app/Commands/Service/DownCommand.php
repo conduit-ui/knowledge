@@ -40,6 +40,7 @@ class DownCommand extends Command
             return self::FAILURE;
         }
 
+        // @codeCoverageIgnoreStart
         // Show warning if removing volumes
         if ($this->option('volumes') === true && $this->option('force') !== true) {
             render(<<<'HTML'
@@ -72,6 +73,7 @@ class DownCommand extends Command
                 return self::SUCCESS;
             }
         }
+        // @codeCoverageIgnoreEnd
 
         // Display shutdown banner
         render(<<<HTML

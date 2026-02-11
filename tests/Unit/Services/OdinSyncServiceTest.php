@@ -292,6 +292,27 @@ describe('OdinSyncService status', function (): void {
         expect($status['pending'])->toBe(1);
     });
 
+    it('returns pending when status file says idle but queue has items', function (): void {
+        // Write a status file with 'idle' status
+        file_put_contents($this->tempDir.'/sync_status.json', json_encode([
+            'status' => 'idle',
+            'pending' => 0,
+            'last_synced' => '2025-06-01T12:00:00+00:00',
+            'last_error' => null,
+        ]));
+
+        $service = new OdinSyncService($this->pathService);
+
+        // Add items to queue - this makes the queue non-empty
+        $service->queueForSync(['id' => '1', 'title' => 'Test', 'content' => 'Content']);
+
+        $status = $service->getStatus();
+
+        // Status should be upgraded from 'idle' to 'pending' because queue has items
+        expect($status['status'])->toBe('pending');
+        expect($status['pending'])->toBe(1);
+    });
+
     it('handles corrupted status file gracefully', function (): void {
         file_put_contents($this->tempDir.'/sync_status.json', 'not-valid-json');
         $service = new OdinSyncService($this->pathService);

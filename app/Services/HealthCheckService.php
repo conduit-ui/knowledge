@@ -96,6 +96,9 @@ class HealthCheckService implements HealthCheckInterface
         return $this->httpCheck("http://{$host}:{$port}/healthz");
     }
 
+    /**
+     * @codeCoverageIgnore Requires native Redis extension with live connection
+     */
     private function checkRedis(): bool
     {
         if (! extension_loaded('redis')) {

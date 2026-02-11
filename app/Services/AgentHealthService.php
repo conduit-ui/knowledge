@@ -7,6 +7,9 @@ namespace App\Services;
 use App\Integrations\Qdrant\QdrantConnector;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
 
+/**
+ * @codeCoverageIgnore Raw socket I/O — requires live Redis/Qdrant connections
+ */
 class AgentHealthService
 {
     /**

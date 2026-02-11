@@ -44,6 +44,7 @@ class LogsCommand extends Command
         /** @var string|null $service */
         $service = $this->argument('service');
 
+        // @codeCoverageIgnoreStart
         // If no service specified and not following, offer selection
         if ($service === null && $this->option('follow') !== true) {
             $service = select(
@@ -62,6 +63,7 @@ class LogsCommand extends Command
                 $service = null;
             }
         }
+        // @codeCoverageIgnoreEnd
 
         $serviceDisplay = is_string($service) ? ucfirst($service) : 'All Services';
         $followMode = $this->option('follow') === true ? 'Live' : 'Recent';

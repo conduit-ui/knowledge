@@ -400,9 +400,20 @@ describe('ContextCommand', function (): void {
                     'usage_count' => 0,
                     'updated_at' => '',
                 ],
+                [
+                    'id' => 'uuid-2',
+                    'title' => 'Entry With Date',
+                    'content' => 'Has date.',
+                    'tags' => [],
+                    'category' => 'testing',
+                    'priority' => 'medium',
+                    'confidence' => 50,
+                    'usage_count' => 0,
+                    'updated_at' => now()->toIso8601String(),
+                ],
             ]));
 
-        $this->qdrantService->shouldReceive('incrementUsage')->once();
+        $this->qdrantService->shouldReceive('incrementUsage')->twice();
 
         $this->artisan('context')
             ->assertSuccessful()
@@ -420,5 +431,94 @@ describe('ContextCommand', function (): void {
 
         $this->artisan('context')
             ->assertSuccessful();
+    });
+
+    it('handles entry with invalid date string that makes strtotime return false', function (): void {
+        $this->qdrantService->shouldReceive('scroll')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-bad-date',
+                    'title' => 'Entry With Bad Date',
+                    'content' => 'Content with invalid date.',
+                    'tags' => ['test'],
+                    'category' => 'testing',
+                    'priority' => 'medium',
+                    'confidence' => 70,
+                    'usage_count' => 0,
+                    'updated_at' => 'not-a-date',
+                ],
+                [
+                    'id' => 'uuid-good-date',
+                    'title' => 'Entry With Good Date',
+                    'content' => 'Content with valid date.',
+                    'tags' => [],
+                    'category' => 'testing',
+                    'priority' => 'medium',
+                    'confidence' => 70,
+                    'usage_count' => 0,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ]));
+
+        $this->qdrantService->shouldReceive('incrementUsage')->twice();
+
+        $this->artisan('context')
+            ->assertSuccessful()
+            ->expectsOutputToContain('Entry With Bad Date');
+    });
+
+    it('breaks when a category header alone exceeds remaining char budget', function (): void {
+        // Use a very tight token budget.
+        // The header "# Session Context: my-project" is ~32 chars + 1 newline = 33.
+        // First category "## Architecture" is ~17 chars + 2 = 19.
+        // First entry block adds more chars.
+        // Second category "## Patterns" header should trigger the break.
+        $this->qdrantService->shouldReceive('scroll')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'uuid-1',
+                    'title' => 'A',
+                    'content' => 'B',
+                    'tags' => [],
+                    'category' => 'architecture',
+                    'priority' => 'high',
+                    'confidence' => 90,
+                    'usage_count' => 10,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+                [
+                    'id' => 'uuid-2',
+                    'title' => 'Second Category Entry',
+                    'content' => 'This should not appear.',
+                    'tags' => [],
+                    'category' => 'patterns',
+                    'priority' => 'medium',
+                    'confidence' => 80,
+                    'usage_count' => 5,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ]));
+
+        // Only uuid-1 should get usage tracked since uuid-2 is in a new
+        // category that can't fit.
+        $this->qdrantService->shouldReceive('incrementUsage')
+            ->with('uuid-1', 'my-project')
+            ->once();
+
+        // Set token budget very tight: enough for header + first category + first entry,
+        // but not enough for a second category header.
+        // "# Session Context: my-project" = 31 chars, + 1 newline = 32 chars counted
+        // "## Architecture" = 15 + 2 = 17 chars counted
+        // Entry block for title "A" content "B" is approx:
+        //   "### A\n\nPriority: high\nConfidence: 90%\n\nB\n" ~ 42 chars + 1 = 43
+        // Total ~ 32 + 17 + 43 = 92 chars
+        // "## Patterns" header = 11 + 2 = 13 chars
+        // Budget at 25 tokens * 4 = 100 chars allows first entry but not second category header
+        $this->artisan('context', ['--max-tokens' => '25'])
+            ->assertSuccessful()
+            ->expectsOutputToContain('## Architecture')
+            ->expectsOutputToContain('### A');
     });
 });

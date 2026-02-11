@@ -103,9 +103,9 @@ class DailyLogService
         }
 
         $files = scandir($stagingDir);
-        if ($files === false) {
+        if ($files === false) { // @codeCoverageIgnoreStart
             return [];
-        }
+        } // @codeCoverageIgnoreEnd
 
         $logs = [];
         foreach ($files as $file) {

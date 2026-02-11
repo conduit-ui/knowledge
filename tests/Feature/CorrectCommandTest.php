@@ -13,6 +13,18 @@ describe('CorrectCommand', function (): void {
         app()->instance(CorrectionService::class, $this->correction);
     });
 
+    it('fails when id argument is an empty string', function (): void {
+        $this->qdrant->shouldNotReceive('getById');
+        $this->correction->shouldNotReceive('correct');
+
+        $this->artisan('correct', [
+            'id' => '',
+            '--new-value' => 'some value',
+        ])
+            ->expectsOutputToContain('Invalid or missing ID argument')
+            ->assertFailed();
+    });
+
     it('fails when entry not found', function (): void {
         $this->qdrant->shouldReceive('getById')
             ->once()

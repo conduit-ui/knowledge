@@ -371,3 +371,61 @@ it('skips duplicate detection with --force flag', function (): void {
         '--force' => true,
     ])->assertSuccessful();
 });
+
+it('fails when re-upsert during supersession returns false', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    // First upsert throws similarity match
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), Mockery::any(), true)
+        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.95));
+
+    // User confirms, but re-upsert (without duplicate check) returns false
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), 'default', false)
+        ->andReturn(false);
+
+    $this->qdrantService->shouldNotReceive('markSuperseded');
+
+    $this->artisan('add', [
+        'title' => 'Supersede Fail Entry',
+        '--content' => 'Content that fails on re-upsert',
+        '--confidence' => 80,
+    ])
+        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
+        ->assertFailed()
+        ->expectsOutputToContain('Failed to create knowledge entry');
+});
+
+it('succeeds with warning when markSuperseded returns false', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    // First upsert throws similarity match
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), Mockery::any(), true)
+        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.92));
+
+    // Re-upsert succeeds
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), 'default', false)
+        ->andReturn(true);
+
+    // markSuperseded fails
+    $this->qdrantService->shouldReceive('markSuperseded')
+        ->once()
+        ->with('existing-id', Mockery::type('string'), Mockery::type('string'))
+        ->andReturn(false);
+
+    $this->artisan('add', [
+        'title' => 'Supersede Mark Fail',
+        '--content' => 'Content where mark fails',
+        '--confidence' => 80,
+    ])
+        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
+        ->expectsOutputToContain('failed to mark old entry as superseded')
+        ->assertSuccessful();
+});

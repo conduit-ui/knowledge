@@ -374,6 +374,114 @@ describe('AppServiceProvider user config loading', function (): void {
         // Port should remain unchanged since it's not in the URL
         expect(config('search.qdrant.port'))->toBe(6333);
     });
+
+    it('merges write_gate criteria overrides from user config', function (): void {
+        $configPath = $this->testConfigDir.'/config.json';
+        $config = [
+            'write_gate' => [
+                'criteria' => [
+                    'behavioral_impact' => false,
+                    'durable_facts' => false,
+                ],
+            ],
+        ];
+        file_put_contents($configPath, json_encode($config));
+
+        // Set up existing write-gate criteria
+        config([
+            'write-gate.criteria' => [
+                'behavioral_impact' => true,
+                'commitment_weight' => true,
+                'decision_rationale' => true,
+                'durable_facts' => true,
+                'explicit_instruction' => true,
+            ],
+        ]);
+
+        $testConfigDir = $this->testConfigDir;
+        $mock = Mockery::mock(KnowledgePathService::class);
+        $mock->shouldReceive('getKnowledgeDirectory')
+            ->andReturn($testConfigDir);
+
+        app()->instance(KnowledgePathService::class, $mock);
+
+        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider->boot();
+
+        $criteria = config('write-gate.criteria');
+        expect($criteria['behavioral_impact'])->toBeFalse();
+        expect($criteria['commitment_weight'])->toBeTrue();
+        expect($criteria['decision_rationale'])->toBeTrue();
+        expect($criteria['durable_facts'])->toBeFalse();
+        expect($criteria['explicit_instruction'])->toBeTrue();
+    });
+
+    it('ignores write_gate criteria keys that do not exist in current config', function (): void {
+        $configPath = $this->testConfigDir.'/config.json';
+        $config = [
+            'write_gate' => [
+                'criteria' => [
+                    'behavioral_impact' => false,
+                    'nonexistent_criterion' => true,
+                ],
+            ],
+        ];
+        file_put_contents($configPath, json_encode($config));
+
+        config([
+            'write-gate.criteria' => [
+                'behavioral_impact' => true,
+                'commitment_weight' => true,
+            ],
+        ]);
+
+        $testConfigDir = $this->testConfigDir;
+        $mock = Mockery::mock(KnowledgePathService::class);
+        $mock->shouldReceive('getKnowledgeDirectory')
+            ->andReturn($testConfigDir);
+
+        app()->instance(KnowledgePathService::class, $mock);
+
+        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider->boot();
+
+        $criteria = config('write-gate.criteria');
+        expect($criteria['behavioral_impact'])->toBeFalse();
+        expect($criteria['commitment_weight'])->toBeTrue();
+        // nonexistent_criterion should not appear
+        expect(array_key_exists('nonexistent_criterion', $criteria))->toBeFalse();
+    });
+
+    it('does not modify write-gate criteria when write_gate config is absent', function (): void {
+        $configPath = $this->testConfigDir.'/config.json';
+        $config = [
+            'qdrant' => [
+                'collection' => 'test-collection',
+            ],
+        ];
+        file_put_contents($configPath, json_encode($config));
+
+        config([
+            'write-gate.criteria' => [
+                'behavioral_impact' => true,
+                'durable_facts' => true,
+            ],
+        ]);
+
+        $testConfigDir = $this->testConfigDir;
+        $mock = Mockery::mock(KnowledgePathService::class);
+        $mock->shouldReceive('getKnowledgeDirectory')
+            ->andReturn($testConfigDir);
+
+        app()->instance(KnowledgePathService::class, $mock);
+
+        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider->boot();
+
+        $criteria = config('write-gate.criteria');
+        expect($criteria['behavioral_impact'])->toBeTrue();
+        expect($criteria['durable_facts'])->toBeTrue();
+    });
 });
 
 afterEach(function (): void {
