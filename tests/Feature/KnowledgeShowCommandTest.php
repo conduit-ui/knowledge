@@ -18,6 +18,7 @@ beforeEach(function (): void {
     app()->instance(QdrantService::class, $this->qdrantService);
     app()->instance(EntryMetadataService::class, $this->metadataService);
     app()->instance(EnhancementQueueService::class, $this->enhancementQueue);
+    mockProjectDetector();
 });
 
 describe('show command', function (): void {
@@ -41,12 +42,12 @@ describe('show command', function (): void {
 
         $this->qdrantService->shouldReceive('getById')
             ->once()
-            ->with('test-id')
+            ->with('test-id', 'default')
             ->andReturn($entry);
 
         $this->qdrantService->shouldReceive('incrementUsage')
             ->once()
-            ->with('test-id');
+            ->with('test-id', 'default');
 
         $this->metadataService->shouldReceive('isStale')->once()->andReturn(false);
         $this->metadataService->shouldReceive('calculateEffectiveConfidence')->once()->andReturn(75);
@@ -133,7 +134,7 @@ describe('show command', function (): void {
     it('returns failure for non-existent entry', function (): void {
         $this->qdrantService->shouldReceive('getById')
             ->once()
-            ->with('missing-id')
+            ->with('missing-id', 'default')
             ->andReturn(null);
 
         $this->artisan('show', ['id' => 'missing-id'])
