@@ -51,7 +51,7 @@ class ThemeClassifierService
         ],
         'integrated-infrastructure' => [
             'keywords' => [
-                'infrastructure', 'server', 'homelab', 'odin', 'docker',
+                'infrastructure', 'server', 'homelab', 'docker',
                 'podman', 'container', 'deploy', 'deployment', 'hosting',
                 'property', 'physical', 'hardware', 'network', 'tailscale',
                 'nginx', 'redis', 'database', 'postgres', 'mysql',

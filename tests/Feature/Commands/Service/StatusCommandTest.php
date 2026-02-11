@@ -57,11 +57,11 @@ describe('service:status command', function () {
                 ->assertSuccessful();
         });
 
-        it('shows odin environment with --odin flag', function () {
-            $this->artisan('service:status', ['--odin' => true])
+        it('shows remote environment with --remote flag', function () {
+            $this->artisan('service:status', ['--remote' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command));
         });
     });
 
@@ -143,11 +143,11 @@ describe('service:status command', function () {
                 && in_array('ps', $process->command));
         });
 
-        it('uses odin compose file with --odin flag', function () {
-            $this->artisan('service:status', ['--odin' => true])
+        it('uses remote compose file with --remote flag', function () {
+            $this->artisan('service:status', ['--remote' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command));
         });
 
         it('handles docker compose failure gracefully', function () {
@@ -196,7 +196,7 @@ describe('service:status command', function () {
             $signature = $signatureProperty->getValue($command);
 
             expect($signature)->toContain('service:status');
-            expect($signature)->toContain('--odin');
+            expect($signature)->toContain('--remote');
         });
 
         it('has correct description', function () {

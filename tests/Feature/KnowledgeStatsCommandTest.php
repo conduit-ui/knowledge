@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use App\Services\KnowledgeCacheService;
-use App\Services\OdinSyncService;
 use App\Services\QdrantService;
+use App\Services\RemoteSyncService;
 
 describe('KnowledgeStatsCommand', function (): void {
     it('displays comprehensive analytics dashboard covering all code paths', function (): void {
         $qdrant = mock(QdrantService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         // Mixed entries testing all display logic in a single test due to static caching
@@ -66,7 +66,7 @@ describe('KnowledgeStatsCommand', function (): void {
             ->once()
             ->andReturnNull();
 
-        $odinSync->shouldReceive('isEnabled')
+        $remoteSync->shouldReceive('isEnabled')
             ->once()
             ->andReturn(false);
 
@@ -77,9 +77,9 @@ describe('KnowledgeStatsCommand', function (): void {
     it('displays cache metrics when cache service is available', function (): void {
         $qdrant = mock(QdrantService::class);
         $cacheService = mock(KnowledgeCacheService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         $entries = collect([
@@ -120,7 +120,7 @@ describe('KnowledgeStatsCommand', function (): void {
                 'stats' => ['hits' => 8, 'misses' => 2],
             ]);
 
-        $odinSync->shouldReceive('isEnabled')
+        $remoteSync->shouldReceive('isEnabled')
             ->once()
             ->andReturn(false);
 
@@ -128,11 +128,11 @@ describe('KnowledgeStatsCommand', function (): void {
             ->assertSuccessful();
     });
 
-    it('displays odin sync status with unknown status using gray color', function (): void {
+    it('displays remote sync status with unknown status using gray color', function (): void {
         $qdrant = mock(QdrantService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         $entries = collect([
@@ -165,11 +165,11 @@ describe('KnowledgeStatsCommand', function (): void {
             ->once()
             ->andReturnNull();
 
-        $odinSync->shouldReceive('isEnabled')
+        $remoteSync->shouldReceive('isEnabled')
             ->once()
             ->andReturn(true);
 
-        $odinSync->shouldReceive('getStatus')
+        $remoteSync->shouldReceive('getStatus')
             ->once()
             ->andReturn([
                 'status' => 'unknown-status',
@@ -182,19 +182,19 @@ describe('KnowledgeStatsCommand', function (): void {
             ->assertSuccessful();
     });
 
-    it('displays odin sync error status in red', function (): void {
+    it('displays remote sync error status in red', function (): void {
         $qdrant = mock(QdrantService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         $qdrant->shouldReceive('count')->once()->with('default')->andReturn(0);
         $qdrant->shouldReceive('scroll')->once()->with([], 0, 'default')->andReturn(collect([]));
         $qdrant->shouldReceive('getCollectionName')->with('default')->andReturn('knowledge_default');
         $qdrant->shouldReceive('getCacheService')->once()->andReturnNull();
-        $odinSync->shouldReceive('isEnabled')->once()->andReturn(true);
-        $odinSync->shouldReceive('getStatus')->once()->andReturn([
+        $remoteSync->shouldReceive('isEnabled')->once()->andReturn(true);
+        $remoteSync->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'error',
             'pending' => 0,
             'last_synced' => null,
@@ -204,19 +204,19 @@ describe('KnowledgeStatsCommand', function (): void {
         $this->artisan('stats')->assertSuccessful();
     });
 
-    it('displays odin sync pending status in yellow', function (): void {
+    it('displays remote sync pending status in yellow', function (): void {
         $qdrant = mock(QdrantService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         $qdrant->shouldReceive('count')->once()->with('default')->andReturn(0);
         $qdrant->shouldReceive('scroll')->once()->with([], 0, 'default')->andReturn(collect([]));
         $qdrant->shouldReceive('getCollectionName')->with('default')->andReturn('knowledge_default');
         $qdrant->shouldReceive('getCacheService')->once()->andReturnNull();
-        $odinSync->shouldReceive('isEnabled')->once()->andReturn(true);
-        $odinSync->shouldReceive('getStatus')->once()->andReturn([
+        $remoteSync->shouldReceive('isEnabled')->once()->andReturn(true);
+        $remoteSync->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'pending',
             'pending' => 5,
             'last_synced' => null,
@@ -226,11 +226,11 @@ describe('KnowledgeStatsCommand', function (): void {
         $this->artisan('stats')->assertSuccessful();
     });
 
-    it('displays odin sync status when enabled', function (): void {
+    it('displays remote sync status when enabled', function (): void {
         $qdrant = mock(QdrantService::class);
-        $odinSync = mock(OdinSyncService::class);
+        $remoteSync = mock(RemoteSyncService::class);
         app()->instance(QdrantService::class, $qdrant);
-        app()->instance(OdinSyncService::class, $odinSync);
+        app()->instance(RemoteSyncService::class, $remoteSync);
         mockProjectDetector();
 
         $entries = collect([
@@ -263,11 +263,11 @@ describe('KnowledgeStatsCommand', function (): void {
             ->once()
             ->andReturnNull();
 
-        $odinSync->shouldReceive('isEnabled')
+        $remoteSync->shouldReceive('isEnabled')
             ->once()
             ->andReturn(true);
 
-        $odinSync->shouldReceive('getStatus')
+        $remoteSync->shouldReceive('getStatus')
             ->once()
             ->andReturn([
                 'status' => 'synced',

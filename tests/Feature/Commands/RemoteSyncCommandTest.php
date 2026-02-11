@@ -2,90 +2,90 @@
 
 declare(strict_types=1);
 
-use App\Services\OdinSyncService;
 use App\Services\QdrantService;
+use App\Services\RemoteSyncService;
 
 beforeEach(function (): void {
-    $this->odinMock = Mockery::mock(OdinSyncService::class);
+    $this->remoteMock = Mockery::mock(RemoteSyncService::class);
     $this->qdrantMock = Mockery::mock(QdrantService::class);
-    $this->app->instance(OdinSyncService::class, $this->odinMock);
+    $this->app->instance(RemoteSyncService::class, $this->remoteMock);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
 });
 
-describe('OdinSyncCommand basic', function (): void {
-    it('fails when odin sync is disabled', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(false);
+describe('RemoteSyncCommand basic', function (): void {
+    it('fails when remote sync is disabled', function (): void {
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(false);
 
-        $this->artisan('sync:odin')
+        $this->artisan('sync:remote')
             ->assertFailed()
-            ->expectsOutput('Odin sync is disabled. Set ODIN_SYNC_ENABLED=true to enable.');
+            ->expectsOutput('Remote sync is disabled. Set REMOTE_SYNC_ENABLED=true to enable.');
     });
 
     it('shows status only with --status flag', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('getStatus')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'synced',
             'pending' => 0,
             'last_synced' => '2025-06-01T12:00:00+00:00',
             'last_error' => null,
         ]);
 
-        config(['services.odin.url' => 'http://odin.local']);
+        config(['services.remote.url' => 'http://remote.local']);
 
-        $this->artisan('sync:odin', ['--status' => true])
+        $this->artisan('sync:remote', ['--status' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Status');
+            ->expectsOutputToContain('Remote Sync Status');
     });
 
     it('clears queue with --clear flag', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('clearQueue')->once();
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('clearQueue')->once();
 
-        $this->artisan('sync:odin', ['--clear' => true])
+        $this->artisan('sync:remote', ['--clear' => true])
             ->assertSuccessful()
             ->expectsOutput('Sync queue cleared.');
     });
 });
 
-describe('OdinSyncCommand connectivity', function (): void {
-    it('warns when Odin is unreachable', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(false);
-        $this->odinMock->shouldReceive('getStatus')->once()->andReturn([
+describe('RemoteSyncCommand connectivity', function (): void {
+    it('warns when remote is unreachable', function (): void {
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(false);
+        $this->remoteMock->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'pending',
             'pending' => 3,
             'last_synced' => null,
             'last_error' => null,
         ]);
 
-        $this->artisan('sync:odin')
+        $this->artisan('sync:remote')
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin server is not reachable')
+            ->expectsOutputToContain('Remote server is not reachable')
             ->expectsOutputToContain('Pending operations: 3');
     });
 });
 
-describe('OdinSyncCommand push', function (): void {
+describe('RemoteSyncCommand push', function (): void {
     it('pushes queued items when --push is specified', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('processQueue')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('processQueue')->once()->andReturn([
             'synced' => 5,
             'failed' => 0,
             'remaining' => 0,
         ]);
 
-        $this->artisan('sync:odin', ['--push' => true])
+        $this->artisan('sync:remote', ['--push' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Summary');
+            ->expectsOutputToContain('Remote Sync Summary');
     });
 });
 
-describe('OdinSyncCommand pull', function (): void {
+describe('RemoteSyncCommand pull', function (): void {
     it('pulls and merges entries when --pull is specified', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('default')
             ->andReturn([
@@ -114,11 +114,11 @@ describe('OdinSyncCommand pull', function (): void {
             ->once()
             ->andReturn(true);
 
-        $this->odinMock->shouldNotReceive('resolveConflict');
+        $this->remoteMock->shouldNotReceive('resolveConflict');
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Summary');
+            ->expectsOutputToContain('Remote Sync Summary');
     });
 
     it('resolves conflicts with last-write-wins on pull', function (): void {
@@ -142,9 +142,9 @@ describe('OdinSyncCommand pull', function (): void {
             'usage_count' => 0,
         ];
 
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('default')
             ->andReturn([$remoteEntry]);
@@ -155,7 +155,7 @@ describe('OdinSyncCommand pull', function (): void {
             ->andReturn(collect([$localEntry]));
 
         // Remote is newer, should win
-        $this->odinMock->shouldReceive('resolveConflict')
+        $this->remoteMock->shouldReceive('resolveConflict')
             ->once()
             ->with($localEntry, $remoteEntry)
             ->andReturn($remoteEntry);
@@ -164,14 +164,14 @@ describe('OdinSyncCommand pull', function (): void {
             ->once()
             ->andReturn(true);
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful();
     });
 
     it('skips entries with empty title on pull', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->andReturn([
                 ['title' => '', 'content' => 'No title'],
@@ -180,7 +180,7 @@ describe('OdinSyncCommand pull', function (): void {
         $this->qdrantMock->shouldNotReceive('search');
         $this->qdrantMock->shouldNotReceive('upsert');
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful();
     });
 
@@ -198,9 +198,9 @@ describe('OdinSyncCommand pull', function (): void {
             'updated_at' => '2025-05-01T12:00:00+00:00',
         ];
 
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->andReturn([$remoteEntry]);
 
@@ -209,23 +209,23 @@ describe('OdinSyncCommand pull', function (): void {
             ->andReturn(collect([$localEntry]));
 
         // Local wins
-        $this->odinMock->shouldReceive('resolveConflict')
+        $this->remoteMock->shouldReceive('resolveConflict')
             ->once()
             ->andReturn($localEntry);
 
         // Should NOT upsert since local wins
         $this->qdrantMock->shouldNotReceive('upsert');
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful();
     });
 });
 
-describe('OdinSyncCommand pull with optional fields', function (): void {
+describe('RemoteSyncCommand pull with optional fields', function (): void {
     it('includes category and module from remote entry when set', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('default')
             ->andReturn([
@@ -256,14 +256,14 @@ describe('OdinSyncCommand pull with optional fields', function (): void {
                 && ($data['module'] ?? null) === 'core-api'), Mockery::any())
             ->andReturn(true);
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful();
     });
 
     it('omits category and module when not set in remote entry', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('default')
             ->andReturn([
@@ -290,94 +290,94 @@ describe('OdinSyncCommand pull with optional fields', function (): void {
                 && ! array_key_exists('module', $data)), Mockery::any())
             ->andReturn(true);
 
-        $this->artisan('sync:odin', ['--pull' => true])
+        $this->artisan('sync:remote', ['--pull' => true])
             ->assertSuccessful();
     });
 });
 
-describe('OdinSyncCommand status display', function (): void {
+describe('RemoteSyncCommand status display', function (): void {
     it('uses red color for error sync status', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('getStatus')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'error',
             'pending' => 0,
             'last_synced' => null,
             'last_error' => 'Connection refused',
         ]);
 
-        config(['services.odin.url' => 'http://odin.local']);
+        config(['services.remote.url' => 'http://remote.local']);
 
-        $this->artisan('sync:odin', ['--status' => true])
+        $this->artisan('sync:remote', ['--status' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Status');
+            ->expectsOutputToContain('Remote Sync Status');
     });
 
     it('uses yellow color for pending sync status', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('getStatus')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'pending',
             'pending' => 3,
             'last_synced' => null,
             'last_error' => null,
         ]);
 
-        config(['services.odin.url' => 'http://odin.local']);
+        config(['services.remote.url' => 'http://remote.local']);
 
-        $this->artisan('sync:odin', ['--status' => true])
+        $this->artisan('sync:remote', ['--status' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Status');
+            ->expectsOutputToContain('Remote Sync Status');
     });
 
     it('uses gray color for unknown sync status', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('getStatus')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('getStatus')->once()->andReturn([
             'status' => 'unknown-status',
             'pending' => 0,
             'last_synced' => null,
             'last_error' => null,
         ]);
 
-        config(['services.odin.url' => 'http://odin.local']);
+        config(['services.remote.url' => 'http://remote.local']);
 
-        $this->artisan('sync:odin', ['--status' => true])
+        $this->artisan('sync:remote', ['--status' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Status');
+            ->expectsOutputToContain('Remote Sync Status');
     });
 });
 
-describe('OdinSyncCommand default two-way sync', function (): void {
+describe('RemoteSyncCommand default two-way sync', function (): void {
     it('performs push then pull with no flags', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('processQueue')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('processQueue')->once()->andReturn([
             'synced' => 2,
             'failed' => 0,
             'remaining' => 0,
         ]);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('default')
             ->andReturn([]);
 
-        $this->artisan('sync:odin')
+        $this->artisan('sync:remote')
             ->assertSuccessful()
-            ->expectsOutputToContain('Odin Sync Summary');
+            ->expectsOutputToContain('Remote Sync Summary');
     });
 
     it('accepts custom project option', function (): void {
-        $this->odinMock->shouldReceive('isEnabled')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('isAvailable')->once()->andReturn(true);
-        $this->odinMock->shouldReceive('processQueue')->once()->andReturn([
+        $this->remoteMock->shouldReceive('isEnabled')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->remoteMock->shouldReceive('processQueue')->once()->andReturn([
             'synced' => 0,
             'failed' => 0,
             'remaining' => 0,
         ]);
-        $this->odinMock->shouldReceive('pullFromOdin')
+        $this->remoteMock->shouldReceive('pullFromRemote')
             ->once()
             ->with('custom-project')
             ->andReturn([]);
 
-        $this->artisan('sync:odin', ['--project' => 'custom-project'])
+        $this->artisan('sync:remote', ['--project' => 'custom-project'])
             ->assertSuccessful();
     });
 });

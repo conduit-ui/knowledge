@@ -50,7 +50,7 @@ describe('classify', function (): void {
         $entry = [
             'title' => 'Docker Deployment Configuration',
             'content' => 'Configure Podman containers for homelab server with Tailscale networking',
-            'tags' => ['docker', 'infrastructure', 'odin'],
+            'tags' => ['docker', 'infrastructure', 'server'],
         ];
 
         $result = $this->classifier->classify($entry);

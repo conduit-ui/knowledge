@@ -26,13 +26,13 @@ describe('service:down command', function () {
             }
         });
 
-        it('fails when odin docker-compose file does not exist', function () {
+        it('fails when remote docker-compose file does not exist', function () {
             $tempDir = sys_get_temp_dir().'/know-test-'.uniqid();
             mkdir($tempDir, 0755, true);
             $this->app->setBasePath($tempDir);
 
             try {
-                $this->artisan('service:down', ['--odin' => true])
+                $this->artisan('service:down', ['--remote' => true])
                     ->assertFailed();
             } finally {
                 rmdir($tempDir);
@@ -57,11 +57,11 @@ describe('service:down command', function () {
                 && in_array('-v', $process->command));
         });
 
-        it('uses odin compose file when odin flag is set', function () {
-            $this->artisan('service:down', ['--odin' => true])
+        it('uses remote compose file when remote flag is set', function () {
+            $this->artisan('service:down', ['--remote' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command));
         });
 
         it('returns failure when docker compose fails', function () {
@@ -76,11 +76,11 @@ describe('service:down command', function () {
                 ->assertFailed();
         });
 
-        it('combines odin and volumes flags correctly when forced', function () {
-            $this->artisan('service:down', ['--odin' => true, '--volumes' => true, '--force' => true])
+        it('combines remote and volumes flags correctly when forced', function () {
+            $this->artisan('service:down', ['--remote' => true, '--volumes' => true, '--force' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command)
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command)
                 && in_array('-v', $process->command));
         });
     });
@@ -95,7 +95,7 @@ describe('service:down command', function () {
 
             expect($signature)->toContain('service:down');
             expect($signature)->toContain('--volumes');
-            expect($signature)->toContain('--odin');
+            expect($signature)->toContain('--remote');
             expect($signature)->toContain('--force');
         });
 

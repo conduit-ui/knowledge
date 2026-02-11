@@ -48,7 +48,7 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 | `QdrantService` | All vector DB operations (upsert, search, delete, collections) |
 | `EmbeddingService` | Text-to-vector conversion |
 | `KnowledgeCacheService` | Redis caching for sub-200ms queries |
-| `OdinSyncService` | Background sync to centralized Odin server |
+| `RemoteSyncService` | Background sync to centralized remote server |
 | `WriteGateService` | Filters knowledge quality before persistence |
 | `EntryMetadataService` | Staleness detection, confidence degradation |
 | `CorrectionService` | Multi-tier correction propagation |

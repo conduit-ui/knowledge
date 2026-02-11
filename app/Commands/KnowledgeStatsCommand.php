@@ -6,8 +6,8 @@ namespace App\Commands;
 
 use App\Commands\Concerns\ResolvesProject;
 use App\Services\KnowledgeCacheService;
-use App\Services\OdinSyncService;
 use App\Services\QdrantService;
+use App\Services\RemoteSyncService;
 use Illuminate\Support\Collection;
 use LaravelZero\Framework\Commands\Command;
 
@@ -25,7 +25,7 @@ class KnowledgeStatsCommand extends Command
 
     protected $description = 'Display analytics dashboard for knowledge entries';
 
-    public function handle(QdrantService $qdrant, OdinSyncService $odinSync): int
+    public function handle(QdrantService $qdrant, RemoteSyncService $remoteSync): int
     {
         $project = $this->resolveProject();
 
@@ -44,7 +44,7 @@ class KnowledgeStatsCommand extends Command
             $this->renderCacheMetrics($cacheService);
         }
 
-        $this->renderSyncStatus($odinSync);
+        $this->renderSyncStatus($remoteSync);
 
         return self::SUCCESS;
     }
@@ -138,13 +138,13 @@ class KnowledgeStatsCommand extends Command
         table(['Cache', 'Hits', 'Misses', 'Hit Rate'], $rows);
     }
 
-    private function renderSyncStatus(OdinSyncService $odinSync): void
+    private function renderSyncStatus(RemoteSyncService $remoteSync): void
     {
-        if (! $odinSync->isEnabled()) {
+        if (! $remoteSync->isEnabled()) {
             return;
         }
 
-        $status = $odinSync->getStatus();
+        $status = $remoteSync->getStatus();
 
         $statusColor = match ($status['status']) {
             'synced' => 'green',
@@ -154,7 +154,7 @@ class KnowledgeStatsCommand extends Command
         };
 
         $this->newLine();
-        $this->line('<fg=gray>Odin Sync</>');
+        $this->line('<fg=gray>Remote Sync</>');
         table(
             ['Property', 'Value'],
             [

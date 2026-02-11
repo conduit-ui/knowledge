@@ -13,17 +13,17 @@ class UpCommand extends Command
 {
     protected $signature = 'service:up
                             {--d|detach : Run in detached mode}
-                            {--odin : Use Odin (remote) configuration}';
+                            {--remote : Use remote configuration}';
 
     protected $description = 'Start knowledge services (Qdrant, Redis, Embeddings)';
 
     public function handle(): int
     {
-        $composeFile = $this->option('odin') === true
-            ? 'docker-compose.odin.yml'
+        $composeFile = $this->option('remote') === true
+            ? 'docker-compose.remote.yml'
             : 'docker-compose.yml';
 
-        $environment = $this->option('odin') === true ? 'Odin (Remote)' : 'Local';
+        $environment = $this->option('remote') === true ? 'Remote' : 'Local';
 
         if (! file_exists(base_path($composeFile))) {
             render(<<<HTML

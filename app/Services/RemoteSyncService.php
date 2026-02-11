@@ -7,7 +7,7 @@ namespace App\Services;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
-class OdinSyncService
+class RemoteSyncService
 {
     private readonly string $queuePath;
 
@@ -24,15 +24,15 @@ class OdinSyncService
     }
 
     /**
-     * Check if Odin sync is enabled in configuration.
+     * Check if remote sync is enabled.
      */
     public function isEnabled(): bool
     {
-        return (bool) config('services.odin.enabled', true);
+        return (bool) config('services.remote.enabled', true);
     }
 
     /**
-     * Check connectivity to Odin server.
+     * Check connectivity to remote server.
      */
     public function isAvailable(): bool
     {
@@ -60,7 +60,7 @@ class OdinSyncService
     }
 
     /**
-     * Queue an entry for sync to Odin.
+     * Queue an entry for sync to remote server.
      *
      * @param  array<string, mixed>  $entry
      */
@@ -83,7 +83,7 @@ class OdinSyncService
     }
 
     /**
-     * Process the sync queue, pushing pending items to Odin.
+     * Process the sync queue, pushing pending items to the remote server.
      *
      * @return array{synced: int, failed: int, remaining: int}
      */
@@ -105,7 +105,7 @@ class OdinSyncService
         }
 
         $remaining = [];
-        $batchSize = max(1, (int) config('services.odin.batch_size', 50));
+        $batchSize = max(1, (int) config('services.remote.batch_size', 50));
         $batches = array_chunk($queue, $batchSize);
 
         foreach ($batches as $batch) {
@@ -146,11 +146,11 @@ class OdinSyncService
     }
 
     /**
-     * Pull fresh entries from Odin for a project.
+     * Pull fresh entries from remote server.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function pullFromOdin(string $project = 'default'): array
+    public function pullFromRemote(string $project = 'default'): array
     {
         $token = $this->getToken();
         if ($token === '') {
@@ -183,7 +183,7 @@ class OdinSyncService
     }
 
     /**
-     * List all projects that have been synced to Odin.
+     * List all projects that have been synced to remote server.
      *
      * @return array<int, array{name: string, entry_count: int, last_synced: string|null}>
      */
@@ -313,7 +313,7 @@ class OdinSyncService
     }
 
     /**
-     * Push a batch of entries to Odin.
+     * Push a batch of entries to remote server.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array{synced: int, failed: int, failedItems: array<int, array<string, mixed>>}
@@ -376,7 +376,7 @@ class OdinSyncService
     }
 
     /**
-     * Delete a batch of entries from Odin.
+     * Delete a batch of entries from remote server.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array{synced: int, failed: int, failedItems: array<int, array<string, mixed>>}
@@ -483,21 +483,21 @@ class OdinSyncService
     }
 
     /**
-     * Get the Odin API base URL.
+     * Get the remote API base URL.
      */
     private function getBaseUrl(): string
     {
-        $url = config('services.odin.url', '');
+        $url = config('services.remote.url', '');
 
         return is_string($url) ? $url : '';
     }
 
     /**
-     * Get the Odin API token.
+     * Get the remote API token.
      */
     private function getToken(): string
     {
-        $token = config('services.odin.token', '');
+        $token = config('services.remote.token', '');
 
         return is_string($token) ? $token : '';
     }
@@ -525,7 +525,7 @@ class OdinSyncService
     {
         return new Client([
             'base_uri' => $this->getBaseUrl(),
-            'timeout' => (int) config('services.odin.timeout', 10),
+            'timeout' => (int) config('services.remote.timeout', 10),
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',

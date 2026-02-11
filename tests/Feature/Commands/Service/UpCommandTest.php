@@ -26,13 +26,13 @@ describe('service:up command', function () {
             }
         });
 
-        it('fails when odin docker-compose file does not exist', function () {
+        it('fails when remote docker-compose file does not exist', function () {
             $tempDir = sys_get_temp_dir().'/know-test-'.uniqid();
             mkdir($tempDir, 0755, true);
             $this->app->setBasePath($tempDir);
 
             try {
-                $this->artisan('service:up', ['--odin' => true])
+                $this->artisan('service:up', ['--remote' => true])
                     ->assertFailed();
             } finally {
                 rmdir($tempDir);
@@ -57,11 +57,11 @@ describe('service:up command', function () {
                 && in_array('-d', $process->command));
         });
 
-        it('uses odin compose file when odin flag is set', function () {
-            $this->artisan('service:up', ['--odin' => true])
+        it('uses remote compose file when remote flag is set', function () {
+            $this->artisan('service:up', ['--remote' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command));
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command));
         });
 
         it('returns failure when docker compose fails', function () {
@@ -76,11 +76,11 @@ describe('service:up command', function () {
                 ->assertFailed();
         });
 
-        it('combines odin and detach flags correctly', function () {
-            $this->artisan('service:up', ['--odin' => true, '--detach' => true])
+        it('combines remote and detach flags correctly', function () {
+            $this->artisan('service:up', ['--remote' => true, '--detach' => true])
                 ->assertSuccessful();
 
-            Process::assertRan(fn ($process) => in_array('docker-compose.odin.yml', $process->command)
+            Process::assertRan(fn ($process) => in_array('docker-compose.remote.yml', $process->command)
                 && in_array('-d', $process->command));
         });
     });
@@ -95,7 +95,7 @@ describe('service:up command', function () {
 
             expect($signature)->toContain('service:up');
             expect($signature)->toContain('--d|detach');
-            expect($signature)->toContain('--odin');
+            expect($signature)->toContain('--remote');
         });
 
         it('has correct description', function () {
