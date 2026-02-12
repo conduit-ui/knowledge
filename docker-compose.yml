@@ -1,15 +1,21 @@
 services:
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: knowledge-chromadb
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: knowledge-qdrant
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "6333:6333"
+      - "6334:6334"
     volumes:
-      - chromadb_data:/data
+      - qdrant_storage:/qdrant/storage
     environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/6333"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   embedding-server:
     build:
@@ -22,8 +28,8 @@ services:
     volumes:
       - embedding_cache:/root/.cache
     depends_on:
-      - chromadb
+      - qdrant
 
 volumes:
-  chromadb_data:
+  qdrant_storage:
   embedding_cache:

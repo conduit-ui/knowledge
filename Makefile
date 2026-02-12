@@ -2,10 +2,10 @@
 
 # Default target
 help:
-	@echo "Knowledge ChromaDB Management"
+	@echo "Knowledge Vector Database Management"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make up        - Start ChromaDB and embedding server"
+	@echo "  make up        - Start Qdrant and embedding server"
 	@echo "  make down      - Stop all services"
 	@echo "  make logs      - Tail service logs"
 	@echo "  make status    - Check service status"
@@ -16,18 +16,17 @@ help:
 
 # Start services
 up:
-	@echo "Starting ChromaDB and embedding server..."
+	@echo "Starting Qdrant and embedding server..."
 	@docker compose up -d
 	@echo "Waiting for services to be healthy..."
 	@sleep 5
 	@docker compose ps
 	@echo ""
 	@echo "Services ready!"
-	@echo "  ChromaDB:   http://localhost:8000"
+	@echo "  Qdrant:     http://localhost:6333"
 	@echo "  Embeddings: http://localhost:8001"
 	@echo ""
 	@echo "Enable in .env:"
-	@echo "  CHROMADB_ENABLED=true"
 	@echo "  SEMANTIC_SEARCH_ENABLED=true"
 
 # Stop services
@@ -43,7 +42,7 @@ status:
 	@docker compose ps
 	@echo ""
 	@echo "Health checks:"
-	@curl -sf http://localhost:8000/api/v1/heartbeat > /dev/null && echo "  ChromaDB:   OK" || echo "  ChromaDB:   NOT RUNNING"
+	@curl -sf http://localhost:6333/collections > /dev/null && echo "  Qdrant:     OK" || echo "  Qdrant:     NOT RUNNING"
 	@curl -sf http://localhost:8001/health > /dev/null && echo "  Embeddings: OK" || echo "  Embeddings: NOT RUNNING"
 
 # Restart services

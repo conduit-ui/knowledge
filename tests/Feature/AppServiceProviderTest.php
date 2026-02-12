@@ -34,16 +34,6 @@ describe('AppServiceProvider', function (): void {
         expect($service)->toBeInstanceOf(StubEmbeddingService::class);
     });
 
-    it('registers EmbeddingService when provider is chromadb', function (): void {
-        config(['search.embedding_provider' => 'chromadb']);
-
-        app()->forgetInstance(EmbeddingServiceInterface::class);
-
-        $service = app(EmbeddingServiceInterface::class);
-
-        expect($service)->toBeInstanceOf(EmbeddingService::class);
-    });
-
     it('registers EmbeddingService when provider is qdrant', function (): void {
         config(['search.embedding_provider' => 'qdrant']);
 
