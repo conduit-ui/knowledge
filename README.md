@@ -68,7 +68,6 @@ All commands support `--project=<name>` to target a specific project namespace a
 | `stage` | Stage entries in daily log before permanent storage |
 | `promote` | Promote staged entries to permanent knowledge |
 | `enhance:worker` | Process the background Ollama enhancement queue |
-| `coderabbit:extract` | Extract CodeRabbit review findings from a GitHub PR |
 
 ### Infrastructure
 

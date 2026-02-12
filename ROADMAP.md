@@ -32,9 +32,6 @@ Index and search codebases semantically via `index-code` and `search-code`.
 ### Context Command
 Semantic session context loading for AI tools — auto-injects relevant knowledge into Claude Code sessions.
 
-### CodeRabbit Review Extraction
-Extract CodeRabbit review findings from GitHub PRs and store as knowledge entries via `coderabbit:extract`.
-
 ### Background Ollama Auto-Tagging
 Async auto-tagging via OllamaService with file-based enhancement queue. `know add` stays fast (<100ms), enhancement happens in background via `enhance:worker`.
 
