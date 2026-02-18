@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\ResolvesProject;
+use App\Services\AiService;
 use App\Services\QdrantService;
+use App\Exceptions\Qdrant\DuplicateEntryException;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -39,7 +41,7 @@ class SynthesizeCommand extends Command
 
     private const CONFIDENCE_FLOOR_DEFAULT = 50;
 
-    public function handle(QdrantService $qdrant): int
+    public function handle(QdrantService $qdrant, AiService $ai): int
     {
         $dedupe = (bool) $this->option('dedupe');
         $digest = (bool) $this->option('digest');
@@ -61,7 +63,7 @@ class SynthesizeCommand extends Command
         }
 
         if ($runAll || $digest) {
-            $stats['digest_created'] = $this->runDigest($qdrant, $dryRun);
+            $stats['digest_created'] = $this->runDigest($qdrant, $ai, $dryRun);
         }
 
         if ($runAll || $archiveStale) {
@@ -143,7 +145,7 @@ class SynthesizeCommand extends Command
     /**
      * Generate a daily digest of recent high-value entries.
      */
-    private function runDigest(QdrantService $qdrant, bool $dryRun): bool
+    private function runDigest(QdrantService $qdrant, AiService $ai, bool $dryRun): bool
     {
         $today = Carbon::today()->format('Y-m-d');
 
@@ -170,8 +172,8 @@ class SynthesizeCommand extends Command
             return false;
         }
 
-        // Build digest content
-        $digestContent = $this->buildDigestContent($recentEntries);
+        // Build digest content (using AI if available)
+        $digestContent = $this->buildDigestContent($recentEntries, $ai, $today);
 
         if ($dryRun) {
             $this->line('');
@@ -182,16 +184,22 @@ class SynthesizeCommand extends Command
         }
 
         // Create digest entry
-        $qdrant->upsert([
-            'id' => Str::uuid()->toString(),
-            'title' => "Daily Synthesis - {$today}",
-            'content' => $digestContent,
-            'category' => 'architecture',
-            'tags' => ['daily-synthesis', $today],
-            'priority' => 'medium',
-            'confidence' => 85,
-            'status' => 'validated',
-        ]);
+        try {
+            $qdrant->upsert([
+                'id' => Str::uuid()->toString(),
+                'title' => "Daily Synthesis - {$today}",
+                'content' => $digestContent,
+                'category' => 'architecture',
+                'tags' => ['daily-synthesis', $today],
+                'priority' => 'medium',
+                'confidence' => 85,
+                'status' => 'validated',
+            ], 'default', false); // Allow upsert to handle vectors, catch duplicates if necessary
+            
+        } catch (DuplicateEntryException $e) {
+            warning("Digest for {$today} already exists (duplicate detected).");
+            return false;
+        }
 
         info("Digest created for {$today}");
 
@@ -259,11 +267,58 @@ class SynthesizeCommand extends Command
     }
 
     /**
-     * Build digest content from entries.
+     * Build digest content from entries using AI.
      *
      * @param  Collection<int, array<string, mixed>>  $entries
      */
-    private function buildDigestContent(Collection $entries): string
+    private function buildDigestContent(Collection $entries, AiService $ai, string $date): string
+    {
+        if (! $ai->isAvailable()) {
+            return $this->buildFallbackDigestContent($entries);
+        }
+
+        $context = "Recent Knowledge Entries:\n";
+        foreach ($entries as $entry) {
+            $title = $entry['title'] ?? 'Untitled';
+            $category = $entry['category'] ?? 'General';
+            $content = $entry['content'] ?? '';
+            $context .= "- [{$category}] {$title}: ".substr($content, 0, 200)."...\n";
+        }
+
+        $prompt = "You are synthesizing the daily knowledge activity into a concise daily digest.
+        
+DATE: {$date}
+
+{$context}
+
+Produce a daily synthesis with these sections:
+
+## Key Insights & Decisions
+- 3-5 bullet points of the most important things learned, decided, or discovered
+- Be SPECIFIC: mention actual tools, files, concepts
+
+## Connections
+- 2-3 connections between topics
+- How does today's work relate to ongoing projects?
+
+## Tomorrow's Focus
+- 2-3 suggested areas to focus on based on today's activity
+
+Rules:
+- Be concrete and specific
+- Reference actual entry titles/tags
+- Keep it concise";
+
+        $summary = $ai->generate($prompt);
+
+        if (empty($summary)) {
+            return $this->buildFallbackDigestContent($entries);
+        }
+
+        return "**Daily Synthesis - {$date}**\n\n".$summary;
+    }
+
+    private function buildFallbackDigestContent(Collection $entries): string
     {
         $lines = ["**Daily Knowledge Synthesis**\n"];
 

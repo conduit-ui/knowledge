@@ -27,6 +27,8 @@ services:
       - "8001:8001"
     volumes:
       - embedding_cache:/root/.cache
+    environment:
+      - EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
     depends_on:
       - qdrant
 

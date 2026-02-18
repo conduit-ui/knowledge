@@ -35,7 +35,20 @@ class CodeIndexerService
         '.pytest_cache',
     ];
 
-    private const FILE_EXTENSIONS = ['php', 'py', 'js', 'ts', 'tsx', 'jsx', 'vue'];
+    private const SKIP_FILES = [
+        'composer.lock',
+        'package-lock.json',
+        'yarn.lock',
+        'pnpm-lock.yaml',
+        'cargo.lock',
+    ];
+
+    private const MAX_LINES = 250;
+
+    private const FILE_EXTENSIONS = [
+        'php', 'py', 'js', 'ts', 'tsx', 'jsx', 'vue', 'md', 'json', // Existing
+        'go', 'rs', 'java', 'c', 'cpp', 'h', 'hpp', 'sh', 'yaml', 'yml', 'toml', 'dockerfile' // Added
+    ];
 
     public function __construct(
         private readonly EmbeddingServiceInterface $embeddingService,
@@ -88,6 +101,7 @@ class CodeIndexerService
             $finder->files()
                 ->in($basePath)
                 ->name(array_map(fn ($ext): string => '*.'.$ext, self::FILE_EXTENSIONS))
+                ->notName(self::SKIP_FILES) // Exclude specific files
                 ->exclude(self::SKIP_DIRS)
                 ->ignoreDotFiles(true)
                 ->ignoreVCS(true);
@@ -96,6 +110,14 @@ class CodeIndexerService
             $repo = basename($basePath);
 
             foreach ($finder as $file) {
+                // Skip large files (by line count)
+                // We do a quick line count check here to avoid reading massive files fully if not needed
+                // Or we can do it in indexFile. Doing it here saves resources.
+                // Using iterator_count on file object might be slow for many files.
+                // Let's just check size first? Or read line count.
+                // SplFileObject::setFlags can read lines.
+                // For now, let's just pass it and check in indexFile to keep loop fast.
+                
                 yield [
                     'path' => $file->getRealPath(),
                     'repo' => $repo,
@@ -115,6 +137,12 @@ class CodeIndexerService
 
         if ($content === false) {
             return ['chunks' => 0, 'success' => false, 'error' => 'Could not read file'];
+        }
+
+        // Check line count
+        $lineCount = substr_count($content, "\n") + 1;
+        if ($lineCount > self::MAX_LINES) {
+            return ['chunks' => 0, 'success' => false, 'error' => "Skipped: File too large ({$lineCount} lines > " . self::MAX_LINES . ")"];
         }
 
         $extension = pathinfo($filepath, PATHINFO_EXTENSION);
@@ -261,6 +289,17 @@ class CodeIndexerService
             'js', 'jsx' => 'javascript',
             'ts', 'tsx' => 'typescript',
             'vue' => 'vue',
+            'go' => 'go',
+            'rs' => 'rust',
+            'java' => 'java',
+            'c', 'h' => 'c',
+            'cpp', 'hpp' => 'cpp',
+            'sh' => 'bash',
+            'yaml', 'yml' => 'yaml',
+            'toml' => 'toml',
+            'json' => 'json',
+            'md' => 'markdown',
+            'dockerfile' => 'dockerfile',
             default => 'unknown',
         };
     }

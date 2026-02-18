@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Services\EnhancementQueueService;
-use App\Services\OllamaService;
+use App\Services\AiService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
 
@@ -20,19 +20,19 @@ class EnhanceWorkerCommand extends Command
                             {--once : Process one item and exit}
                             {--status : Show queue status and exit}';
 
-    protected $description = 'Process the enhancement queue using Ollama';
+    protected $description = 'Process the enhancement queue using AI';
 
     public function handle(
         EnhancementQueueService $queue,
-        OllamaService $ollama,
+        AiService $ai,
         QdrantService $qdrant,
     ): int {
         if ((bool) $this->option('status')) {
             return $this->showStatus($queue);
         }
 
-        if (! $ollama->isAvailable()) {
-            warning('Ollama is not available. Skipping enhancement processing.');
+        if (! $ai->isAvailable()) {
+            warning('AI is not available. Skipping enhancement processing.');
 
             return self::SUCCESS;
         }
@@ -40,15 +40,15 @@ class EnhanceWorkerCommand extends Command
         $processOnce = (bool) $this->option('once');
 
         if ($processOnce) {
-            return $this->processOne($queue, $ollama, $qdrant);
+            return $this->processOne($queue, $ai, $qdrant);
         }
 
-        return $this->processAll($queue, $ollama, $qdrant);
+        return $this->processAll($queue, $ai, $qdrant);
     }
 
     private function processOne(
         EnhancementQueueService $queue,
-        OllamaService $ollama,
+        AiService $ai,
         QdrantService $qdrant,
     ): int {
         $item = $queue->dequeue();
@@ -59,12 +59,12 @@ class EnhanceWorkerCommand extends Command
             return self::SUCCESS;
         }
 
-        return $this->processItem($item, $queue, $ollama, $qdrant);
+        return $this->processItem($item, $queue, $ai, $qdrant);
     }
 
     private function processAll(
         EnhancementQueueService $queue,
-        OllamaService $ollama,
+        AiService $ai,
         QdrantService $qdrant,
     ): int {
         $pending = $queue->pendingCount();
@@ -81,7 +81,7 @@ class EnhanceWorkerCommand extends Command
         $failed = 0;
 
         while (($item = $queue->dequeue()) !== null) {
-            $result = $this->processItem($item, $queue, $ollama, $qdrant);
+            $result = $this->processItem($item, $queue, $ai, $qdrant);
 
             if ($result === self::SUCCESS) {
                 $processed++;
@@ -101,7 +101,7 @@ class EnhanceWorkerCommand extends Command
     private function processItem(
         array $item,
         EnhancementQueueService $queue,
-        OllamaService $ollama,
+        AiService $ai,
         QdrantService $qdrant,
     ): int {
         $entryId = $item['entry_id'];
@@ -109,7 +109,7 @@ class EnhanceWorkerCommand extends Command
 
         $this->line("Enhancing entry: {$item['title']}");
 
-        $enhancement = $ollama->enhance([
+        $enhancement = $ai->enhance([
             'title' => $item['title'],
             'content' => $item['content'],
             'category' => $item['category'] ?? null,

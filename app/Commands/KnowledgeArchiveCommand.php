@@ -33,14 +33,14 @@ class KnowledgeArchiveCommand extends Command
         /** @var bool $restore */
         $restore = (bool) $this->option('restore');
 
-        if (! is_numeric($id)) {
-            $this->error('Entry ID must be a number.');
+        if (! is_numeric($id) && ! is_string($id)) {
+            $this->error('Entry ID must be a number or string.');
 
             return self::FAILURE;
         }
 
         $project = $this->resolveProject();
-        $entry = $qdrant->getById((int) $id, $project);
+        $entry = $qdrant->getById($id, $project);
 
         if ($entry === null) {
             $this->error("Entry not found with ID: {$id}");
@@ -70,7 +70,7 @@ class KnowledgeArchiveCommand extends Command
 
         $oldStatus = $entry['status'];
 
-        $qdrant->updateFields((int) $entry['id'], [
+        $qdrant->updateFields($entry['id'], [
             'status' => 'deprecated',
             'confidence' => 0,
         ], $this->resolveProject());
@@ -98,7 +98,7 @@ class KnowledgeArchiveCommand extends Command
             return self::SUCCESS;
         }
 
-        $qdrant->updateFields((int) $entry['id'], [
+        $qdrant->updateFields($entry['id'], [
             'status' => 'draft',
             'confidence' => 50,
         ], $this->resolveProject());

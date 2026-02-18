@@ -175,6 +175,10 @@ class QdrantService
             'superseded_by' => $entry['superseded_by'] ?? null,
             'superseded_date' => $entry['superseded_date'] ?? null,
             'superseded_reason' => $entry['superseded_reason'] ?? null,
+            'enhanced' => $entry['enhanced'] ?? false,
+            'enhanced_at' => $entry['enhanced_at'] ?? null,
+            'concepts' => $entry['concepts'] ?? [],
+            'summary' => $entry['summary'] ?? '',
         ];
 
         // Build point with appropriate vector format
@@ -781,6 +785,10 @@ class QdrantService
             'superseded_by' => $payload['superseded_by'] ?? null,
             'superseded_date' => $payload['superseded_date'] ?? null,
             'superseded_reason' => $payload['superseded_reason'] ?? null,
+            'enhanced' => $payload['enhanced'] ?? false,
+            'enhanced_at' => $payload['enhanced_at'] ?? null,
+            'concepts' => $payload['concepts'] ?? [],
+            'summary' => $payload['summary'] ?? '',
         ];
     }
 
@@ -793,6 +801,8 @@ class QdrantService
     private function mapPointToEntry(array $point): array
     {
         $payload = $point['payload'] ?? [];
+        // Debug
+        // error_log('Payload enhanced: ' . var_export($payload['enhanced'] ?? 'missing', true));
 
         return [
             'id' => $point['id'],
@@ -812,6 +822,10 @@ class QdrantService
             'superseded_by' => $payload['superseded_by'] ?? null,
             'superseded_date' => $payload['superseded_date'] ?? null,
             'superseded_reason' => $payload['superseded_reason'] ?? null,
+            'enhanced' => $payload['enhanced'] ?? false,
+            'enhanced_at' => $payload['enhanced_at'] ?? null,
+            'concepts' => $payload['concepts'] ?? [],
+            'summary' => $payload['summary'] ?? '',
         ];
     }
 

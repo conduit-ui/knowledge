@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use App\Services\EnhancementQueueService;
-use App\Services\OllamaService;
+use App\Services\AiService;
 use App\Services\QdrantService;
 
 beforeEach(function (): void {
-    $this->ollamaService = mock(OllamaService::class);
+    $this->aiService = mock(AiService::class);
     $this->qdrantService = mock(QdrantService::class);
     $this->queueService = mock(EnhancementQueueService::class);
 
-    app()->instance(OllamaService::class, $this->ollamaService);
+    app()->instance(AiService::class, $this->aiService);
     app()->instance(QdrantService::class, $this->qdrantService);
     app()->instance(EnhancementQueueService::class, $this->queueService);
 });
@@ -33,15 +33,15 @@ describe('enhance:worker command', function (): void {
             ->assertSuccessful();
     });
 
-    it('exits gracefully when Ollama is unavailable', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(false);
+    it('exits gracefully when AI is unavailable', function (): void {
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(false);
 
         $this->artisan('enhance:worker')
             ->assertSuccessful();
     });
 
     it('exits successfully when queue is empty', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
         $this->queueService->shouldReceive('pendingCount')->once()->andReturn(0);
 
         $this->artisan('enhance:worker')
@@ -49,7 +49,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('processes one item with --once flag', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
 
         $this->queueService->shouldReceive('dequeue')
             ->once()
@@ -63,7 +63,7 @@ describe('enhance:worker command', function (): void {
                 'queued_at' => '2025-06-01T12:00:00+00:00',
             ]);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->once()
             ->andReturn([
                 'tags' => ['php', 'testing'],
@@ -89,7 +89,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('handles empty queue with --once flag', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
         $this->queueService->shouldReceive('dequeue')->once()->andReturn(null);
 
         $this->artisan('enhance:worker', ['--once' => true])
@@ -97,7 +97,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('records failure on empty enhancement response', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
 
         $this->queueService->shouldReceive('dequeue')
             ->once()
@@ -111,7 +111,7 @@ describe('enhance:worker command', function (): void {
                 'queued_at' => '2025-06-01T12:00:00+00:00',
             ]);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->once()
             ->andReturn([
                 'tags' => [],
@@ -127,7 +127,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('records failure on Qdrant update failure', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
 
         $this->queueService->shouldReceive('dequeue')
             ->once()
@@ -141,7 +141,7 @@ describe('enhance:worker command', function (): void {
                 'queued_at' => '2025-06-01T12:00:00+00:00',
             ]);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->once()
             ->andReturn([
                 'tags' => ['php'],
@@ -161,7 +161,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('processes all items in queue', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
         $this->queueService->shouldReceive('pendingCount')->once()->andReturn(2);
 
         $item1 = [
@@ -188,7 +188,7 @@ describe('enhance:worker command', function (): void {
             ->times(3)
             ->andReturn($item1, $item2, null);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->twice()
             ->andReturn([
                 'tags' => ['ai-tag'],
@@ -208,7 +208,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('preserves existing tags when merging', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
 
         $this->queueService->shouldReceive('dequeue')
             ->once()
@@ -222,7 +222,7 @@ describe('enhance:worker command', function (): void {
                 'queued_at' => '2025-06-01T12:00:00+00:00',
             ]);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->once()
             ->andReturn([
                 'tags' => ['new-tag', 'existing-tag'],
@@ -243,7 +243,7 @@ describe('enhance:worker command', function (): void {
     });
 
     it('does not override existing category', function (): void {
-        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->aiService->shouldReceive('isAvailable')->once()->andReturn(true);
 
         $this->queueService->shouldReceive('dequeue')
             ->once()
@@ -257,7 +257,7 @@ describe('enhance:worker command', function (): void {
                 'queued_at' => '2025-06-01T12:00:00+00:00',
             ]);
 
-        $this->ollamaService->shouldReceive('enhance')
+        $this->aiService->shouldReceive('enhance')
             ->once()
             ->andReturn([
                 'tags' => ['tag'],

@@ -25,19 +25,47 @@ class EnhancementQueueService
      */
     public function queue(array $entry, string $project = 'default'): void
     {
+        $this->queueMany([$entry], $project);
+    }
+
+    /**
+     * Queue multiple entries for enhancement.
+     *
+     * @param  array<int, array{id: string|int, title: string, content: string, category?: string|null, tags?: array<string>}>  $entries
+     */
+    public function queueMany(array $entries, string $project = 'default'): void
+    {
         $items = $this->loadQueue();
+        $now = now()->toIso8601String();
+        
+        // Create lookup map of existing IDs for fast duplicate checking
+        $existingIds = [];
+        foreach ($items as $item) {
+            $existingIds[$item['entry_id']] = true;
+        }
 
-        $items[] = [
-            'entry_id' => $entry['id'],
-            'title' => $entry['title'],
-            'content' => $entry['content'],
-            'category' => $entry['category'] ?? null,
-            'tags' => $entry['tags'] ?? [],
-            'project' => $project,
-            'queued_at' => now()->toIso8601String(),
-        ];
+        $addedCount = 0;
+        foreach ($entries as $entry) {
+            if (isset($existingIds[$entry['id']])) {
+                continue;
+            }
+            
+            $items[] = [
+                'entry_id' => $entry['id'],
+                'title' => $entry['title'],
+                'content' => $entry['content'],
+                'category' => $entry['category'] ?? null,
+                'tags' => $entry['tags'] ?? [],
+                'project' => $project,
+                'queued_at' => $now,
+            ];
+            $existingIds[$entry['id']] = true;
+            $addedCount++;
+        }
 
-        $this->saveQueue($items);
+        if ($addedCount > 0) {
+            $this->saveQueue($items);
+        }
     }
 
     /**
