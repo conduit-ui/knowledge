@@ -28,7 +28,7 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 - **Storage**: Qdrant vector database only (no SQLite, no Eloquent models)
 - **Cache**: Redis via KnowledgeCacheService
 - **Embeddings**: sentence-transformers via EmbeddingService
-- **LLM**: Ollama via OllamaService (optional, for auto-tagging)
+- **LLM**: AI via AiService (optional, for auto-tagging)
 - **HTTP**: Saloon connectors in `app/Integrations/Qdrant/`
 - **Commands**: `app/Commands/` — extend `LaravelZero\Framework\Commands\Command`
 - **Services**: `app/Services/` — registered in `app/Providers/AppServiceProvider.php`
@@ -57,7 +57,7 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 | `TieredSearchService` | Narrow-to-wide retrieval across 4 search tiers |
 | `ProjectDetectorService` | Auto-detect project namespace from git repo |
 | `EnhancementQueueService` | File-based queue for async Ollama auto-tagging |
-| `OllamaService` | LLM integration for auto-tagging and query expansion |
+| `AiService` | AI integration for auto-tagging and query expansion |
 | `PatternDetectorService` | Detect duplicate/similar entries before persistence |
 
 ## TDD Workflow

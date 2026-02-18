@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir \
 COPY server.py .
 
 # Pre-download the model during build
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+RUN python -c "from sentence_transformers import SentenceTransformer; import os; SentenceTransformer(os.environ.get('EMBEDDING_MODEL', 'all-MiniLM-L6-v2'))"
 
 EXPOSE 8001
 

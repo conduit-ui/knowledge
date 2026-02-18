@@ -9,10 +9,12 @@ use App\Services\DeletionTracker;
 use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
 use App\Services\GitContextService;
+use App\Services\GithubService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgeCacheService;
 use App\Services\KnowledgePathService;
-use App\Services\OllamaService;
+use App\Services\OpenCodeService;
+use App\Services\AiService;
 use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
 use App\Services\RemoteSyncService;
@@ -183,8 +185,24 @@ class AppServiceProvider extends ServiceProvider
         // Health check service for service status commands
         $this->app->singleton(HealthCheckInterface::class, fn (): HealthCheckService => new HealthCheckService);
 
-        // Ollama service
-        $this->app->singleton(OllamaService::class, fn (): \App\Services\OllamaService => new OllamaService);
+        // AI service
+        $this->app->singleton(AiService::class, fn (): \App\Services\AiService => new AiService);
+
+        // Supersede service
+        $this->app->singleton(SupersedeService::class, fn ($app): SupersedeService => new SupersedeService(
+            $app->make(QdrantService::class),
+            $app->make(AiService::class)
+        ));
+
+        // GitHub service
+        $this->app->singleton(GithubService::class, fn (): GithubService => new GithubService);
+
+        // OpenCode enrichment service
+        $this->app->singleton(OpenCodeService::class, fn (): OpenCodeService => new OpenCodeService(
+            config('opencode.url'),
+            config('opencode.token'),
+            (int) config('opencode.timeout', 20)
+        ));
 
         // Enhancement queue service
         $this->app->singleton(EnhancementQueueService::class, fn ($app): \App\Services\EnhancementQueueService => new EnhancementQueueService(

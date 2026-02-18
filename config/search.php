@@ -105,6 +105,26 @@ return [
 
     'project_patterns' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AI Configuration
+    |--------------------------------------------------------------------------
+    */
+
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'ollama'),
+        'openrouter' => [
+            'key' => env('OPENROUTER_API_KEY'),
+            'model' => env('OPENROUTER_MODEL', 'anthropic/claude-3.5-sonnet'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ollama Configuration
+    |--------------------------------------------------------------------------
+    */
+
     'ollama' => [
         'enabled' => env('OLLAMA_ENABLED', true),
         'host' => env('OLLAMA_HOST', 'localhost'),

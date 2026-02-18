@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2fb8042162e7b54f70de58d01f92ce7c",
+    "content-hash": "936a0979bc8adc27cb5f15202beb11c9",
     "packages": [
         {
             "name": "brick/math",
@@ -134,6 +134,127 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "conduit-ui/connector",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/conduit-ui/connector.git",
+                "reference": "b315dce1b0fe0341f5426274d4276c14e9f4f52f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/conduit-ui/connector/zipball/b315dce1b0fe0341f5426274d4276c14e9f4f52f",
+                "reference": "b315dce1b0fe0341f5426274d4276c14e9f4f52f",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2|^8.3|^8.4",
+                "saloonphp/saloon": "^3.10"
+            },
+            "require-dev": {
+                "laravel/pail": "^1.2",
+                "laravel/pint": "^1.26",
+                "nunomaduro/collision": "^7.0||^8.0",
+                "pestphp/pest": "^2.34||^3.0",
+                "pestphp/pest-plugin-arch": "^2.7||^3.0",
+                "phpstan/extension-installer": "^1.3",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-deprecation-rules": "^1.1",
+                "phpstan/phpstan-phpunit": "^1.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ConduitUi\\GitHubConnector\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jordan Partridge",
+                    "email": "jordan.l.partridge@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Core GitHub API connector with authentication",
+            "homepage": "https://github.com/conduit-ui/github-connector",
+            "keywords": [
+                "api",
+                "conduit-ui",
+                "connector",
+                "github"
+            ],
+            "support": {
+                "issues": "https://github.com/conduit-ui/connector/issues",
+                "source": "https://github.com/conduit-ui/connector/tree/v1.0.0"
+            },
+            "time": "2025-12-11T04:17:51+00:00"
+        },
+        {
+            "name": "conduit-ui/pr",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/conduit-ui/pr.git",
+                "reference": "673ccce68d637e97c36ba9289f0877748c5fff6f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/conduit-ui/pr/zipball/673ccce68d637e97c36ba9289f0877748c5fff6f",
+                "reference": "673ccce68d637e97c36ba9289f0877748c5fff6f",
+                "shasum": ""
+            },
+            "require": {
+                "conduit-ui/connector": "^1.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "pestphp/pest": "^3.0",
+                "phpstan/phpstan": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "ConduitUI\\Pr\\PrServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ConduitUI\\Pr\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jordan Partridge",
+                    "email": "jordan@partridge.rocks"
+                }
+            ],
+            "description": "Pull Request operations for the Conduit agent ecosystem",
+            "keywords": [
+                "Agent",
+                "api",
+                "conduit-ui",
+                "github",
+                "pr",
+                "pull-request"
+            ],
+            "support": {
+                "issues": "https://github.com/conduit-ui/pr/issues",
+                "source": "https://github.com/conduit-ui/pr/tree/v1.0.0"
+            },
+            "time": "2025-12-12T16:11:50+00:00"
         },
         {
             "name": "doctrine/inflector",
