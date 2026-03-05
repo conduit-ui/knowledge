@@ -1150,6 +1150,134 @@ describe('upsert duplicate detection', function (): void {
         expect($this->service->upsert($entry, 'default', true))->toBeTrue();
     });
 
+    it('throws when fingerprint tag matches existing entry', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        // Mock findByFingerprint scroll returning a match
+        $scrollResponse = createMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    ['id' => 'existing-fingerprint-id'],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'tags' => ['fingerprint:abc123', 'other-tag'],
+        ];
+
+        expect(fn () => $this->service->upsert($entry, 'default', true))
+            ->toThrow(DuplicateEntryException::class);
+    });
+
+    it('throws when title and commit hash match existing entry', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        // Mock findByTitleAndCommit scroll returning a match
+        $scrollResponse = createMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    ['id' => 'existing-commit-id'],
+                ],
+            ],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'commit' => 'abc1234',
+        ];
+
+        expect(fn () => $this->service->upsert($entry, 'default', true))
+            ->toThrow(DuplicateEntryException::class);
+    });
+
+    it('proceeds when fingerprint has no match', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Unique Title Unique content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector, 2);
+
+        // Mock findByFingerprint scroll returning no match
+        $scrollResponse = createMockResponse(true, 200, [
+            'result' => ['points' => []],
+        ]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        // Mock findSimilar returning no results (content hash check)
+        $searchResponse = createMockResponse(true, 200, ['result' => []]);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($searchResponse);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Unique Title',
+            'content' => 'Unique content',
+            'tags' => ['fingerprint:unique123'],
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
+    });
+
+    it('stores commit field in payload', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        $upsertResponse = createMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $entry = [
+            'id' => 'test-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'commit' => 'abc1234def',
+        ];
+
+        expect($this->service->upsert($entry, 'default', false))->toBeTrue();
+    });
+
     it('stores superseded fields in payload', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Title Test content')

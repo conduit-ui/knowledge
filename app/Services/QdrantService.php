@@ -141,6 +141,25 @@ class QdrantService
 
         // Check for duplicates when requested (for new entries)
         if ($checkDuplicates) {
+            // Fingerprint dedup: if entry has a fingerprint tag, check for existing entries with same fingerprint
+            $fingerprint = $this->extractFingerprint($entry['tags'] ?? []);
+            if ($fingerprint !== null) {
+                $existing = $this->findByFingerprint($fingerprint, $project);
+                if ($existing !== null) {
+                    throw DuplicateEntryException::hashMatch($existing, $fingerprint);
+                }
+            }
+
+            // Title+commit dedup: same title and commit hash means same CI event captured twice
+            $commitHash = $entry['commit'] ?? null;
+            if (is_string($commitHash) && $commitHash !== '') {
+                $existing = $this->findByTitleAndCommit($entry['title'], $commitHash, $project);
+                if ($existing !== null) {
+                    throw DuplicateEntryException::hashMatch($existing, $entry['title'].'@'.$commitHash);
+                }
+            }
+
+            // Content hash dedup (existing behavior)
             $contentHash = hash('sha256', $entry['title'].$entry['content']);
             $similar = $this->findSimilar($vector, $project, 0.95);
 
@@ -172,6 +191,7 @@ class QdrantService
             'updated_at' => $entry['updated_at'] ?? now()->toIso8601String(),
             'last_verified' => $entry['last_verified'] ?? null,
             'evidence' => $entry['evidence'] ?? null,
+            'commit' => $entry['commit'] ?? null,
             'superseded_by' => $entry['superseded_by'] ?? null,
             'superseded_date' => $entry['superseded_date'] ?? null,
             'superseded_reason' => $entry['superseded_reason'] ?? null,
@@ -879,6 +899,75 @@ class QdrantService
             ),
             fn (string $name): bool => str_starts_with($name, 'knowledge_')
         ));
+    }
+
+    /**
+     * Extract fingerprint value from tags array.
+     *
+     * Fingerprint tags follow the format "fingerprint:{hash}".
+     *
+     * @param  array<string>  $tags
+     */
+    private function extractFingerprint(array $tags): ?string
+    {
+        foreach ($tags as $tag) {
+            if (str_starts_with($tag, 'fingerprint:')) {
+                return $tag;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find an existing entry with the same fingerprint tag.
+     */
+    private function findByFingerprint(string $fingerprint, string $project): string|int|null
+    {
+        $filter = [
+            'must' => [
+                ['key' => 'tags', 'match' => ['value' => $fingerprint]],
+                ['is_empty' => ['key' => 'superseded_by']],
+            ],
+        ];
+
+        $response = $this->connector->send(
+            new ScrollPoints($this->getCollectionName($project), 1, $filter, null)
+        );
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $points = $response->json()['result']['points'] ?? [];
+
+        return $points !== [] ? $points[0]['id'] : null;
+    }
+
+    /**
+     * Find an existing entry with the same title and commit hash.
+     */
+    private function findByTitleAndCommit(string $title, string $commit, string $project): string|int|null
+    {
+        $filter = [
+            'must' => [
+                ['key' => 'title', 'match' => ['text' => $title]],
+                ['key' => 'commit', 'match' => ['value' => $commit]],
+                ['is_empty' => ['key' => 'superseded_by']],
+            ],
+        ];
+
+        $response = $this->connector->send(
+            new ScrollPoints($this->getCollectionName($project), 1, $filter, null)
+        );
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $points = $response->json()['result']['points'] ?? [];
+
+        return $points !== [] ? $points[0]['id'] : null;
     }
 
     /**
