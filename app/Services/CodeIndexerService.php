@@ -7,7 +7,9 @@ namespace App\Services;
 use App\Contracts\EmbeddingServiceInterface;
 use App\Integrations\Qdrant\QdrantConnector;
 use App\Integrations\Qdrant\Requests\CreateCollection;
+use App\Integrations\Qdrant\Requests\DeletePoints;
 use App\Integrations\Qdrant\Requests\GetCollectionInfo;
+use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
 use Symfony\Component\Finder\Finder;
@@ -171,7 +173,7 @@ class CodeIndexerService
      * Search code semantically.
      *
      * @param  array{repo?: string, language?: string}  $filters
-     * @return array<array{filepath: string, repo: string, language: string, content: string, score: float, functions: array<string>}>
+     * @return array<array{filepath: string, repo: string, language: string, content: string, score: float, functions: array<string>, symbol_name: string|null, symbol_kind: string|null, signature: string|null, start_line: int, end_line: int}>
      */
     public function search(string $query, int $limit = 10, array $filters = []): array
     {
@@ -344,6 +346,79 @@ class CodeIndexerService
         }
 
         return ['success' => $success, 'failed' => $failed, 'total' => $total];
+    }
+
+    /**
+     * Remove vectorized symbols that no longer exist in the current index.
+     *
+     * @return array{deleted: int, total_checked: int}
+     */
+    public function pruneStaleSymbols(string $indexPath, string $repo): array
+    {
+        $content = @file_get_contents($indexPath);
+        if ($content === false) {
+            return ['deleted' => 0, 'total_checked' => 0];
+        }
+
+        /** @var array{symbols: array<array<string, mixed>>}|null $index */
+        $index = json_decode($content, true);
+        if (! is_array($index) || ! isset($index['symbols'])) {
+            return ['deleted' => 0, 'total_checked' => 0];
+        }
+
+        // Build set of valid point IDs from the current index
+        $validIds = [];
+        foreach ($index['symbols'] as $symbol) {
+            $id = md5("{$repo}:{$symbol['file']}:{$symbol['name']}:{$symbol['line']}");
+            $validIds[$id] = true;
+        }
+
+        // Scroll through all points for this repo in Qdrant
+        $staleIds = [];
+        $totalChecked = 0;
+        $offset = null;
+
+        do {
+            $filter = ['must' => [['key' => 'repo', 'match' => ['value' => $repo]]]];
+            $response = $this->connector->send(
+                new ScrollPoints(self::COLLECTION_NAME, 100, $filter, $offset)
+            );
+
+            if (! $response->successful()) {
+                break;
+            }
+
+            $data = $response->json();
+            $points = $data['result']['points'] ?? [];
+            $offset = $data['result']['next_page_offset'] ?? null;
+
+            foreach ($points as $point) {
+                // Only check symbol points (they have symbol_name in payload)
+                if (! isset($point['payload']['symbol_name'])) {
+                    continue;
+                }
+
+                $totalChecked++;
+                $pointId = $point['id'];
+
+                if (! isset($validIds[$pointId])) {
+                    $staleIds[] = $pointId;
+                }
+            }
+        } while ($offset !== null && $points !== []);
+
+        // Delete stale points in batches
+        $deleted = 0;
+        foreach (array_chunk($staleIds, 100) as $batch) {
+            $response = $this->connector->send(
+                new DeletePoints(self::COLLECTION_NAME, $batch)
+            );
+            if ($response->successful()) {
+                $deleted += count($batch);
+            }
+        }
+
+        return ['deleted' => $deleted, 'total_checked' => $totalChecked];
     }
 
     /**

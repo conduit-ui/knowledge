@@ -303,6 +303,40 @@ PYTHON;
     }
 
     /**
+     * Get symbol source code by name and file path.
+     */
+    public function getSymbolSourceByNameAndFile(string $name, string $filePath, string $repo = 'local/knowledge'): ?string
+    {
+        $index = $this->loadIndex($repo);
+        if ($index === null) {
+            return null;
+        }
+
+        $symbol = $this->findSymbolByNameAndFile($index, $name, $filePath);
+        if ($symbol === null) {
+            return null;
+        }
+
+        $contentPath = $this->contentFilePath($repo, $symbol['file']);
+        if ($contentPath === null || ! file_exists($contentPath)) {
+            return null;
+        }
+
+        $handle = fopen($contentPath, 'rb');
+        // @codeCoverageIgnoreStart
+        if ($handle === false) {
+            return null;
+        }
+        // @codeCoverageIgnoreEnd
+
+        fseek($handle, $symbol['byte_offset']);
+        $source = fread($handle, $symbol['byte_length']);
+        fclose($handle);
+
+        return $source !== false ? $source : null;
+    }
+
+    /**
      * Find a symbol by ID in an index.
      *
      * @param  array<string, mixed>  $index
@@ -312,6 +346,23 @@ PYTHON;
     {
         foreach ($index['symbols'] as $symbol) {
             if (($symbol['id'] ?? '') === $symbolId) {
+                return $symbol;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find a symbol by name and file path in an index.
+     *
+     * @param  array<string, mixed>  $index
+     * @return array<string, mixed>|null
+     */
+    private function findSymbolByNameAndFile(array $index, string $name, string $filePath): ?array
+    {
+        foreach ($index['symbols'] as $symbol) {
+            if (($symbol['name'] ?? '') === $name && ($symbol['file'] ?? '') === $filePath) {
                 return $symbol;
             }
         }

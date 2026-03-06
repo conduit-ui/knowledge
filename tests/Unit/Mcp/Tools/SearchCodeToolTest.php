@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 use App\Mcp\Tools\SearchCodeTool;
 use App\Services\CodeIndexerService;
+use App\Services\SymbolIndexService;
 use Laravel\Mcp\Request;
 
 uses()->group('mcp-tools');
 
 beforeEach(function (): void {
     $this->codeIndexer = Mockery::mock(CodeIndexerService::class);
-    $this->tool = new SearchCodeTool($this->codeIndexer);
+    $this->symbolIndex = Mockery::mock(SymbolIndexService::class);
+    $this->tool = new SearchCodeTool($this->codeIndexer, $this->symbolIndex);
 });
 
 describe('search code tool', function (): void {
@@ -46,7 +48,7 @@ describe('search code tool', function (): void {
             ->and($data['meta']['query'])->toBe('authentication middleware');
     });
 
-    it('returns formatted results', function (): void {
+    it('returns formatted results with source code', function (): void {
         $this->codeIndexer->shouldReceive('search')
             ->once()
             ->andReturn([
@@ -65,6 +67,11 @@ describe('search code tool', function (): void {
                 ],
             ]);
 
+        $this->symbolIndex->shouldReceive('getSymbolSourceByNameAndFile')
+            ->with('Auth', '/app/Http/Middleware/Auth.php', 'local/pstrax-laravel')
+            ->once()
+            ->andReturn('class Auth extends Middleware { public function handle() {} }');
+
         $request = new Request(['query' => 'authentication middleware']);
         $response = $this->tool->handle($request);
 
@@ -75,7 +82,38 @@ describe('search code tool', function (): void {
             ->and($data['results'][0]['symbol_kind'])->toBe('class')
             ->and($data['results'][0]['score'])->toBe(0.92)
             ->and($data['results'][0]['line'])->toBe(5)
+            ->and($data['results'][0]['source'])->toBe('class Auth extends Middleware { public function handle() {} }')
             ->and($data['meta']['total'])->toBe(1);
+    });
+
+    it('returns null source when symbol not found in index', function (): void {
+        $this->codeIndexer->shouldReceive('search')
+            ->once()
+            ->andReturn([
+                [
+                    'filepath' => '/app/Foo.php',
+                    'repo' => 'local/test',
+                    'language' => 'php',
+                    'content' => 'class Foo {}',
+                    'score' => 0.8,
+                    'functions' => [],
+                    'symbol_name' => 'Foo',
+                    'symbol_kind' => 'class',
+                    'signature' => 'class Foo',
+                    'start_line' => 1,
+                    'end_line' => 5,
+                ],
+            ]);
+
+        $this->symbolIndex->shouldReceive('getSymbolSourceByNameAndFile')
+            ->once()
+            ->andReturnNull();
+
+        $request = new Request(['query' => 'test query']);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['results'][0]['source'])->toBeNull();
     });
 
     it('passes repo filter to search', function (): void {

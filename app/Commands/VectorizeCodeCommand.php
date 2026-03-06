@@ -78,6 +78,11 @@ class VectorizeCodeCommand extends Command
 
         info("Done: {$result['success']}/{$result['total']} symbols vectorized, {$result['failed']} failed");
 
+        $pruneResult = $codeIndexer->pruneStaleSymbols($indexPath, $repo);
+        if ($pruneResult['deleted'] > 0) {
+            note("Pruned {$pruneResult['deleted']} stale symbols ({$pruneResult['total_checked']} checked)");
+        }
+
         return self::SUCCESS;
     }
 }

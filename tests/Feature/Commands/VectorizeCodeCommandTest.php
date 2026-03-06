@@ -57,6 +57,10 @@ describe('vectorize-code command', function (): void {
             ->once()
             ->andReturn(['success' => 5, 'failed' => 1, 'total' => 6]);
 
+        $this->codeIndexerMock->shouldReceive('pruneStaleSymbols')
+            ->once()
+            ->andReturn(['deleted' => 0, 'total_checked' => 0]);
+
         $this->artisan('vectorize-code', ['repo' => 'local/test-vectorize'])
             ->assertSuccessful();
 
@@ -78,6 +82,10 @@ describe('vectorize-code command', function (): void {
             })
             ->once()
             ->andReturn(['success' => 3, 'failed' => 0, 'total' => 3]);
+
+        $this->codeIndexerMock->shouldReceive('pruneStaleSymbols')
+            ->once()
+            ->andReturn(['deleted' => 0, 'total_checked' => 0]);
 
         $this->artisan('vectorize-code', [
             'repo' => 'local/test-vectorize',
@@ -102,6 +110,10 @@ describe('vectorize-code command', function (): void {
             })
             ->once()
             ->andReturn(['success' => 2, 'failed' => 0, 'total' => 2]);
+
+        $this->codeIndexerMock->shouldReceive('pruneStaleSymbols')
+            ->once()
+            ->andReturn(['deleted' => 0, 'total_checked' => 0]);
 
         $this->artisan('vectorize-code', [
             'repo' => 'local/test-vectorize',

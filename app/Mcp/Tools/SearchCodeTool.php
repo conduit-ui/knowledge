@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mcp\Tools;
 
 use App\Services\CodeIndexerService;
+use App\Services\SymbolIndexService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -20,6 +21,7 @@ class SearchCodeTool extends Tool
 {
     public function __construct(
         private readonly CodeIndexerService $codeIndexer,
+        private readonly SymbolIndexService $symbolIndex,
     ) {}
 
     public function handle(Request $request): Response
@@ -47,16 +49,29 @@ class SearchCodeTool extends Tool
             ], JSON_THROW_ON_ERROR));
         }
 
-        $formatted = array_map(fn (array $r): array => [
-            'filepath' => $r['filepath'],
-            'repo' => $r['repo'],
-            'language' => $r['language'],
-            'symbol_name' => $r['symbol_name'] ?? null,
-            'symbol_kind' => $r['symbol_kind'] ?? null,
-            'line' => $r['start_line'],
-            'score' => round($r['score'], 3),
-            'content' => $r['content'],
-        ], $results);
+        $formatted = array_map(function (array $r): array {
+            $source = null;
+            $symbolName = $r['symbol_name'] ?? null;
+            if (is_string($symbolName) && $symbolName !== '') {
+                $source = $this->symbolIndex->getSymbolSourceByNameAndFile(
+                    $symbolName,
+                    $r['filepath'],
+                    $r['repo'],
+                );
+            }
+
+            return [
+                'filepath' => $r['filepath'],
+                'repo' => $r['repo'],
+                'language' => $r['language'],
+                'symbol_name' => $symbolName,
+                'symbol_kind' => $r['symbol_kind'] ?? null,
+                'line' => $r['start_line'],
+                'score' => round($r['score'], 3),
+                'content' => $r['content'],
+                'source' => $source,
+            ];
+        }, $results);
 
         return Response::text(json_encode([
             'results' => $formatted,

@@ -1238,3 +1238,142 @@ describe('constructor', function (): void {
         expect($property->getValue($service))->toBe(768);
     });
 });
+
+describe('pruneStaleSymbols', function (): void {
+    it('returns zeros for non-existent file', function (): void {
+        $result = $this->service->pruneStaleSymbols('/nonexistent/file.json', 'local/test');
+
+        expect($result)->toMatchArray(['deleted' => 0, 'total_checked' => 0]);
+    });
+
+    it('returns zeros for invalid JSON', function (): void {
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, 'not json');
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result)->toMatchArray(['deleted' => 0, 'total_checked' => 0]);
+        unlink($tempFile);
+    });
+
+    it('deletes stale points', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'kind' => 'class'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $validId = md5('local/test:Foo.php:Foo:1');
+        $staleId = md5('local/test:Bar.php:Bar:1');
+
+        // Scroll returns one valid and one stale point
+        $scrollResponse = createCodeMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    ['id' => $validId, 'payload' => ['symbol_name' => 'Foo', 'repo' => 'local/test']],
+                    ['id' => $staleId, 'payload' => ['symbol_name' => 'Bar', 'repo' => 'local/test']],
+                ],
+                'next_page_offset' => null,
+            ],
+        ]);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $deleteResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\DeletePoints::class))
+            ->once()
+            ->andReturn($deleteResponse);
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result['deleted'])->toBe(1)
+            ->and($result['total_checked'])->toBe(2);
+
+        unlink($tempFile);
+    });
+
+    it('skips non-symbol points (file chunks)', function (): void {
+        $indexData = ['symbols' => []];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $scrollResponse = createCodeMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    ['id' => 'chunk-1', 'payload' => ['filepath' => 'Foo.php', 'repo' => 'local/test']],
+                ],
+                'next_page_offset' => null,
+            ],
+        ]);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result['deleted'])->toBe(0)
+            ->and($result['total_checked'])->toBe(0);
+
+        unlink($tempFile);
+    });
+
+    it('handles scroll failure gracefully', function (): void {
+        $indexData = ['symbols' => [['name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'kind' => 'class']]];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $scrollResponse = createCodeMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result['deleted'])->toBe(0)
+            ->and($result['total_checked'])->toBe(0);
+
+        unlink($tempFile);
+    });
+
+    it('reports no deletions when all points are current', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'kind' => 'class'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $validId = md5('local/test:Foo.php:Foo:1');
+
+        $scrollResponse = createCodeMockResponse(true, 200, [
+            'result' => [
+                'points' => [
+                    ['id' => $validId, 'payload' => ['symbol_name' => 'Foo', 'repo' => 'local/test']],
+                ],
+                'next_page_offset' => null,
+            ],
+        ]);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+            ->once()
+            ->andReturn($scrollResponse);
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result['deleted'])->toBe(0)
+            ->and($result['total_checked'])->toBe(1);
+
+        unlink($tempFile);
+    });
+});

@@ -112,6 +112,11 @@ class ReindexAllCommand extends Command
 
             $vectorized++;
             note("  Vectorized: {$vResult['success']}/{$vResult['total']} ({$vResult['failed']} failed)");
+
+            $pruneResult = $codeIndexer->pruneStaleSymbols($indexPath, $repo);
+            if ($pruneResult['deleted'] > 0) {
+                note("  Pruned {$pruneResult['deleted']} stale symbols");
+            }
         }
 
         info("Done: {$indexed} indexed, {$vectorized} vectorized, {$errors} errors");
