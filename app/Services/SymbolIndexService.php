@@ -34,7 +34,8 @@ class SymbolIndexService
         $incrementalFlag = $incremental ? 'True' : 'False';
 
         $script = <<<PYTHON
-import sys
+import os, sys
+os.environ['JCODEMUNCH_MAX_INDEX_FILES'] = '10000'
 sys.path.insert(0, '/tmp/jcodemunch-inspect')
 from jcodemunch_mcp.tools.index_folder import index_folder
 import json
@@ -47,7 +48,7 @@ result = index_folder(
 print(json.dumps(result))
 PYTHON;
 
-        $result = Process::timeout(120)->run(['python3', '-c', $script]);
+        $result = Process::timeout(600)->run(['/opt/homebrew/opt/python@3.12/bin/python3.12', '-c', $script]);
 
         if (! $result->successful()) {
             return ['success' => false, 'error' => $result->errorOutput()];

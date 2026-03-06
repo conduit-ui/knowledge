@@ -8,6 +8,7 @@ use App\Mcp\Tools\ContextTool;
 use App\Mcp\Tools\CorrectTool;
 use App\Mcp\Tools\RecallTool;
 use App\Mcp\Tools\RememberTool;
+use App\Mcp\Tools\SearchCodeTool;
 use App\Mcp\Tools\StatsTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -25,6 +26,7 @@ class KnowledgeServer extends Server
         CorrectTool::class,
         ContextTool::class,
         StatsTool::class,
+        SearchCodeTool::class,
     ];
 
     protected array $resources = [];

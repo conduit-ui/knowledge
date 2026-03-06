@@ -204,10 +204,162 @@ class CodeIndexerService
                 'content' => $payload['content'] ?? '',
                 'score' => $result['score'] ?? 0.0,
                 'functions' => $payload['functions'] ?? [],
-                'start_line' => $payload['start_line'] ?? 1,
-                'end_line' => $payload['end_line'] ?? 1,
+                'symbol_name' => $payload['symbol_name'] ?? null,
+                'symbol_kind' => $payload['symbol_kind'] ?? null,
+                'signature' => $payload['signature'] ?? null,
+                'start_line' => $payload['start_line'] ?? $payload['line'] ?? 1,
+                'end_line' => $payload['end_line'] ?? $payload['line'] ?? 1,
             ];
         }, $results);
+    }
+
+    /**
+     * Index a single tree-sitter symbol into Qdrant.
+     *
+     * @return array{success: bool, error?: string}
+     */
+    public function indexSymbol(
+        string $text,
+        string $filepath,
+        string $repo,
+        string $language,
+        string $symbolName,
+        string $symbolKind,
+        int $line,
+        string $signature,
+    ): array {
+        $vector = $this->embeddingService->generate($text);
+
+        if ($vector === []) {
+            return ['success' => false, 'error' => 'Empty embedding'];
+        }
+
+        $id = md5("{$repo}:{$filepath}:{$symbolName}:{$line}");
+
+        $points = [[
+            'id' => $id,
+            'vector' => $vector,
+            'payload' => [
+                'filepath' => $filepath,
+                'repo' => $repo,
+                'language' => $language,
+                'symbol_name' => $symbolName,
+                'symbol_kind' => $symbolKind,
+                'line' => $line,
+                'signature' => $signature,
+                'content' => mb_substr($text, 0, 4000),
+                'indexed_at' => now()->toIso8601String(),
+            ],
+        ]];
+
+        $response = $this->connector->send(new UpsertPoints(self::COLLECTION_NAME, $points));
+
+        return $response->successful()
+            ? ['success' => true]
+            : ['success' => false, 'error' => 'Upsert failed'];
+    }
+
+    /**
+     * Batch-vectorize symbols from a tree-sitter index file.
+     *
+     * @param  array<string>  $kinds  Symbol kinds to include (empty = all structural kinds)
+     * @param  callable(int $success, int $failed, int $total): void  $onProgress
+     * @return array{success: int, failed: int, total: int}
+     */
+    public function vectorizeFromIndex(
+        string $indexPath,
+        string $repo,
+        SymbolIndexService $symbolIndex,
+        array $kinds = [],
+        ?string $language = null,
+        ?callable $onProgress = null,
+    ): array {
+        $content = file_get_contents($indexPath);
+        if ($content === false) {
+            return ['success' => 0, 'failed' => 0, 'total' => 0];
+        }
+
+        /** @var array{symbols: array<array<string, mixed>>}|null $index */
+        $index = json_decode($content, true);
+        if (! is_array($index) || ! isset($index['symbols'])) {
+            return ['success' => 0, 'failed' => 0, 'total' => 0];
+        }
+
+        $allowedKinds = $kinds !== [] ? $kinds : ['class', 'method', 'function', 'interface', 'trait', 'enum'];
+
+        $symbols = array_values(array_filter(
+            $index['symbols'],
+            function (array $s) use ($allowedKinds, $language): bool {
+                if (! in_array($s['kind'] ?? '', $allowedKinds, true)) {
+                    return false;
+                }
+                if ($language !== null) {
+                    $ext = strtolower(pathinfo($s['file'] ?? '', PATHINFO_EXTENSION));
+                    $fileLang = $this->detectLanguage($ext);
+                    if ($fileLang !== $language) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+        ));
+
+        $total = count($symbols);
+        $success = 0;
+        $failed = 0;
+
+        foreach ($symbols as $symbol) {
+            $text = $this->buildSymbolText($symbol);
+            if (trim($text) === '') {
+                $failed++;
+
+                continue;
+            }
+
+            $source = $symbolIndex->getSymbolSource($symbol['id'] ?? '', $repo);
+            if ($source !== null) {
+                $text .= "\n".$source;
+            }
+
+            $ext = strtolower(pathinfo($symbol['file'] ?? '', PATHINFO_EXTENSION));
+            $symbolLanguage = $this->detectLanguage($ext);
+
+            $result = $this->indexSymbol(
+                text: $text,
+                filepath: $symbol['file'] ?? '',
+                repo: $repo,
+                language: $symbolLanguage,
+                symbolName: $symbol['name'] ?? '',
+                symbolKind: $symbol['kind'] ?? '',
+                line: (int) ($symbol['line'] ?? 0),
+                signature: $symbol['signature'] ?? '',
+            );
+
+            $result['success'] ? $success++ : $failed++;
+
+            if ($onProgress !== null) {
+                $onProgress($success, $failed, $total);
+            }
+        }
+
+        return ['success' => $success, 'failed' => $failed, 'total' => $total];
+    }
+
+    /**
+     * Build searchable text from a tree-sitter symbol.
+     *
+     * @param  array<string, mixed>  $symbol
+     */
+    private function buildSymbolText(array $symbol): string
+    {
+        return implode("\n", array_filter([
+            ($symbol['kind'] ?? '').' '.($symbol['name'] ?? ''),
+            $symbol['signature'] ?? '',
+            $symbol['summary'] ?? '',
+            $symbol['docstring'] ?? '',
+            isset($symbol['file']) ? 'file: '.$symbol['file'] : '',
+        ]));
     }
 
     /**
