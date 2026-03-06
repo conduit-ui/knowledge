@@ -1,5 +1,7 @@
 # Knowledge CLI
 
+[![Sentinel Gate](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml/badge.svg)](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml)
+
 AI-powered knowledge base with semantic search, Qdrant vector storage, and Ollama intelligence.
 
 ## What It Does

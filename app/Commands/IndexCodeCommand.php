@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Services\CodeIndexerService;
+use App\Services\SymbolIndexService;
 use LaravelZero\Framework\Commands\Command;
 
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
-use function Laravel\Prompts\progress;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
 use function Laravel\Prompts\warning;
@@ -18,173 +17,109 @@ use function Laravel\Prompts\warning;
 class IndexCodeCommand extends Command
 {
     protected $signature = 'index-code
-                            {--path=* : Additional paths to index}
-                            {--dry-run : Show what would be indexed without actually indexing}
-                            {--stats : Show indexing statistics only}';
+                            {path? : Path to index (defaults to current directory)}
+                            {--incremental : Only re-index changed files}
+                            {--list : List all indexed repositories}';
 
-    protected $description = 'Index code files for semantic search';
+    protected $description = 'Index code files using tree-sitter AST parsing';
 
-    /** @var array<string> */
-    private const DEFAULT_PATHS = [];
-
-    public function handle(CodeIndexerService $indexer): int
+    public function handle(SymbolIndexService $indexer): int
     {
-        /** @var array<string> $additionalPaths */
-        $additionalPaths = (array) $this->option('path');
-        $dryRun = (bool) $this->option('dry-run');
-        $statsOnly = (bool) $this->option('stats');
+        if ((bool) $this->option('list')) {
+            return $this->listRepos($indexer);
+        }
 
-        $paths = array_unique(array_merge(self::DEFAULT_PATHS, $additionalPaths));
+        $pathArg = $this->argument('path');
+        $path = is_string($pathArg) ? $pathArg : getcwd();
+        $incremental = (bool) $this->option('incremental');
 
-        // Filter to existing paths
-        $validPaths = array_filter($paths, fn ($p): bool => is_dir($p));
-
-        if ($validPaths === []) {
-            error('No valid paths to index.');
+        if ($path === false || ! is_dir($path)) {
+            error("Invalid path: {$path}");
 
             return self::FAILURE;
         }
 
-        info('Code Indexer');
-        note('Paths to index: '.implode(', ', array_map('basename', $validPaths)));
+        info('Symbol Indexer (tree-sitter AST)');
+        note('Path: '.$path);
 
-        // Ensure collection exists
-        if (! $dryRun) {
-            $created = spin(
-                fn (): bool => $indexer->ensureCollection(),
-                'Ensuring code collection exists...'
-            );
-
-            if (! $created) {
-                error('Failed to create/verify code collection in Qdrant.');
-
-                return self::FAILURE;
-            }
-        }
-
-        // Collect all files first
-        $files = [];
-        foreach ($indexer->findFiles($validPaths) as $file) {
-            $files[] = $file;
-        }
-
-        $totalFiles = count($files);
-        info("Found {$totalFiles} files to index.");
-
-        if ($statsOnly || $dryRun) {
-            $this->showStats($files);
-
-            if ($dryRun) {
-                warning('Dry run - no files were indexed.');
-            }
-
-            return self::SUCCESS;
-        }
-
-        if ($totalFiles === 0) {
-            warning('No files found to index.');
-
-            return self::SUCCESS;
-        }
-
-        // Index files with progress bar
-        $indexed = 0;
-        $failed = 0;
-        $totalChunks = 0;
-        $errors = [];
-
-        $progress = progress(
-            label: 'Indexing files...',
-            steps: $totalFiles
+        /** @var array{success: bool, repo?: string, file_count?: int, symbol_count?: int, languages?: array<string, int>, error?: string, incremental?: bool, changed?: int, new?: int, deleted?: int, warnings?: array<string>} $result */
+        $result = spin(
+            fn (): array => $indexer->indexFolder($path, $incremental),
+            $incremental ? 'Incremental indexing...' : 'Indexing with tree-sitter...'
         );
 
-        $progress->start();
+        if (! $result['success']) {
+            error($result['error'] ?? 'Indexing failed.');
 
-        foreach ($files as $file) {
-            $result = $indexer->indexFile($file['path'], $file['repo']);
-
-            if ($result['success']) {
-                $indexed++;
-                $totalChunks += $result['chunks'];
-            } else {
-                $failed++;
-                if (isset($result['error'])) {
-                    $errors[$file['path']] = $result['error'];
-                }
-            }
-
-            $progress->advance();
+            return self::FAILURE;
         }
 
-        $progress->finish();
+        if (isset($result['message'])) {
+            info($result['message']);
 
-        // Show results
+            return self::SUCCESS;
+        }
+
         info('Indexing complete!');
 
-        table(
-            ['Metric', 'Value'],
-            [
-                ['Files indexed', (string) $indexed],
-                ['Files failed', (string) $failed],
-                ['Total chunks', (string) $totalChunks],
-            ]
-        );
+        $rows = [
+            ['Repository', $result['repo'] ?? 'unknown'],
+        ];
 
-        if ($errors !== [] && count($errors) <= 10) {
-            warning('Errors:');
-            foreach ($errors as $path => $err) {
-                note("  {$path}: {$err}");
+        if (isset($result['incremental']) && $result['incremental']) {
+            $rows[] = ['Changed files', (string) ($result['changed'] ?? 0)];
+            $rows[] = ['New files', (string) ($result['new'] ?? 0)];
+            $rows[] = ['Deleted files', (string) ($result['deleted'] ?? 0)];
+        } else {
+            $rows[] = ['Files indexed', (string) ($result['file_count'] ?? 0)];
+        }
+
+        $rows[] = ['Symbols extracted', (string) ($result['symbol_count'] ?? 0)];
+
+        if (isset($result['languages'])) {
+            $langStr = implode(', ', array_map(
+                fn (string $lang, int $count): string => "{$lang}: {$count}",
+                array_keys($result['languages']),
+                array_values($result['languages'])
+            ));
+            $rows[] = ['Languages', $langStr];
+        }
+
+        table(['Metric', 'Value'], $rows);
+
+        if (isset($result['warnings']) && $result['warnings'] !== []) {
+            foreach (array_slice($result['warnings'], 0, 5) as $warn) {
+                warning($warn);
             }
-        } elseif ($errors !== []) {
-            warning(count($errors).' files had errors.');
         }
 
-        return $failed > 0 && $indexed === 0 ? self::FAILURE : self::SUCCESS;
+        return self::SUCCESS;
     }
 
-    /**
-     * Show statistics about files to be indexed.
-     *
-     * @param  array<array{path: string, repo: string}>  $files
-     */
-    private function showStats(array $files): void
+    private function listRepos(SymbolIndexService $indexer): int
     {
-        $byRepo = [];
-        $byLang = [];
+        $repos = $indexer->listRepos();
 
-        foreach ($files as $file) {
-            $repo = $file['repo'];
-            $ext = pathinfo($file['path'], PATHINFO_EXTENSION);
-            $lang = $this->extToLang($ext);
+        if ($repos === []) {
+            info('No indexed repositories found.');
 
-            $byRepo[$repo] = ($byRepo[$repo] ?? 0) + 1;
-            $byLang[$lang] = ($byLang[$lang] ?? 0) + 1;
+            return self::SUCCESS;
         }
 
-        info('Files by repository:');
-        $repoRows = [];
-        foreach ($byRepo as $repo => $count) {
-            $repoRows[] = [$repo, (string) $count];
+        $rows = [];
+        foreach ($repos as $repo) {
+            $langs = implode(', ', array_keys($repo['languages']));
+            $rows[] = [
+                $repo['repo'],
+                (string) $repo['file_count'],
+                (string) $repo['symbol_count'],
+                $langs,
+                $repo['indexed_at'],
+            ];
         }
-        table(['Repository', 'Files'], $repoRows);
 
-        info('Files by language:');
-        $langRows = [];
-        foreach ($byLang as $lang => $count) {
-            $langRows[] = [$lang, (string) $count];
-        }
-        table(['Language', 'Files'], $langRows);
-    }
+        table(['Repository', 'Files', 'Symbols', 'Languages', 'Indexed At'], $rows);
 
-    private function extToLang(string $ext): string
-    {
-        return match (strtolower($ext)) {
-            'php' => 'PHP',
-            'py' => 'Python',
-            'js', 'jsx' => 'JavaScript',
-            'ts', 'tsx' => 'TypeScript',
-            'vue' => 'Vue',
-            default => 'Other',
-        };
+        return self::SUCCESS;
     }
 }
