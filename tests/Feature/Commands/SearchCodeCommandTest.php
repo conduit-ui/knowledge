@@ -2,110 +2,123 @@
 
 declare(strict_types=1);
 
-use App\Services\CodeIndexerService;
+use App\Services\SymbolIndexService;
 
 beforeEach(function (): void {
-    $this->indexerMock = Mockery::mock(CodeIndexerService::class);
-    $this->app->instance(CodeIndexerService::class, $this->indexerMock);
+    $this->indexerMock = Mockery::mock(SymbolIndexService::class);
+    $this->app->instance(SymbolIndexService::class, $this->indexerMock);
 });
 
 afterEach(function (): void {
     Mockery::close();
 });
 
-describe('search-code command', function (): void {
-    it('searches code semantically', function (): void {
-        $this->indexerMock->shouldReceive('search')
-            ->once()
-            ->with('authentication logic', 10, [])
-            ->andReturn([
-                createCodeResult('/path/to/auth.php', 'my-repo', 'php', 0.95),
-            ]);
+function createSymbolResult(
+    string $name = 'authenticate',
+    string $kind = 'method',
+    string $file = 'app/Services/AuthService.php',
+    int $line = 15,
+    int $score = 35,
+): array {
+    return [
+        'id' => "{$file}::{$name}#{$kind}",
+        'kind' => $kind,
+        'name' => $name,
+        'file' => $file,
+        'line' => $line,
+        'signature' => "public function {$name}(): bool",
+        'summary' => "Method {$name}",
+        'score' => $score,
+    ];
+}
 
-        $this->artisan('search-code', ['query' => 'authentication logic'])
+describe('search-code command', function (): void {
+    it('searches code symbols', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
+            ->once()
+            ->with('authenticate', 'local/knowledge', null, null, 10)
+            ->andReturn([createSymbolResult()]);
+
+        $this->artisan('search-code', ['query' => 'authenticate'])
             ->assertSuccessful()
             ->expectsOutputToContain('results found')
-            ->expectsOutputToContain('auth.php');
+            ->expectsOutputToContain('authenticate');
     });
 
     it('fails with empty query', function (): void {
-        $this->indexerMock->shouldNotReceive('search');
+        $this->indexerMock->shouldNotReceive('searchSymbols');
 
         $this->artisan('search-code', ['query' => ''])
             ->assertFailed();
     });
 
     it('fails with whitespace-only query', function (): void {
-        $this->indexerMock->shouldNotReceive('search');
+        $this->indexerMock->shouldNotReceive('searchSymbols');
 
         $this->artisan('search-code', ['query' => '   '])
             ->assertFailed();
     });
 
     it('shows no results message when no matches found', function (): void {
-        $this->indexerMock->shouldReceive('search')
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->with('nonexistent code', 10, [])
             ->andReturn([]);
 
-        $this->artisan('search-code', ['query' => 'nonexistent code'])
+        $this->artisan('search-code', ['query' => 'nonexistent'])
             ->assertSuccessful()
             ->expectsOutputToContain('No results found');
     });
 
     it('respects limit option', function (): void {
-        $this->indexerMock->shouldReceive('search')
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->with('test', 5, [])
+            ->with('test', 'local/knowledge', null, null, 5)
             ->andReturn([]);
 
         $this->artisan('search-code', ['query' => 'test', '--limit' => '5'])
             ->assertSuccessful();
     });
 
-    it('filters by repository', function (): void {
-        $this->indexerMock->shouldReceive('search')
+    it('filters by symbol kind', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->with('test', 10, ['repo' => 'my-project'])
-            ->andReturn([]);
+            ->with('user', 'local/knowledge', 'class', null, 10)
+            ->andReturn([createSymbolResult('User', 'class')]);
 
-        $this->artisan('search-code', ['query' => 'test', '--repo' => 'my-project'])
+        $this->artisan('search-code', ['query' => 'user', '--kind' => 'class'])
             ->assertSuccessful();
     });
 
-    it('filters by language', function (): void {
-        $this->indexerMock->shouldReceive('search')
+    it('filters by file pattern', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->with('test', 10, ['language' => 'php'])
+            ->with('test', 'local/knowledge', null, '*/Services/*', 10)
             ->andReturn([]);
 
-        $this->artisan('search-code', ['query' => 'test', '--language' => 'php'])
+        $this->artisan('search-code', ['query' => 'test', '--file' => '*/Services/*'])
             ->assertSuccessful();
     });
 
-    it('combines repo and language filters', function (): void {
-        $this->indexerMock->shouldReceive('search')
+    it('uses custom repo', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->with('test', 10, ['repo' => 'my-project', 'language' => 'typescript'])
+            ->with('test', 'local/myproject', null, null, 10)
             ->andReturn([]);
 
-        $this->artisan('search-code', [
-            'query' => 'test',
-            '--repo' => 'my-project',
-            '--language' => 'typescript',
-        ])->assertSuccessful();
+        $this->artisan('search-code', ['query' => 'test', '--repo' => 'local/myproject'])
+            ->assertSuccessful();
     });
 
     it('displays multiple results with numbering', function (): void {
-        $this->indexerMock->shouldReceive('search')
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
             ->andReturn([
-                createCodeResult('/path/to/file1.php', 'repo1', 'php', 0.95),
-                createCodeResult('/path/to/file2.js', 'repo2', 'javascript', 0.85),
-                createCodeResult('/path/to/file3.py', 'repo3', 'python', 0.75),
+                createSymbolResult('login', 'method', 'app/Auth.php', 10, 35),
+                createSymbolResult('User', 'class', 'app/User.php', 5, 20),
+                createSymbolResult('register', 'method', 'app/Auth.php', 50, 15),
             ]);
 
-        $this->artisan('search-code', ['query' => 'test'])
+        $this->artisan('search-code', ['query' => 'auth'])
             ->assertSuccessful()
             ->expectsOutputToContain('3 results found')
             ->expectsOutputToContain('[1]')
@@ -113,139 +126,107 @@ describe('search-code command', function (): void {
             ->expectsOutputToContain('[3]');
     });
 
-    it('displays functions when available', function (): void {
-        $result = createCodeResult('/path/to/auth.php', 'my-repo', 'php', 0.95);
-        $result['functions'] = ['authenticate', 'login', 'logout'];
-
-        $this->indexerMock->shouldReceive('search')
+    it('displays signature', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->andReturn([$result]);
+            ->andReturn([createSymbolResult()]);
 
-        $this->artisan('search-code', ['query' => 'auth'])
+        $this->artisan('search-code', ['query' => 'authenticate'])
             ->assertSuccessful()
-            ->expectsOutputToContain('Functions: authenticate, login, logout');
+            ->expectsOutputToContain('public function authenticate');
     });
 
-    it('truncates functions list to 5 items', function (): void {
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['functions'] = ['func1', 'func2', 'func3', 'func4', 'func5', 'func6', 'func7'];
-
-        $this->indexerMock->shouldReceive('search')
+    it('displays file and line number', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->andReturn([$result]);
+            ->andReturn([createSymbolResult('test', 'function', 'src/utils.php', 42)]);
 
         $this->artisan('search-code', ['query' => 'test'])
             ->assertSuccessful()
-            ->expectsOutputToContain('Functions: func1, func2, func3, func4, func5');
-    });
-
-    it('does not display functions line when empty', function (): void {
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['functions'] = [];
-
-        $this->indexerMock->shouldReceive('search')
-            ->once()
-            ->andReturn([$result]);
-
-        $output = $this->artisan('search-code', ['query' => 'test']);
-        $output->assertSuccessful();
-        // Functions line should not appear when empty
-    });
-
-    it('displays line range', function (): void {
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['start_line'] = 10;
-        $result['end_line'] = 50;
-
-        $this->indexerMock->shouldReceive('search')
-            ->once()
-            ->andReturn([$result]);
-
-        $this->artisan('search-code', ['query' => 'test'])
-            ->assertSuccessful()
-            ->expectsOutputToContain('Lines: 10-50');
+            ->expectsOutputToContain('src/utils.php:42');
     });
 });
 
-describe('--show-content flag', function (): void {
-    it('displays code content when flag is set', function (): void {
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['content'] = "<?php\nfunction test() {\n    return true;\n}";
-
-        $this->indexerMock->shouldReceive('search')
+describe('--show-source flag', function (): void {
+    it('displays source code when flag is set', function (): void {
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->andReturn([$result]);
+            ->andReturn([createSymbolResult()]);
 
-        $this->artisan('search-code', ['query' => 'test', '--show-content' => true])
+        $this->indexerMock->shouldReceive('getSymbolSource')
+            ->once()
+            ->andReturn("public function authenticate(): bool {\n    return true;\n}");
+
+        $this->artisan('search-code', ['query' => 'authenticate', '--show-source' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('function test()');
+            ->expectsOutputToContain('return true');
     });
 
-    it('truncates content to 15 lines and shows remaining count', function (): void {
+    it('truncates source to 20 lines', function (): void {
         $lines = [];
-        for ($i = 1; $i <= 20; $i++) {
-            $lines[] = "Line {$i} of code";
+        for ($i = 1; $i <= 25; $i++) {
+            $lines[] = "    line {$i}";
         }
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['content'] = implode("\n", $lines);
 
-        $this->indexerMock->shouldReceive('search')
+        $this->indexerMock->shouldReceive('searchSymbols')
             ->once()
-            ->andReturn([$result]);
+            ->andReturn([createSymbolResult()]);
 
-        $this->artisan('search-code', ['query' => 'test', '--show-content' => true])
+        $this->indexerMock->shouldReceive('getSymbolSource')
+            ->once()
+            ->andReturn(implode("\n", $lines));
+
+        $this->artisan('search-code', ['query' => 'test', '--show-source' => true])
             ->assertSuccessful()
-            ->expectsOutputToContain('Line 1 of code')
-            ->expectsOutputToContain('Line 15 of code')
             ->expectsOutputToContain('... (5 more lines)');
     });
-
-    it('does not show more lines indicator when content is 15 lines or less', function (): void {
-        $lines = [];
-        for ($i = 1; $i <= 10; $i++) {
-            $lines[] = "Line {$i}";
-        }
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['content'] = implode("\n", $lines);
-
-        $this->indexerMock->shouldReceive('search')
-            ->once()
-            ->andReturn([$result]);
-
-        $output = $this->artisan('search-code', ['query' => 'test', '--show-content' => true]);
-        $output->assertSuccessful();
-        // Should not contain "more lines" indicator
-    });
-
-    it('shows separator lines around content', function (): void {
-        $result = createCodeResult('/path/to/file.php', 'repo', 'php', 0.9);
-        $result['content'] = "<?php\necho 'hello';";
-
-        $this->indexerMock->shouldReceive('search')
-            ->once()
-            ->andReturn([$result]);
-
-        $this->artisan('search-code', ['query' => 'test', '--show-content' => true])
-            ->assertSuccessful()
-            ->expectsOutputToContain('----');
-    });
 });
 
-// Helper function
-function createCodeResult(
-    string $filepath,
-    string $repo,
-    string $language,
-    float $score,
-): array {
-    return [
-        'filepath' => $filepath,
-        'repo' => $repo,
-        'language' => $language,
-        'content' => "Sample code content for {$filepath}",
-        'score' => $score,
-        'functions' => [],
-        'start_line' => 1,
-        'end_line' => 100,
-    ];
-}
+describe('--outline flag', function (): void {
+    it('shows file outline', function (): void {
+        $this->indexerMock->shouldReceive('getFileOutline')
+            ->once()
+            ->with('app/Services/QdrantService.php', 'local/knowledge')
+            ->andReturn([
+                [
+                    'id' => 'app/Services/QdrantService.php::QdrantService#class',
+                    'kind' => 'class',
+                    'name' => 'QdrantService',
+                    'signature' => 'class QdrantService',
+                    'summary' => 'Class QdrantService',
+                    'line' => 28,
+                    'children' => [
+                        [
+                            'id' => 'app/Services/QdrantService.php::QdrantService.search#method',
+                            'kind' => 'method',
+                            'name' => 'search',
+                            'signature' => 'public function search()',
+                            'summary' => 'Search entries.',
+                            'line' => 100,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->artisan('search-code', [
+            'query' => 'ignored',
+            '--outline' => 'app/Services/QdrantService.php',
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('QdrantService')
+            ->expectsOutputToContain('search');
+    });
+
+    it('shows message when no symbols in file', function (): void {
+        $this->indexerMock->shouldReceive('getFileOutline')
+            ->once()
+            ->andReturn([]);
+
+        $this->artisan('search-code', [
+            'query' => 'ignored',
+            '--outline' => 'empty.php',
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('No symbols found');
+    });
+});
