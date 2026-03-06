@@ -6,10 +6,12 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\ContextTool;
 use App\Mcp\Tools\CorrectTool;
+use App\Mcp\Tools\FileOutlineTool;
 use App\Mcp\Tools\RecallTool;
 use App\Mcp\Tools\RememberTool;
 use App\Mcp\Tools\SearchCodeTool;
 use App\Mcp\Tools\StatsTool;
+use App\Mcp\Tools\SymbolLookupTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -27,6 +29,8 @@ class KnowledgeServer extends Server
         ContextTool::class,
         StatsTool::class,
         SearchCodeTool::class,
+        FileOutlineTool::class,
+        SymbolLookupTool::class,
     ];
 
     protected array $resources = [];
