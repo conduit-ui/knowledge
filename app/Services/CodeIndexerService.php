@@ -323,13 +323,13 @@ class CodeIndexerService
             }
 
             $ext = strtolower(pathinfo($symbol['file'] ?? '', PATHINFO_EXTENSION));
-            $language = $this->detectLanguage($ext);
+            $symbolLanguage = $this->detectLanguage($ext);
 
             $result = $this->indexSymbol(
                 text: $text,
                 filepath: $symbol['file'] ?? '',
                 repo: $repo,
-                language: $language,
+                language: $symbolLanguage,
                 symbolName: $symbol['name'] ?? '',
                 symbolKind: $symbol['kind'] ?? '',
                 line: (int) ($symbol['line'] ?? 0),

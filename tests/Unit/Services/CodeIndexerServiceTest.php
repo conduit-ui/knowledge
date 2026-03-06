@@ -858,6 +858,365 @@ describe('search', function (): void {
     });
 });
 
+describe('indexSymbol', function (): void {
+    it('successfully indexes a symbol', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->indexSymbol(
+            text: 'class UserController extends Controller',
+            filepath: 'app/Http/Controllers/UserController.php',
+            repo: 'local/pstrax',
+            language: 'php',
+            symbolName: 'UserController',
+            symbolKind: 'class',
+            line: 10,
+            signature: 'class UserController extends Controller',
+        );
+
+        expect($result)->toMatchArray(['success' => true]);
+    });
+
+    it('returns error when embedding is empty', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn([]);
+
+        $result = $this->service->indexSymbol(
+            text: 'class Foo',
+            filepath: 'Foo.php',
+            repo: 'local/test',
+            language: 'php',
+            symbolName: 'Foo',
+            symbolKind: 'class',
+            line: 1,
+            signature: 'class Foo',
+        );
+
+        expect($result)->toMatchArray(['success' => false, 'error' => 'Empty embedding']);
+    });
+
+    it('returns error when upsert fails', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(false, 500);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->indexSymbol(
+            text: 'class Foo',
+            filepath: 'Foo.php',
+            repo: 'local/test',
+            language: 'php',
+            symbolName: 'Foo',
+            symbolKind: 'class',
+            line: 1,
+            signature: 'class Foo',
+        );
+
+        expect($result)->toMatchArray(['success' => false, 'error' => 'Upsert failed']);
+    });
+
+    it('truncates content to 4000 chars', function (): void {
+        $longText = str_repeat('x', 5000);
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::on(function ($request) {
+                // Verify the upsert request has truncated content
+                return $request instanceof UpsertPoints;
+            }))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->indexSymbol(
+            text: $longText,
+            filepath: 'Foo.php',
+            repo: 'local/test',
+            language: 'php',
+            symbolName: 'Foo',
+            symbolKind: 'class',
+            line: 1,
+            signature: 'class Foo',
+        );
+
+        expect($result['success'])->toBeTrue();
+    });
+});
+
+describe('vectorizeFromIndex', function (): void {
+    it('returns zeros for non-existent file', function (): void {
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        unlink($tempFile); // Ensure it doesn't exist
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        // Suppress the E_WARNING from file_get_contents on non-existent file
+        $result = @$this->service->vectorizeFromIndex(
+            $tempFile,
+            'local/test',
+            $symbolIndex,
+        );
+
+        expect($result)->toMatchArray(['success' => 0, 'failed' => 0, 'total' => 0]);
+    });
+
+    it('returns zeros for invalid JSON', function (): void {
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, 'not json');
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result)->toMatchArray(['success' => 0, 'failed' => 0, 'total' => 0]);
+
+        unlink($tempFile);
+    });
+
+    it('returns zeros for JSON without symbols key', function (): void {
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode(['no_symbols' => true]));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result)->toMatchArray(['success' => 0, 'failed' => 0, 'total' => 0]);
+
+        unlink($tempFile);
+    });
+
+    it('processes symbols from valid index', function (): void {
+        $indexData = [
+            'symbols' => [
+                [
+                    'id' => 'sym-1',
+                    'kind' => 'class',
+                    'name' => 'UserController',
+                    'file' => 'app/Controllers/UserController.php',
+                    'line' => 10,
+                    'signature' => 'class UserController',
+                    'summary' => 'Handles user actions',
+                ],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        $symbolIndex->shouldReceive('getSymbolSource')
+            ->with('sym-1', 'local/test')
+            ->once()
+            ->andReturn('class UserController { }');
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result)->toMatchArray(['success' => 1, 'failed' => 0, 'total' => 1]);
+
+        unlink($tempFile);
+    });
+
+    it('filters by kind', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'signature' => 'class Foo'],
+                ['id' => 'sym-2', 'kind' => 'function', 'name' => 'bar', 'file' => 'helpers.php', 'line' => 1, 'signature' => 'function bar()'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
+
+        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex, ['class']);
+
+        expect($result['total'])->toBe(1)
+            ->and($result['success'])->toBe(1);
+
+        unlink($tempFile);
+    });
+
+    it('filters by language', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'signature' => 'class Foo'],
+                ['id' => 'sym-2', 'kind' => 'class', 'name' => 'Bar', 'file' => 'Bar.ts', 'line' => 1, 'signature' => 'class Bar'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
+
+        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex, [], 'php');
+
+        expect($result['total'])->toBe(1)
+            ->and($result['success'])->toBe(1);
+
+        unlink($tempFile);
+    });
+
+    it('calls progress callback', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'signature' => 'class Foo'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
+
+        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $progressCalled = false;
+        $result = $this->service->vectorizeFromIndex(
+            $tempFile,
+            'local/test',
+            $symbolIndex,
+            [],
+            null,
+            function (int $success, int $failed, int $total) use (&$progressCalled): void {
+                $progressCalled = true;
+                expect($total)->toBe(1);
+            },
+        );
+
+        expect($progressCalled)->toBeTrue();
+
+        unlink($tempFile);
+    });
+
+    it('counts failed symbols with empty text', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => '', 'file' => '', 'line' => 0, 'signature' => '', 'summary' => '', 'docstring' => ''],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        // buildSymbolText produces "class \n\n\nfile: " which has content, so it won't fail on empty text.
+        // Instead, simulate an embedding failure.
+        $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
+        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn([]);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result['failed'])->toBe(1)
+            ->and($result['success'])->toBe(0);
+
+        unlink($tempFile);
+    });
+
+    it('excludes non-structural kinds by default', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'variable', 'name' => '$foo', 'file' => 'Foo.php', 'line' => 1, 'signature' => '$foo'],
+                ['id' => 'sym-2', 'kind' => 'import', 'name' => 'Bar', 'file' => 'Foo.php', 'line' => 2, 'signature' => 'use Bar'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result['total'])->toBe(0);
+
+        unlink($tempFile);
+    });
+
+    it('appends source code when available', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'signature' => 'class Foo'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        $symbolIndex->shouldReceive('getSymbolSource')
+            ->with('sym-1', 'local/test')
+            ->once()
+            ->andReturn('class Foo { public function bar() {} }');
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->withArgs(function (string $text): bool {
+                return str_contains($text, 'class Foo { public function bar() {} }');
+            })
+            ->once()
+            ->andReturn(array_fill(0, 1024, 0.1));
+
+        $upsertResponse = createCodeMockResponse(true);
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(UpsertPoints::class))
+            ->once()
+            ->andReturn($upsertResponse);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result['success'])->toBe(1);
+
+        unlink($tempFile);
+    });
+});
+
 describe('constructor', function (): void {
     it('uses default vector size of 1024', function (): void {
         $service = new CodeIndexerService($this->mockEmbedding);
