@@ -21,7 +21,14 @@ class KnowledgeValidateCommand extends Command
 
     public function handle(QdrantService $qdrant): int
     {
-        $id = $this->argument('id');
+        $idArg = $this->argument('id');
+        $id = is_string($idArg) || is_int($idArg) ? (string) $idArg : '';
+
+        if ($id === '') {
+            $this->error('A valid entry ID is required.');
+
+            return self::FAILURE;
+        }
 
         $entry = $qdrant->getById($id);
 

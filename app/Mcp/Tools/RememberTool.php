@@ -43,21 +43,30 @@ class RememberTool extends Tool
 
         $project = is_string($request->get('project')) ? $request->get('project') : $this->projectDetector->detect();
 
-        /** @var array<string>|null $tags */
+        /** @var array<string> $tags */
         $tags = is_array($request->get('tags')) ? $request->get('tags') : [];
+
+        /** @var string|null $category */
+        $category = is_string($request->get('category')) ? $request->get('category') : null;
 
         $entry = [
             'id' => Str::uuid()->toString(),
             'title' => $title,
             'content' => $content,
-            'category' => is_string($request->get('category')) ? $request->get('category') : null,
-            'tags' => $tags,
             'priority' => is_string($request->get('priority')) ? $request->get('priority') : 'medium',
             'confidence' => is_int($request->get('confidence')) ? $request->get('confidence') : 50,
             'status' => 'draft',
             'evidence' => is_string($request->get('evidence')) ? $request->get('evidence') : null,
             'last_verified' => now()->toIso8601String(),
         ];
+
+        // Only add optional fields when they have values
+        if ($category !== null) {
+            $entry['category'] = $category;
+        }
+        if ($tags !== []) {
+            $entry['tags'] = $tags;
+        }
 
         // Auto-populate git context
         if ($this->gitContext->isGitRepository()) {

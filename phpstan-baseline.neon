@@ -11,21 +11,6 @@ parameters:
 			path: app/Commands/InsightsCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$project of method App\\\\Services\\\\QdrantService\\:\\:ensureCollection\\(\\) expects string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
-			count: 1
-			path: app/Commands/InstallCommand.php
-
-		-
-			message: "#^Part \\$project \\(array\\|bool\\|float\\|int\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
-			count: 1
-			path: app/Commands/InstallCommand.php
-
-		-
-			message: "#^Cannot cast array\\|bool\\|float\\|int\\|string\\|null to string\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeAddCommand.php
-
-		-
 			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\<string, mixed\\> given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
@@ -64,21 +49,6 @@ parameters:
 			message: "#^Only booleans are allowed in &&, mixed given on the left side\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeStatsCommand.php
-
-		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:getById\\(\\) expects int\\|string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeValidateCommand.php
-
-		-
-			message: "#^Parameter \\#1 \\$id of method App\\\\Services\\\\QdrantService\\:\\:updateFields\\(\\) expects int\\|string, array\\|bool\\|float\\|int\\|string\\|null given\\.$#"
-			count: 1
-			path: app/Commands/KnowledgeValidateCommand.php
-
-		-
-			message: "#^Part \\$id \\(array\\|bool\\|float\\|int\\|string\\|null\\) of encapsed string cannot be cast to string\\.$#"
-			count: 2
-			path: app/Commands/KnowledgeValidateCommand.php
 
 		-
 			message: "#^Only booleans are allowed in an if condition, array\\<string, array\\<string\\>\\|float\\|int\\|string\\|null\\>\\|null given\\.$#"

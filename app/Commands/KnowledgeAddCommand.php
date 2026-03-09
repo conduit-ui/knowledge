@@ -55,8 +55,9 @@ class KnowledgeAddCommand extends Command
 
     public function handle(GitContextService $gitService, QdrantService $qdrant, WriteGateService $writeGate, EnhancementQueueService $enhancementQueue): int
     {
+        $titleArg = $this->argument('title');
         /** @var string $title */
-        $title = (string) $this->argument('title');
+        $title = is_string($titleArg) ? $titleArg : '';
         /** @var string|null $content */
         $content = is_string($this->option('content')) ? $this->option('content') : null;
         /** @var string|null $category */

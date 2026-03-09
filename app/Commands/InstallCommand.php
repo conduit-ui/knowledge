@@ -20,7 +20,7 @@ class InstallCommand extends Command
 
     public function handle(QdrantService $qdrant): int
     {
-        $project = $this->option('project');
+        $project = is_string($this->option('project')) ? $this->option('project') : 'default';
 
         note("Initializing collection: knowledge_{$project}");
 
