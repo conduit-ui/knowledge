@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\ResolvesProject;
-use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
 use App\Services\QdrantService;
 use LaravelZero\Framework\Commands\Command;
@@ -26,7 +25,7 @@ class KnowledgeShowCommand extends Command
 
     protected $description = 'Display full details of a knowledge entry';
 
-    public function handle(QdrantService $qdrant, EntryMetadataService $metadata, EnhancementQueueService $enhancementQueue): int
+    public function handle(QdrantService $qdrant, EntryMetadataService $metadata): int
     {
         $id = $this->argument('id');
 
@@ -55,7 +54,7 @@ class KnowledgeShowCommand extends Command
 
         $qdrant->incrementUsage($id, $project);
 
-        $this->renderEntry($entry, $metadata, $enhancementQueue);
+        $this->renderEntry($entry, $metadata);
 
         // Show supersession history
         $history = $qdrant->getSupersessionHistory($id);
@@ -67,7 +66,7 @@ class KnowledgeShowCommand extends Command
     /**
      * @param  array<string, mixed>  $entry
      */
-    private function renderEntry(array $entry, EntryMetadataService $metadata, EnhancementQueueService $enhancementQueue): void
+    private function renderEntry(array $entry, EntryMetadataService $metadata): void
     {
         $this->newLine();
 
@@ -121,7 +120,7 @@ class KnowledgeShowCommand extends Command
         }
 
         // Enhancement status
-        $rows[] = ['Enhanced', $this->enhancementStatus($entry, $enhancementQueue)];
+        $rows[] = ['Enhanced', $this->enhancementStatus($entry)];
 
         if (isset($entry['concepts']) && $entry['concepts'] !== []) {
             $rows[] = ['Concepts', implode(', ', $entry['concepts'])];
@@ -170,16 +169,12 @@ class KnowledgeShowCommand extends Command
     /**
      * @param  array<string, mixed>  $entry
      */
-    private function enhancementStatus(array $entry, EnhancementQueueService $enhancementQueue): string
+    private function enhancementStatus(array $entry): string
     {
         if (isset($entry['enhanced']) && $entry['enhanced'] === true) {
             $enhancedAt = $entry['enhanced_at'] ?? 'Unknown';
 
             return "<fg=green>Yes</> <fg=gray>({$enhancedAt})</>";
-        }
-
-        if ($enhancementQueue->isQueued($entry['id'])) {
-            return '<fg=yellow>Pending</>';
         }
 
         return '<fg=gray>No</>';

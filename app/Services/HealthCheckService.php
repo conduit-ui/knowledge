@@ -34,11 +34,6 @@ class HealthCheckService implements HealthCheckInterface
                 'type' => 'ML Service',
                 'checker' => fn () => $this->checkEmbeddings(),
             ],
-            'ollama' => [
-                'name' => 'Ollama',
-                'type' => 'LLM Engine',
-                'checker' => fn () => $this->checkOllama(),
-            ],
         ];
     }
 
@@ -83,7 +78,6 @@ class HealthCheckService implements HealthCheckInterface
             'qdrant' => config('search.qdrant.host', 'localhost').':'.config('search.qdrant.port', 6333),
             'redis' => config('database.redis.default.host', '127.0.0.1').':'.config('database.redis.default.port', 6380),
             'embeddings' => config('search.qdrant.embedding_server', 'http://localhost:8001'),
-            'ollama' => config('search.ollama.host', 'localhost').':'.config('search.ollama.port', 11434),
             default => 'unknown',
         };
     }
@@ -121,14 +115,6 @@ class HealthCheckService implements HealthCheckInterface
         $server = config('search.qdrant.embedding_server', 'http://localhost:8001');
 
         return $this->httpCheck("{$server}/health");
-    }
-
-    private function checkOllama(): bool
-    {
-        $host = config('search.ollama.host', 'localhost');
-        $port = config('search.ollama.port', 11434);
-
-        return $this->httpCheck("http://{$host}:{$port}/api/tags");
     }
 
     private function httpCheck(string $url): bool

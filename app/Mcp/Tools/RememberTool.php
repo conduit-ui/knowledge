@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Mcp\Tools;
 
 use App\Exceptions\Qdrant\DuplicateEntryException;
-use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
 use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
@@ -25,7 +24,6 @@ class RememberTool extends Tool
         private readonly WriteGateService $writeGate,
         private readonly GitContextService $gitContext,
         private readonly ProjectDetectorService $projectDetector,
-        private readonly EnhancementQueueService $enhancementQueue,
     ) {}
 
     public function handle(Request $request): Response
@@ -84,11 +82,6 @@ class RememberTool extends Tool
                 'similarity' => $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : null,
                 'message' => "Similar entry already exists (ID: {$e->existingId}). Use the `correct` tool to update it, or add more distinct content.",
             ], JSON_THROW_ON_ERROR));
-        }
-
-        // Queue for Ollama auto-tagging
-        if ((bool) config('search.ollama.enabled', true)) {
-            $this->enhancementQueue->queue($entry);
         }
 
         return Response::text(json_encode([

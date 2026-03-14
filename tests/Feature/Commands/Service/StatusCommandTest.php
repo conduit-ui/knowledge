@@ -19,11 +19,10 @@ beforeEach(function () {
             ['name' => 'Qdrant', 'healthy' => true, 'endpoint' => 'localhost:6333', 'type' => 'Vector Database'],
             ['name' => 'Redis', 'healthy' => false, 'endpoint' => '127.0.0.1:6380', 'type' => 'Cache'],
             ['name' => 'Embeddings', 'healthy' => true, 'endpoint' => 'http://localhost:8001', 'type' => 'ML Service'],
-            ['name' => 'Ollama', 'healthy' => false, 'endpoint' => 'localhost:11434', 'type' => 'LLM Engine'],
         ]);
 
     $healthCheck->shouldReceive('getServices')
-        ->andReturn(['qdrant', 'redis', 'embeddings', 'ollama']);
+        ->andReturn(['qdrant', 'redis', 'embeddings']);
 
     $healthCheck->shouldReceive('check')
         ->with('qdrant')

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Mcp\Tools\RememberTool;
-use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
 use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
@@ -18,14 +17,12 @@ beforeEach(function (): void {
     $this->writeGate = Mockery::mock(WriteGateService::class);
     $this->gitContext = Mockery::mock(GitContextService::class);
     $this->projectDetector = Mockery::mock(ProjectDetectorService::class);
-    $this->enhancementQueue = Mockery::mock(EnhancementQueueService::class);
 
     $this->tool = new RememberTool(
         $this->qdrant,
         $this->writeGate,
         $this->gitContext,
         $this->projectDetector,
-        $this->enhancementQueue,
     );
 });
 
@@ -73,9 +70,6 @@ describe('remember tool', function (): void {
         ]);
         $this->writeGate->shouldReceive('evaluate')->once()->andReturn(['passed' => true]);
         $this->qdrant->shouldReceive('upsert')->once()->andReturn(true);
-        $this->enhancementQueue->shouldReceive('queue')->once();
-
-        config(['search.ollama.enabled' => true]);
 
         $request = new Request([
             'title' => 'Test Discovery',
@@ -139,9 +133,6 @@ describe('remember tool', function (): void {
             ->withArgs(fn ($entry, $project) => $project === 'custom-project')
             ->once()
             ->andReturn(true);
-        $this->enhancementQueue->shouldReceive('queue')->once();
-
-        config(['search.ollama.enabled' => true]);
 
         $request = new Request([
             'title' => 'Project Specific',

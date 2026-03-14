@@ -6,7 +6,6 @@ namespace App\Commands;
 
 use App\Commands\Concerns\ResolvesProject;
 use App\Exceptions\Qdrant\DuplicateEntryException;
-use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 use App\Services\WriteGateService;
@@ -41,7 +40,6 @@ class KnowledgeAddCommand extends Command
                             {--commit= : Git commit hash}
                             {--no-git : Skip automatic git context detection}
                             {--force : Skip write gate and duplicate detection}
-                            {--skip-enhance : Skip queueing for Ollama enhancement}
                             {--project= : Override project namespace}
                             {--global : Search across all projects}';
 
@@ -53,7 +51,7 @@ class KnowledgeAddCommand extends Command
 
     private const VALID_STATUSES = ['draft', 'validated', 'deprecated'];
 
-    public function handle(GitContextService $gitService, QdrantService $qdrant, WriteGateService $writeGate, EnhancementQueueService $enhancementQueue): int
+    public function handle(GitContextService $gitService, QdrantService $qdrant, WriteGateService $writeGate): int
     {
         /** @var string $title */
         $title = (string) $this->argument('title');
@@ -89,8 +87,6 @@ class KnowledgeAddCommand extends Command
         $noGit = (bool) $this->option('no-git');
         /** @var bool $force */
         $force = (bool) $this->option('force');
-        /** @var bool $skipEnhance */
-        $skipEnhance = (bool) $this->option('skip-enhance');
 
         // Validate required fields
         if ($content === null || $content === '') {
@@ -188,11 +184,6 @@ class KnowledgeAddCommand extends Command
             }
         } catch (DuplicateEntryException $e) {
             return $this->handleDuplicate($e, $data, $qdrant, (int) $confidence);
-        }
-
-        // Queue for Ollama enhancement unless skipped
-        if (! $skipEnhance && (bool) config('search.ollama.enabled', true)) {
-            $enhancementQueue->queue($data);
         }
 
         info('Knowledge entry created!');

@@ -86,12 +86,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Ollama Configuration
-    |--------------------------------------------------------------------------
-    */
-
-    /*
-    |--------------------------------------------------------------------------
     | Project Pattern Detection
     |--------------------------------------------------------------------------
     |
@@ -104,17 +98,4 @@ return [
     */
 
     'project_patterns' => [],
-
-    'ollama' => [
-        'enabled' => env('OLLAMA_ENABLED', true),
-        'host' => env('OLLAMA_HOST', 'localhost'),
-        'port' => env('OLLAMA_PORT', 11434),
-        'model' => env('OLLAMA_MODEL', 'llama3.2:3b'),
-        'timeout' => env('OLLAMA_TIMEOUT', 30),
-        'auto_tag' => env('OLLAMA_AUTO_TAG', true),
-        'auto_categorize' => env('OLLAMA_AUTO_CATEGORIZE', true),
-        'extract_concepts' => env('OLLAMA_EXTRACT_CONCEPTS', true),
-        'suggest_relationships' => env('OLLAMA_SUGGEST_RELATIONSHIPS', true),
-        'enhance_queries' => env('OLLAMA_ENHANCE_QUERIES', true),
-    ],
 ];

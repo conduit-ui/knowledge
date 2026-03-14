@@ -32,8 +32,8 @@ Index and search codebases semantically via `index-code` and `search-code`.
 ### Context Command
 Semantic session context loading for AI tools — auto-injects relevant knowledge into Claude Code sessions.
 
-### Background Ollama Auto-Tagging
-Async auto-tagging via OllamaService with file-based enhancement queue. `know add` stays fast (<100ms), enhancement happens in background via `enhance:worker`.
+### Clean Vectorization
+Pure vectorization pipeline focused on embeddings and semantic search. AI capabilities provided through Claude Code integration (MCP tools, skills, agents).
 
 ### Tiered Search
 Narrow-to-wide retrieval across four tiers: working context, recent, structured, archive. Early return on confident matches reduces latency.
@@ -45,6 +45,7 @@ Auto-detect git repo and create per-project Qdrant collections. `--project` and 
 
 ## Future
 
-- **Smart Query Expansion**: Ollama-powered semantic query understanding (synonyms, related terms)
+- **Smart Query Expansion**: Claude-powered semantic query understanding via MCP tools
 - **PostgreSQL/Pluggable Vector Store**: Support alternative vector backends (#23)
 - **Agentify**: AI agents that monitor Claude Code conversations via hooks (#96)
+- **Enhanced MCP Integration**: Deeper Claude Code integration for auto-tagging and insights

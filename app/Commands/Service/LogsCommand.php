@@ -13,7 +13,7 @@ use function Termwind\render;
 class LogsCommand extends Command
 {
     protected $signature = 'service:logs
-                            {service? : Specific service (qdrant, redis, embeddings, ollama)}
+                            {service? : Specific service (qdrant, redis, embeddings)}
                             {--f|follow : Follow log output}
                             {--tail=50 : Number of lines to show}
                             {--remote : Use remote configuration}';
@@ -54,7 +54,6 @@ class LogsCommand extends Command
                     'qdrant' => 'Qdrant (Vector Database)',
                     'redis' => 'Redis (Cache)',
                     'embeddings' => 'Embeddings (ML Service)',
-                    'ollama' => 'Ollama (LLM Engine)',
                 ],
                 default: 'all'
             );

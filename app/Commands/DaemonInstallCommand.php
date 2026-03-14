@@ -22,14 +22,6 @@ class DaemonInstallCommand extends Command
 
     /** @var array<string, array{description: string, command: string, interval: string, boot_delay: string, timeout: int, start_timeout: int}> */
     private const UNITS = [
-        'knowledge-enhance' => [
-            'description' => 'Knowledge enhancement worker (Ollama auto-tagging)',
-            'command' => 'enhance:worker',
-            'interval' => '15min',
-            'boot_delay' => '2min',
-            'timeout' => 30,
-            'start_timeout' => 300,
-        ],
         'knowledge-sync' => [
             'description' => 'Knowledge remote sync (push and pull)',
             'command' => 'sync:remote',

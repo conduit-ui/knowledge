@@ -10,7 +10,7 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 
 ### 1. AI-First Context Engine
 - **Primary use case**: Feed Claude Code/LLMs with relevant background automatically
-- **Smart retrieval**: Ollama-powered query expansion understands intent
+- **Smart retrieval**: Semantic search with tiered narrow-to-wide retrieval
 - **Sub-200ms search**: Instant results through aggressive Redis caching
 - **Project-aware**: Auto-detects git repo, returns project-specific context
 
@@ -21,10 +21,10 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 - **Graceful degradation**: Always functional, network optional
 
 ### 3. Zero-Friction Capture
-- **Multiple entry points**: CLI commands, git hooks, Claude Code hooks, imports
-- **Background enhancement**: Ollama auto-tags/categorizes async
+- **Multiple entry points**: CLI commands, git hooks, Claude Code hooks, MCP tools, imports
+- **AI integration**: Claude Code MCP tools for intelligent capture and retrieval
 - **No manual organization**: Project namespaces auto-detected from git
-- **Write and forget**: Add instantly, enhancement happens later
+- **Write and forget**: Add instantly via MCP tools from any Claude Code session
 
 ### 4. Pure Vector Architecture
 - **Qdrant only**: No SQLite, no schema migrations
@@ -69,6 +69,7 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 │  CLI (Laravel Zero)                     │
 │  - One-shot commands                    │
 │  - Scriptable / hookable                │
+│  - MCP tools for Claude Code            │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────▼──────────────────────────┐
@@ -76,7 +77,6 @@ Knowledge is a command-line tool that captures technical decisions, learnings, a
 │  - Qdrant (vectors + all data)          │
 │  - Redis (cache everything)             │
 │  - Embeddings (Python/FastAPI)          │
-│  - Ollama (native, Metal GPU)           │
 └──────────────┬──────────────────────────┘
                │
                │ Background sync
@@ -112,4 +112,4 @@ claude "help me debug this auth issue"
 
 ---
 
-*Built with Qdrant (Rust), Redis, Ollama, and Laravel Zero*
+*Built with Qdrant (Rust), Redis, Laravel Zero, and Claude Code integration*

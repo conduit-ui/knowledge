@@ -2,7 +2,7 @@
 
 [![Sentinel Gate](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml/badge.svg)](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml)
 
-AI-powered knowledge base with semantic search, Qdrant vector storage, and Ollama intelligence.
+Knowledge base with semantic search and Qdrant vector storage. AI capabilities via Claude Code integration (MCP tools, skills, agents).
 
 ## What It Does
 
@@ -34,8 +34,6 @@ Redis (Cache layer - sub-200ms queries)
     ↓
 Embedding Server (sentence-transformers)
     ↓
-Ollama (optional - async auto-tagging via background queue)
-    ↓
 Remote Sync (optional - background sync to centralized server)
 ```
 
@@ -49,7 +47,7 @@ All commands support `--project=<name>` to target a specific project namespace a
 
 | Command | Description |
 |---------|-------------|
-| `add` | Add a knowledge entry (auto-detects git context, async Ollama tagging) |
+| `add` | Add a knowledge entry (auto-detects git context) |
 | `search` | Semantic vector search with tiered narrow-to-wide retrieval |
 | `show <id>` | Display entry details |
 | `entries` | List entries with filters |
@@ -69,7 +67,6 @@ All commands support `--project=<name>` to target a specific project namespace a
 | `synthesize` | Generate daily synthesis of knowledge themes |
 | `stage` | Stage entries in daily log before permanent storage |
 | `promote` | Promote staged entries to permanent knowledge |
-| `enhance:worker` | Process the background Ollama enhancement queue |
 
 ### Infrastructure
 
@@ -79,7 +76,7 @@ All commands support `--project=<name>` to target a specific project namespace a
 | `config` | Manage configuration |
 | `stats` | Analytics dashboard |
 | `search:status` | Search infrastructure health check |
-| `agent:status` | Dependency health checks (Qdrant, Redis, Ollama, Embeddings) |
+| `agent:status` | Dependency health checks (Qdrant, Redis, Embeddings) |
 | `maintain` | Run maintenance tasks |
 | `projects` | List all project knowledge bases |
 
@@ -160,7 +157,6 @@ QDRANT_PORT=6333
 EMBEDDING_SERVER_URL=http://localhost:8001
 REDIS_HOST=localhost
 REDIS_PORT=6379
-OLLAMA_HOST=http://localhost:11434
 ```
 
 ### Remote Server (Production)
@@ -190,10 +186,10 @@ composer analyse          # Static analysis (PHPStan level 8)
 - **Vector DB**: Qdrant (Rust)
 - **Cache**: Redis
 - **Embeddings**: sentence-transformers (Python/FastAPI)
-- **LLM**: Ollama (optional, for auto-tagging and query expansion)
 - **HTTP Client**: Saloon
 - **Testing**: Pest
 - **CI**: GitHub Actions (Sentinel Gate)
+- **AI Integration**: Claude Code (MCP tools, skills, agents)
 
 ## License
 

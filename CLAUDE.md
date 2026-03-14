@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## What This Is
 
-Knowledge CLI — an AI-powered knowledge base with semantic search, Qdrant vector storage, and Ollama intelligence. Built as a Laravel Zero CLI application.
+Knowledge CLI — a knowledge base with semantic search and Qdrant vector storage. Built as a Laravel Zero CLI application. AI capabilities are provided through Claude Code integration (MCP tools, skills, agents).
 
 **Entry point**: `./know` (not `artisan`)
 
@@ -28,7 +28,6 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 - **Storage**: Qdrant vector database only (no SQLite, no Eloquent models)
 - **Cache**: Redis via KnowledgeCacheService
 - **Embeddings**: sentence-transformers via EmbeddingService
-- **LLM**: Ollama via OllamaService (optional, for auto-tagging)
 - **HTTP**: Saloon connectors in `app/Integrations/Qdrant/`
 - **Commands**: `app/Commands/` — extend `LaravelZero\Framework\Commands\Command`
 - **Services**: `app/Services/` — registered in `app/Providers/AppServiceProvider.php`
@@ -56,8 +55,6 @@ vendor/bin/pest tests/Feature/Commands/KnowledgeSearchCommandTest.php
 | `GitContextService` | Auto-detect git repo, branch, commit, author |
 | `TieredSearchService` | Narrow-to-wide retrieval across 4 search tiers |
 | `ProjectDetectorService` | Auto-detect project namespace from git repo |
-| `EnhancementQueueService` | File-based queue for async Ollama auto-tagging |
-| `OllamaService` | LLM integration for auto-tagging and query expansion |
 | `PatternDetectorService` | Detect duplicate/similar entries before persistence |
 
 ## TDD Workflow

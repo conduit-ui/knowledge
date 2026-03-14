@@ -10,7 +10,7 @@ describe('HealthCheckService', function () {
 
         $services = $service->getServices();
 
-        expect($services)->toBe(['qdrant', 'redis', 'embeddings', 'ollama']);
+        expect($services)->toBe(['qdrant', 'redis', 'embeddings']);
     });
 
     it('returns unhealthy status for unknown service', function () {
@@ -32,7 +32,7 @@ describe('HealthCheckService', function () {
         $results = $service->checkAll();
 
         expect($results)->toBeArray();
-        expect($results)->toHaveCount(4);
+        expect($results)->toHaveCount(3);
 
         foreach ($results as $result) {
             expect($result)->toHaveKeys(['name', 'healthy', 'endpoint', 'type']);
@@ -76,17 +76,6 @@ describe('HealthCheckService', function () {
         expect($result['endpoint'])->toBeString();
     });
 
-    it('returns correct structure for ollama check', function () {
-        $service = new HealthCheckService;
-
-        $result = $service->check('ollama');
-
-        expect($result['name'])->toBe('Ollama');
-        expect($result['type'])->toBe('LLM Engine');
-        expect($result['healthy'])->toBeBool();
-        expect($result['endpoint'])->toBeString();
-    });
-
     it('uses config values for qdrant endpoint', function () {
         config(['search.qdrant.host' => 'test-host']);
         config(['search.qdrant.port' => 9999]);
@@ -114,16 +103,6 @@ describe('HealthCheckService', function () {
         $result = $service->check('embeddings');
 
         expect($result['endpoint'])->toBe('http://embed-host:8001');
-    });
-
-    it('uses config values for ollama endpoint', function () {
-        config(['search.ollama.host' => 'ollama-host']);
-        config(['search.ollama.port' => 11434]);
-
-        $service = new HealthCheckService;
-        $result = $service->check('ollama');
-
-        expect($result['endpoint'])->toBe('ollama-host:11434');
     });
 
     it('checkAll returns same count as getServices', function () {
