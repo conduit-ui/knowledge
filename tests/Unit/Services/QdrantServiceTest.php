@@ -1733,12 +1733,14 @@ describe('searchRawCollection', function (): void {
             ->with('punk rock')
             ->andReturn($embedding);
 
-        $mockResponse = createMockResponse(true, 200, [
-            'result' => [
-                ['id' => 'abc', 'score' => 0.95, 'payload' => ['track' => 'Punkrocker', 'artist' => 'Teddybears']],
-                ['id' => 'def', 'score' => 0.85, 'payload' => ['track' => 'Blitzkrieg Bop', 'artist' => 'Ramones']],
-            ],
-        ]);
+        $searchResults = [
+            ['id' => 'abc', 'score' => 0.95, 'payload' => ['track' => 'Punkrocker', 'artist' => 'Teddybears']],
+            ['id' => 'def', 'score' => 0.85, 'payload' => ['track' => 'Blitzkrieg Bop', 'artist' => 'Ramones']],
+        ];
+
+        $mockResponse = Mockery::mock(\Saloon\Http\Response::class);
+        $mockResponse->shouldReceive('successful')->andReturn(true);
+        $mockResponse->shouldReceive('json')->with('result')->andReturn($searchResults);
 
         $this->mockConnector->shouldReceive('send')
             ->with(Mockery::type(SearchPoints::class))
