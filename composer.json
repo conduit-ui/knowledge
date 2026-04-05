@@ -27,7 +27,7 @@
         "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.25.1",
         "mockery/mockery": "^1.6.12",
-        "pestphp/pest": "^3.8.4|^4.1.2",
+        "pestphp/pest": "^4.4",
         "phpstan/extension-installer": "*",
         "phpstan/phpstan": "^1.0",
         "phpstan/phpstan-deprecation-rules": "^1.2",
