@@ -16,4 +16,4 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 EXPOSE 8001
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8001", "server:app"]
+CMD ["gunicorn", "-w", "4", "--preload", "--timeout", "120", "-b", "0.0.0.0:8001", "server:app"]

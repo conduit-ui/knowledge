@@ -48,7 +48,14 @@ result = index_folder(
 print(json.dumps(result))
 PYTHON;
 
-        $result = Process::timeout(600)->run(['/opt/homebrew/opt/python@3.12/bin/python3.12', '-c', $script]);
+        $pipxVenvPython = '/home/jordan/.local/share/pipx/venvs/jcodemunch-mcp/bin/python3';
+        $pythonBin = file_exists($pipxVenvPython)
+            ? $pipxVenvPython
+            : (PHP_OS_FAMILY === 'Darwin'
+                ? '/opt/homebrew/opt/python@3.12/bin/python3.12'
+                : (trim((string) shell_exec('which python3')) ?: 'python3'));
+
+        $result = Process::timeout(600)->run([$pythonBin, '-c', $script]);
 
         if (! $result->successful()) {
             return ['success' => false, 'error' => $result->errorOutput()];

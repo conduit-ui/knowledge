@@ -108,7 +108,8 @@ class KnowledgeSearchCommand extends Command
             $priority = $entry['priority'] ?? 'medium';
             $confidence = $entry['confidence'] ?? 0;
             $module = $entry['module'] ?? null;
-            $tags = $entry['tags'] ?? [];
+            $rawTags = $entry['tags'] ?? [];
+            $tags = is_array($rawTags) ? $rawTags : array_filter(array_map('trim', explode(',', (string) $rawTags)));
             $content = $entry['content'] ?? '';
             $score = $entry['score'] ?? 0.0;
             $supersededBy = $entry['superseded_by'] ?? null;

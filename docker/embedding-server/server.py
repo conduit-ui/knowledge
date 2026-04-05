@@ -9,18 +9,15 @@ from sentence_transformers import SentenceTransformer
 
 app = Flask(__name__)
 
-# Load model on startup (cached in volume)
+# Load model at module level — with gunicorn --preload this runs once before
+# workers fork, so all workers share the weights via copy-on-write.
 MODEL_NAME = os.environ.get('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
-model = None
+print(f"Loading model: {MODEL_NAME}")
+model = SentenceTransformer(MODEL_NAME)
+print(f"Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}")
 
 
 def get_model():
-    """Lazy load the model."""
-    global model
-    if model is None:
-        print(f"Loading model: {MODEL_NAME}")
-        model = SentenceTransformer(MODEL_NAME)
-        print(f"Model loaded. Embedding dimension: {model.get_sentence_embedding_dimension()}")
     return model
 
 
