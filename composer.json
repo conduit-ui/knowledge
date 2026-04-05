@@ -20,18 +20,19 @@
         "illuminate/database": "^12.17",
         "laravel-zero/framework": "^12.0.2",
         "laravel/mcp": "^0.6.0",
-        "saloonphp/saloon": "^3.14",
+        "saloonphp/saloon": "^4.0",
         "symfony/uid": "^8.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.25.1",
         "mockery/mockery": "^1.6.12",
-        "pestphp/pest": "^3.8.4|^4.1.2",
+        "pestphp/pest": "4.3.2",
         "phpstan/extension-installer": "*",
         "phpstan/phpstan": "^1.0",
         "phpstan/phpstan-deprecation-rules": "^1.2",
         "phpstan/phpstan-strict-rules": "^1.6",
+        "phpunit/phpunit": "12.5.8",
         "rector/rector": "^1.2"
     },
     "autoload": {

@@ -1723,3 +1723,64 @@ describe('getCachedEmbedding with cache service', function (): void {
         expect($result)->toBe($embedding);
     });
 });
+
+describe('searchRawCollection', function (): void {
+    it('returns results from any collection by name', function (): void {
+        $embedding = array_fill(0, 384, 0.1);
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->with('punk rock')
+            ->andReturn($embedding);
+
+        $searchResults = [
+            ['id' => 'abc', 'score' => 0.95, 'payload' => ['track' => 'Punkrocker', 'artist' => 'Teddybears']],
+            ['id' => 'def', 'score' => 0.85, 'payload' => ['track' => 'Blitzkrieg Bop', 'artist' => 'Ramones']],
+        ];
+
+        $mockResponse = Mockery::mock(\Saloon\Http\Response::class);
+        $mockResponse->shouldReceive('successful')->andReturn(true);
+        $mockResponse->shouldReceive('json')->with('result')->andReturn($searchResults);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($mockResponse);
+
+        $results = $this->service->searchRawCollection('music_events', 'punk rock', 10);
+
+        expect($results)->toHaveCount(2)
+            ->and($results[0]['payload']['track'])->toBe('Punkrocker')
+            ->and($results[0]['score'])->toBe(0.95)
+            ->and($results[1]['payload']['artist'])->toBe('Ramones');
+    });
+
+    it('returns empty collection when embedding fails', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn([]);
+
+        $results = $this->service->searchRawCollection('music_events', 'test', 10);
+
+        expect($results)->toBeEmpty();
+    });
+
+    it('returns empty collection on failed response', function (): void {
+        $embedding = array_fill(0, 384, 0.1);
+
+        $this->mockEmbedding->shouldReceive('generate')
+            ->once()
+            ->andReturn($embedding);
+
+        $mockResponse = createMockResponse(false, 500);
+
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::type(SearchPoints::class))
+            ->once()
+            ->andReturn($mockResponse);
+
+        $results = $this->service->searchRawCollection('music_events', 'test', 10);
+
+        expect($results)->toBeEmpty();
+    });
+});

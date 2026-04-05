@@ -27,7 +27,8 @@ class KnowledgeSearchCommand extends Command
                             {--semantic : Use semantic search if available}
                             {--include-superseded : Include superseded entries in results}
                             {--project= : Override project namespace}
-                            {--global : Search across all projects}';
+                            {--global : Search across all projects}
+                            {--collection= : Search a raw Qdrant collection directly (bypasses knowledge_ prefix)}';
 
     /**
      * @var string
@@ -68,6 +69,12 @@ class KnowledgeSearchCommand extends Command
 
         // Use project-aware search
         $searchQuery = is_string($query) ? $query : '';
+
+        // Raw collection search — bypasses knowledge_ prefix and metadata formatting
+        $rawCollection = $this->option('collection');
+        if (is_string($rawCollection) && $rawCollection !== '') {
+            return $this->searchRawCollection($qdrant, $rawCollection, $searchQuery, $limit);
+        }
 
         if ($this->isGlobal()) {
             $collections = $qdrant->listCollections();
@@ -142,6 +149,42 @@ class KnowledgeSearchCommand extends Command
                 : $content;
 
             $this->line($contentPreview);
+            $this->newLine();
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function searchRawCollection(QdrantService $qdrant, string $collection, string $query, int $limit): int
+    {
+        $results = $qdrant->searchRawCollection($collection, $query, $limit);
+
+        if ($results->isEmpty()) {
+            $this->line('No results found.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Found {$results->count()} ".str('result')->plural($results->count())." in {$collection}");
+        $this->newLine();
+
+        foreach ($results as $result) {
+            $score = $result['score'] ?? 0.0;
+            $payload = $result['payload'] ?? [];
+
+            $this->line('<fg=yellow>'.number_format($score, 3).'</> | '.($payload['description'] ?? json_encode($payload)));
+
+            // Show key payload fields
+            $fields = collect($payload)
+                ->except(['description', 'vector'])
+                ->filter(fn ($v): bool => $v !== null && $v !== '')
+                ->map(fn ($v, $k): string => "<fg=gray>{$k}:</> {$v}")
+                ->implode(' | ');
+
+            if ($fields !== '') {
+                $this->line("  {$fields}");
+            }
+
             $this->newLine();
         }
 

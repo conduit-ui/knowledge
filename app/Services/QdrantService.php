@@ -977,4 +977,32 @@ class QdrantService
     {
         return 'knowledge_'.str_replace(['/', '\\', ' '], '_', $project);
     }
+
+    /**
+     * Search any Qdrant collection by name — no knowledge_ prefix, no metadata mapping.
+     *
+     * @return Collection<int, array{id: string|int, score: float, payload: array<string, mixed>}>
+     */
+    public function searchRawCollection(string $collection, string $query, int $limit = 10): Collection
+    {
+        $queryVector = $this->getCachedEmbedding($query);
+
+        if ($queryVector === []) {
+            return collect();
+        }
+
+        $response = $this->connector->send(
+            new SearchPoints($collection, $queryVector, $limit, 0.0)
+        );
+
+        if (! $response->successful()) {
+            return collect();
+        }
+
+        return collect($response->json('result') ?? [])->map(fn (array $r): array => [
+            'id' => $r['id'],
+            'score' => $r['score'] ?? 0.0,
+            'payload' => $r['payload'] ?? [],
+        ]);
+    }
 }
