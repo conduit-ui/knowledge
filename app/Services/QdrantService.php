@@ -787,7 +787,7 @@ class QdrantService
             'score' => $result['score'] ?? 0.0,
             'title' => $payload['title'] ?? '',
             'content' => $payload['content'] ?? '',
-            'tags' => $payload['tags'] ?? [],
+            'tags' => $this->normalizeTags($payload['tags'] ?? []),
             'category' => $payload['category'] ?? null,
             'module' => $payload['module'] ?? null,
             'priority' => $payload['priority'] ?? null,
@@ -818,7 +818,7 @@ class QdrantService
             'id' => $point['id'],
             'title' => $payload['title'] ?? '',
             'content' => $payload['content'] ?? '',
-            'tags' => $payload['tags'] ?? [],
+            'tags' => $this->normalizeTags($payload['tags'] ?? []),
             'category' => $payload['category'] ?? null,
             'module' => $payload['module'] ?? null,
             'priority' => $payload['priority'] ?? null,
@@ -973,6 +973,27 @@ class QdrantService
     /**
      * Get collection name for project namespace.
      */
+    /**
+     * Normalize tags from Qdrant payload — handles JSON-encoded strings.
+     *
+     * @return array<string>
+     */
+    private function normalizeTags(mixed $tags): array
+    {
+        if (is_array($tags)) {
+            return $tags;
+        }
+
+        if (is_string($tags) && str_starts_with($tags, '[')) {
+            $decoded = json_decode($tags, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }
+
     public function getCollectionName(string $project): string
     {
         return 'knowledge_'.str_replace(['/', '\\', ' '], '_', $project);

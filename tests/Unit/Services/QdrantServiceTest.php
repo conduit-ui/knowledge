@@ -1784,3 +1784,32 @@ describe('searchRawCollection', function (): void {
         expect($results)->toBeEmpty();
     });
 });
+
+describe('normalizeTags', function (): void {
+    it('passes through normal arrays', function (): void {
+        $method = new ReflectionMethod($this->service, 'normalizeTags');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, ['rock', 'punk']);
+
+        expect($result)->toBe(['rock', 'punk']);
+    });
+
+    it('decodes JSON-encoded string arrays', function (): void {
+        $method = new ReflectionMethod($this->service, 'normalizeTags');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, '["rock","punk","metal"]');
+
+        expect($result)->toBe(['rock', 'punk', 'metal']);
+    });
+
+    it('returns empty array for non-array non-JSON strings', function (): void {
+        $method = new ReflectionMethod($this->service, 'normalizeTags');
+        $method->setAccessible(true);
+
+        expect($method->invoke($this->service, 'just a string'))->toBe([])
+            ->and($method->invoke($this->service, null))->toBe([])
+            ->and($method->invoke($this->service, '[not valid json'))->toBe([]);
+    });
+});
