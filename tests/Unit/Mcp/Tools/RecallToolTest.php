@@ -129,4 +129,52 @@ describe('recall tool', function (): void {
         $request = new Request(['query' => 'test', 'limit' => 10]);
         $this->tool->handle($request);
     });
+
+    it('adds project field to each result when searching globally', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('default');
+        $this->qdrant->shouldReceive('listCollections')
+            ->once()
+            ->andReturn(['knowledge_alpha', 'knowledge_beta']);
+
+        $alphaEntry = [
+            'id' => 'entry-a1',
+            'title' => 'Alpha Entry',
+            'content' => 'Alpha content',
+            'category' => 'architecture',
+            'tags' => [],
+            'tiered_score' => 0.9,
+            'tier_label' => 'exact',
+            'confidence' => 80,
+            'updated_at' => now()->toIso8601String(),
+        ];
+
+        $this->tieredSearch->shouldReceive('search')
+            ->withArgs(fn ($q, $f, $l, $forceTier, $project) => $project === 'alpha')
+            ->once()
+            ->andReturn(collect([$alphaEntry]));
+
+        $this->tieredSearch->shouldReceive('search')
+            ->withArgs(fn ($q, $f, $l, $forceTier, $project) => $project === 'beta')
+            ->once()
+            ->andReturn(collect());
+
+        $this->metadata->shouldReceive('calculateEffectiveConfidence')->once()->andReturn(80);
+        $this->metadata->shouldReceive('isStale')->once()->andReturn(false);
+
+        $request = new Request(['query' => 'shared concept', 'global' => true]);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['results'])->toHaveCount(1)
+            ->and($data['results'][0]['project'])->toBe('alpha')
+            ->and($data['meta']['collections_searched'])->toBe(2);
+    });
+});
+
+describe('schema', function (): void {
+    it('returns valid schema definition', function (): void {
+        $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+        $result = $this->tool->schema($schema);
+        expect($result)->toBeArray()->not->toBeEmpty();
+    });
 });

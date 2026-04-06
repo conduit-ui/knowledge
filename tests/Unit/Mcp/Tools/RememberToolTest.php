@@ -155,3 +155,11 @@ describe('remember tool', function (): void {
         expect($data['project'])->toBe('custom-project');
     });
 });
+
+describe('schema', function (): void {
+    it('returns valid schema definition', function (): void {
+        $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+        $result = $this->tool->schema($schema);
+        expect($result)->toBeArray()->not->toBeEmpty();
+    });
+});

@@ -1012,6 +1012,29 @@ describe('vectorizeFromIndex', function (): void {
         unlink($tempFile);
     });
 
+    it('counts as failed when buildSymbolText produces only whitespace', function (): void {
+        // kind='' + name='' produces " " (space). Without file/signature/summary/docstring keys,
+        // array_filter keeps only " " which trims to "" — triggering the trim($text)==='' branch (line 301).
+        // We pass kinds=[''] so the symbol is not filtered out by the allowed-kinds check.
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => '', 'name' => '', 'line' => 0],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex, ['']);
+
+        expect($result['failed'])->toBe(1)
+            ->and($result['success'])->toBe(0)
+            ->and($result['total'])->toBe(1);
+
+        unlink($tempFile);
+    });
+
     it('excludes non-structural kinds by default', function (): void {
         $indexData = [
             'symbols' => [

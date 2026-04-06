@@ -181,4 +181,36 @@ describe('EnhancementQueueService status', function (): void {
         expect($status['processed'])->toBe(2);
         expect($status['failed'])->toBe(1);
     });
+
+    it('creates queue directory when it does not exist and enqueues item', function (): void {
+        $nestedDir = $this->tempDir.'/nested/deep/dir';
+
+        $pathService = Mockery::mock(KnowledgePathService::class);
+        $pathService->shouldReceive('getKnowledgeDirectory')
+            ->andReturn($nestedDir);
+
+        $service = new EnhancementQueueService($pathService);
+
+        $service->queue(['id' => 'x1', 'title' => 'Nested', 'content' => 'Content']);
+
+        expect($service->pendingCount())->toBe(1);
+    });
+
+    it('creates status directory when it does not exist and records success', function (): void {
+        // Use a separate nested dir that does NOT pre-exist.
+        // recordSuccess() calls updateStatus() which must mkdir if dir is absent.
+        $nestedDir = $this->tempDir.'/nested/status/dir';
+
+        $pathService = Mockery::mock(KnowledgePathService::class);
+        $pathService->shouldReceive('getKnowledgeDirectory')
+            ->andReturn($nestedDir);
+
+        // Do NOT mkdir — let the service create it via updateStatus()
+        $service = new EnhancementQueueService($pathService);
+
+        $service->recordSuccess();
+        $status = $service->getStatus();
+
+        expect($status['processed'])->toBe(1);
+    });
 });

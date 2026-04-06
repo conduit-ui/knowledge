@@ -276,4 +276,63 @@ describe('enhance:worker command', function (): void {
         $this->artisan('enhance:worker', ['--once' => true])
             ->assertSuccessful();
     });
+
+    it('increments failed count in processAll when item fails', function (): void {
+        $this->ollamaService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $this->queueService->shouldReceive('pendingCount')->once()->andReturn(2);
+
+        $goodItem = [
+            'entry_id' => 'good-id',
+            'title' => 'Good Entry',
+            'content' => 'Good content',
+            'category' => null,
+            'tags' => [],
+            'project' => 'default',
+            'queued_at' => '2025-06-01T12:00:00+00:00',
+        ];
+
+        $badItem = [
+            'entry_id' => 'bad-id',
+            'title' => 'Bad Entry',
+            'content' => 'Bad content',
+            'category' => null,
+            'tags' => [],
+            'project' => 'default',
+            'queued_at' => '2025-06-01T12:00:00+00:00',
+        ];
+
+        $this->queueService->shouldReceive('dequeue')
+            ->times(3)
+            ->andReturn($goodItem, $badItem, null);
+
+        $this->ollamaService->shouldReceive('enhance')
+            ->once()
+            ->with(Mockery::on(fn ($args): bool => $args['title'] === 'Good Entry'))
+            ->andReturn([
+                'tags' => ['php'],
+                'category' => 'architecture',
+                'concepts' => [],
+                'summary' => 'A summary.',
+            ]);
+
+        $this->ollamaService->shouldReceive('enhance')
+            ->once()
+            ->with(Mockery::on(fn ($args): bool => $args['title'] === 'Bad Entry'))
+            ->andReturn([
+                'tags' => [],
+                'category' => null,
+                'concepts' => [],
+                'summary' => '',
+            ]);
+
+        $this->qdrantService->shouldReceive('updateFields')
+            ->once()
+            ->andReturn(true);
+
+        $this->queueService->shouldReceive('recordSuccess')->once();
+        $this->queueService->shouldReceive('recordFailure')->once();
+
+        $this->artisan('enhance:worker')
+            ->assertFailed();
+    });
 });

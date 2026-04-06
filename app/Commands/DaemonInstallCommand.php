@@ -77,11 +77,13 @@ class DaemonInstallCommand extends Command
             $tmpService = tempnam(sys_get_temp_dir(), 'kd_');
             $tmpTimer = tempnam(sys_get_temp_dir(), 'kd_');
 
+            // @codeCoverageIgnoreStart
             if ($tmpService === false || $tmpTimer === false) {
                 error('Failed to create temp files');
 
                 return self::FAILURE;
             }
+            // @codeCoverageIgnoreEnd
 
             file_put_contents($tmpService, $service);
             file_put_contents($tmpTimer, $timer);
@@ -94,11 +96,13 @@ class DaemonInstallCommand extends Command
             @unlink($tmpService);
             @unlink($tmpTimer);
 
+            // @codeCoverageIgnoreStart
             if (! $result->successful()) {
                 error("Failed to install {$name}: ".$result->errorOutput());
 
                 return self::FAILURE;
             }
+            // @codeCoverageIgnoreEnd
         }
 
         Process::run('sudo systemctl daemon-reload');

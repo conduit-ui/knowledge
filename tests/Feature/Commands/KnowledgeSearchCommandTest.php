@@ -301,3 +301,78 @@ it('handles entries with missing optional fields', function (): void {
         ->assertSuccessful()
         ->expectsOutputToContain('Category: N/A');
 });
+
+it('uses --project option instead of auto-detecting project', function (): void {
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('timezone', [], 20, 'my-custom-project')
+        ->andReturn(collect([]));
+
+    $this->artisan('search', ['query' => 'timezone', '--project' => 'my-custom-project'])
+        ->assertSuccessful()
+        ->expectsOutput('No entries found.');
+});
+
+it('searches raw collection with --collection flag', function (): void {
+    $this->mockQdrant->shouldReceive('searchRawCollection')
+        ->once()
+        ->with('conversations', 'hello', 20)
+        ->andReturn(collect([
+            [
+                'score' => 0.91,
+                'payload' => ['description' => 'A conversation about hello', 'topic' => 'greetings'],
+            ],
+        ]));
+
+    $this->artisan('search', ['query' => 'hello', '--collection' => 'conversations'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 result');
+});
+
+it('shows no results message for raw collection with no matches', function (): void {
+    $this->mockQdrant->shouldReceive('searchRawCollection')
+        ->once()
+        ->with('conversations', 'noop', 20)
+        ->andReturn(collect([]));
+
+    $this->artisan('search', ['query' => 'noop', '--collection' => 'conversations'])
+        ->assertSuccessful()
+        ->expectsOutput('No results found.');
+});
+
+it('searches all projects with --global flag', function (): void {
+    $this->mockQdrant->shouldReceive('listCollections')
+        ->once()
+        ->andReturn(['knowledge_alpha', 'knowledge_beta']);
+
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('query', [], 20, 'alpha')
+        ->andReturn(collect([
+            [
+                'id' => 'e1',
+                'title' => 'Alpha Result',
+                'content' => 'Alpha content',
+                'category' => 'architecture',
+                'priority' => 'high',
+                'confidence' => 90,
+                'module' => null,
+                'tags' => [],
+                'score' => 0.95,
+                'status' => 'validated',
+                'usage_count' => 0,
+                'created_at' => '2025-01-01T00:00:00Z',
+                'updated_at' => '2025-01-01T00:00:00Z',
+            ],
+        ]));
+
+    $this->mockQdrant->shouldReceive('search')
+        ->once()
+        ->with('query', [], 20, 'beta')
+        ->andReturn(collect([]));
+
+    $this->artisan('search', ['query' => 'query', '--global' => true])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Found 1 entry')
+        ->expectsOutputToContain('Alpha Result');
+});

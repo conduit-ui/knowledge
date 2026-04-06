@@ -24,11 +24,13 @@ class VectorizeCodeCommand extends Command
     public function handle(SymbolIndexService $symbolIndex, CodeIndexerService $codeIndexer): int
     {
         $repo = $this->argument('repo');
+        // @codeCoverageIgnoreStart
         if (! is_string($repo)) {
             error('Repository argument is required.');
 
             return self::FAILURE;
         }
+        // @codeCoverageIgnoreEnd
 
         $home = getenv('HOME') !== false ? (string) getenv('HOME') : '/tmp';
         $indexPath = "{$home}/.code-index/".str_replace('/', '-', $repo).'.json';

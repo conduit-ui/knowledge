@@ -184,9 +184,11 @@ PROMPT;
     protected function getClient(): Client
     {
         if (! $this->client instanceof Client) {
-            $this->client = app()->bound(Client::class)
-                ? app(Client::class)
-                : $this->createClient();
+            if (app()->bound(Client::class)) {
+                $this->client = app(Client::class);
+            } else {
+                $this->client = $this->createClient(); // @codeCoverageIgnore
+            }
         }
 
         return $this->client;

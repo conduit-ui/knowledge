@@ -106,4 +106,26 @@ describe('ProjectDetectorService', function (): void {
 
         expect($detector->detect())->toBe('repo');
     });
+
+    it('falls back to directory name when URL does not match extraction pattern', function (): void {
+        $gitContext = Mockery::mock(GitContextService::class);
+        $gitContext->shouldReceive('isGitRepository')->andReturn(true);
+        $gitContext->shouldReceive('getRepositoryUrl')->andReturn('localhost');
+        $gitContext->shouldReceive('getRepositoryPath')->andReturn('/some/path/myrepo');
+
+        $detector = new ProjectDetectorService($gitContext);
+
+        expect($detector->detect())->toBe('myrepo');
+    });
+
+    it('returns default when directory name sanitizes to empty string', function (): void {
+        $gitContext = Mockery::mock(GitContextService::class);
+        $gitContext->shouldReceive('isGitRepository')->andReturn(true);
+        $gitContext->shouldReceive('getRepositoryUrl')->andReturn(null);
+        $gitContext->shouldReceive('getRepositoryPath')->andReturn('/path/to/!!!');
+
+        $detector = new ProjectDetectorService($gitContext);
+
+        expect($detector->detect())->toBe('default');
+    });
 });

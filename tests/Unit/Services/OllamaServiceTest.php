@@ -99,6 +99,20 @@ describe('OllamaService generate', function (): void {
         expect($result)->toBe('');
     });
 
+    it('returns empty string when generate receives non-200 status with http_errors disabled', function (): void {
+        $mockHandler = new MockHandler([
+            new Response(202, [], json_encode(['unexpected' => 'accepted'])),
+        ]);
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack, 'http_errors' => false]);
+        app()->instance(Client::class, $mockClient);
+
+        $service = new OllamaService;
+        $result = $service->generate('test prompt');
+
+        expect($result)->toBe('');
+    });
+
     it('returns empty string on invalid response', function (): void {
         $mockHandler = new MockHandler([
             new Response(200, [], json_encode(['invalid' => 'data'])),
@@ -250,5 +264,99 @@ describe('OllamaService enhance', function (): void {
         expect($result['tags'])->toBe(['docker']);
         expect($result['category'])->toBe('deployment');
         expect($result['summary'])->toBe('Docker guide.');
+    });
+
+    it('returns defaults when JSON decodes to non-array', function (): void {
+        // The regex matches {invalid json} but json_decode returns null (non-array)
+        $mockHandler = new MockHandler([
+            new Response(200, [], json_encode(['response' => '{invalid json}'])),
+        ]);
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+        app()->instance(Client::class, $mockClient);
+
+        $service = new OllamaService;
+        $result = $service->enhance([
+            'title' => 'Test',
+            'content' => 'Content',
+        ]);
+
+        expect($result['tags'])->toBe([]);
+        expect($result['category'])->toBeNull();
+        expect($result['concepts'])->toBe([]);
+        expect($result['summary'])->toBe('');
+    });
+
+    it('falls back to empty array when tags is not an array', function (): void {
+        $jsonResponse = json_encode([
+            'tags' => 'not-an-array',
+            'category' => 'testing',
+            'concepts' => ['concept'],
+            'summary' => 'A summary.',
+        ]);
+
+        $mockHandler = new MockHandler([
+            new Response(200, [], json_encode(['response' => $jsonResponse])),
+        ]);
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+        app()->instance(Client::class, $mockClient);
+
+        $service = new OllamaService;
+        $result = $service->enhance([
+            'title' => 'Test',
+            'content' => 'Content',
+        ]);
+
+        expect($result['tags'])->toBe([]);
+        expect($result['category'])->toBe('testing');
+    });
+
+    it('falls back to empty array when concepts is not an array', function (): void {
+        $jsonResponse = json_encode([
+            'tags' => ['php'],
+            'category' => 'testing',
+            'concepts' => 'not-an-array',
+            'summary' => 'A summary.',
+        ]);
+
+        $mockHandler = new MockHandler([
+            new Response(200, [], json_encode(['response' => $jsonResponse])),
+        ]);
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+        app()->instance(Client::class, $mockClient);
+
+        $service = new OllamaService;
+        $result = $service->enhance([
+            'title' => 'Test',
+            'content' => 'Content',
+        ]);
+
+        expect($result['concepts'])->toBe([]);
+    });
+
+    it('falls back to empty string when summary is not a string', function (): void {
+        $jsonResponse = json_encode([
+            'tags' => ['php'],
+            'category' => 'testing',
+            'concepts' => ['concept'],
+            'summary' => ['not', 'a', 'string'],
+        ]);
+
+        $mockHandler = new MockHandler([
+            new Response(200, [], json_encode(['response' => $jsonResponse])),
+        ]);
+        $handlerStack = HandlerStack::create($mockHandler);
+        $mockClient = new Client(['handler' => $handlerStack]);
+        app()->instance(Client::class, $mockClient);
+
+        $service = new OllamaService;
+        $result = $service->enhance([
+            'title' => 'Test',
+            'content' => 'Content',
+        ]);
+
+        expect($result['summary'])->toBe('');
     });
 });
