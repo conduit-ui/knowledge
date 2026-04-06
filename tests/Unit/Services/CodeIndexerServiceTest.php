@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Services\CodeIndexerService;
 use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Data\CollectionInfo;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Data\ScrollResult;
@@ -15,7 +15,7 @@ use TheShit\Vector\Qdrant;
 uses()->group('code-indexer-unit');
 
 beforeEach(function (): void {
-    $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+    $this->mockEmbedding = Mockery::mock(EmbeddingClient::class);
     $this->mockQdrant = Mockery::mock(Qdrant::class);
     $this->service = new CodeIndexerService($this->mockEmbedding, $this->mockQdrant, 1024);
 });
@@ -176,7 +176,7 @@ function testFunction() {
 }
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -211,7 +211,7 @@ function testFunction() {
         $filepath = $tempDir.'/test.php';
         file_put_contents($filepath, '<?php echo "test";');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([]);
 
@@ -233,7 +233,7 @@ function testFunction() {
         $filepath = $tempDir.'/test.php';
         file_put_contents($filepath, '<?php echo "test";');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -260,7 +260,7 @@ function testFunction() {
         $content = "<?php\n".str_repeat("// This is line number X with some code\n", 100);
         file_put_contents($filepath, $content);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->atLeast()->times(2)
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -288,7 +288,7 @@ private function privateMethod() {}
 protected function protectedMethod() {}
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function ($text) {
                 return str_contains($text, 'globalFunction')
                     && str_contains($text, 'publicMethod')
@@ -322,7 +322,7 @@ async def async_function():
     pass
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function ($text) {
                 return str_contains($text, 'regular_function')
                     && str_contains($text, 'async_function');
@@ -352,7 +352,7 @@ const arrowFunction = () => {};
 async arrowAsync() {}
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function ($text) {
                 return str_contains($text, 'regularFunction');
             })
@@ -380,7 +380,7 @@ function typescriptFunction() {}
 const constFunction = async () => {};
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function ($text) {
                 return str_contains($text, 'typescriptFunction');
             })
@@ -408,7 +408,7 @@ const constFunction = async () => {};
 function vueFunction() {}
 </script>');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -430,7 +430,7 @@ function vueFunction() {}
         $filepath = $tempDir.'/unknown.xyz';
         file_put_contents($filepath, 'some content');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -456,7 +456,7 @@ function ReactComponent() {
 }
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function ($text) {
                 return str_contains($text, 'ReactComponent');
             })
@@ -485,7 +485,7 @@ function JsxComponent() {
 }
 ');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -508,7 +508,7 @@ function JsxComponent() {
         $content = "<?php\n".str_repeat("// Line of code here\n", 150);
         file_put_contents($filepath, $content);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->twice()
             ->andReturn([], array_fill(0, 1024, 0.1));
 
@@ -528,7 +528,7 @@ function JsxComponent() {
 
 describe('search', function (): void {
     it('successfully searches code with results', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('find authentication function')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -563,7 +563,7 @@ describe('search', function (): void {
     });
 
     it('returns empty array when embedding generation fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn([]);
@@ -574,7 +574,7 @@ describe('search', function (): void {
     });
 
     it('returns empty array when search request fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -589,7 +589,7 @@ describe('search', function (): void {
     });
 
     it('handles empty result set', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('nonexistent code')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -604,7 +604,7 @@ describe('search', function (): void {
     });
 
     it('applies repo filter', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('search query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -619,7 +619,7 @@ describe('search', function (): void {
     });
 
     it('applies language filter', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('search query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -634,7 +634,7 @@ describe('search', function (): void {
     });
 
     it('applies both repo and language filters', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('search query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -652,7 +652,7 @@ describe('search', function (): void {
     });
 
     it('handles custom limit', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('search')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -667,7 +667,7 @@ describe('search', function (): void {
     });
 
     it('handles missing payload fields gracefully', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -694,7 +694,7 @@ describe('search', function (): void {
     });
 
     it('handles missing score gracefully', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -714,7 +714,7 @@ describe('search', function (): void {
     });
 
     it('handles empty filter array', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('search')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -731,7 +731,7 @@ describe('search', function (): void {
 
 describe('indexSymbol', function (): void {
     it('successfully indexes a symbol', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -754,7 +754,7 @@ describe('indexSymbol', function (): void {
     });
 
     it('returns error when embedding is empty', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([]);
 
@@ -773,7 +773,7 @@ describe('indexSymbol', function (): void {
     });
 
     it('returns error when upsert fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -798,7 +798,7 @@ describe('indexSymbol', function (): void {
     it('truncates content to 4000 chars', function (): void {
         $longText = str_repeat('x', 5000);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -886,7 +886,7 @@ describe('vectorizeFromIndex', function (): void {
             ->once()
             ->andReturn('class UserController { }');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -914,7 +914,7 @@ describe('vectorizeFromIndex', function (): void {
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
 
-        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+        $this->mockEmbedding->shouldReceive('embed')->once()->andReturn(array_fill(0, 1024, 0.1));
 
         $this->mockQdrant->shouldReceive('upsert')
             ->once()
@@ -941,7 +941,7 @@ describe('vectorizeFromIndex', function (): void {
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
 
-        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+        $this->mockEmbedding->shouldReceive('embed')->once()->andReturn(array_fill(0, 1024, 0.1));
 
         $this->mockQdrant->shouldReceive('upsert')
             ->once()
@@ -967,7 +967,7 @@ describe('vectorizeFromIndex', function (): void {
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
 
-        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
+        $this->mockEmbedding->shouldReceive('embed')->once()->andReturn(array_fill(0, 1024, 0.1));
 
         $this->mockQdrant->shouldReceive('upsert')
             ->once()
@@ -1002,7 +1002,7 @@ describe('vectorizeFromIndex', function (): void {
 
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
-        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn([]);
+        $this->mockEmbedding->shouldReceive('embed')->once()->andReturn([]);
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
 
@@ -1069,7 +1069,7 @@ describe('vectorizeFromIndex', function (): void {
             ->once()
             ->andReturn('class Foo { public function bar() {} }');
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->withArgs(function (string $text): bool {
                 return str_contains($text, 'class Foo { public function bar() {} }');
             })
@@ -1277,7 +1277,7 @@ describe('vectorizeFromIndex empty symbol text', function (): void {
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
         // buildSymbolText produces "class \n\n\nfile: " which isn't empty, so it proceeds
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
-        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn([]);
+        $this->mockEmbedding->shouldReceive('embed')->once()->andReturn([]);
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Services\QdrantService;
+use TheShit\Vector\Contracts\EmbeddingClient;
 
 describe('KnowledgeSearchStatusCommand', function (): void {
     beforeEach(function (): void {
-        $this->embeddingService = mock(EmbeddingServiceInterface::class);
+        $this->embeddingService = mock(EmbeddingClient::class);
         $this->qdrant = mock(QdrantService::class);
 
-        app()->instance(EmbeddingServiceInterface::class, $this->embeddingService);
+        app()->instance(EmbeddingClient::class, $this->embeddingService);
         app()->instance(QdrantService::class, $this->qdrant);
     });
 
@@ -18,7 +18,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
         config(['search.semantic_enabled' => false]);
         config(['search.embedding_provider' => 'none']);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]);
@@ -36,7 +36,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'ollama']);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([0.1, 0.2, 0.3]); // Non-empty embedding
@@ -56,7 +56,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
         config(['search.semantic_enabled' => false]);
         config(['search.embedding_provider' => 'none']);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]);
@@ -74,7 +74,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'openai']);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]); // Empty embedding
@@ -91,7 +91,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
     it('displays database statistics', function (): void {
         config(['search.semantic_enabled' => false]);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]);
@@ -115,7 +115,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
         config(['search.semantic_enabled' => true]);
         config(['search.embedding_provider' => 'ollama']);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([0.1, 0.2, 0.3]);
@@ -132,7 +132,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
     it('displays usage instructions with semantic search disabled', function (): void {
         config(['search.semantic_enabled' => false]);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]);
@@ -149,7 +149,7 @@ describe('KnowledgeSearchStatusCommand', function (): void {
     it('handles empty database', function (): void {
         config(['search.semantic_enabled' => false]);
 
-        $this->embeddingService->shouldReceive('generate')
+        $this->embeddingService->shouldReceive('embed')
             ->once()
             ->with('test')
             ->andReturn([]);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\SparseEmbeddingServiceInterface;
 use App\Exceptions\Qdrant\CollectionCreationException;
 use App\Exceptions\Qdrant\ConnectionException;
@@ -14,6 +13,7 @@ use App\Exceptions\Qdrant\UpsertException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Saloon\Exceptions\Request\RequestException;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Qdrant;
 
@@ -22,7 +22,7 @@ class QdrantService
     private ?SparseEmbeddingServiceInterface $sparseEmbeddingService = null;
 
     public function __construct(
-        private readonly EmbeddingServiceInterface $embeddingService,
+        private readonly EmbeddingClient $embeddingService,
         private readonly Qdrant $qdrant,
         private readonly int $vectorSize = 384,
         private readonly float $scoreThreshold = 0.7,
@@ -572,11 +572,11 @@ class QdrantService
     private function getCachedEmbedding(string $text): array
     {
         if (! config('search.qdrant.cache_embeddings', true)) {
-            return $this->embeddingService->generate($text);
+            return $this->embeddingService->embed($text);
         }
 
         if ($this->cacheService instanceof KnowledgeCacheService) {
-            return $this->cacheService->rememberEmbedding($text, fn (): array => $this->embeddingService->generate($text));
+            return $this->cacheService->rememberEmbedding($text, fn (): array => $this->embeddingService->embed($text));
         }
 
         $cacheKey = 'embedding:'.hash('xxh128', $text);
@@ -585,7 +585,7 @@ class QdrantService
         return Cache::remember(
             $cacheKey,
             $this->cacheTtl,
-            fn (): array => $this->embeddingService->generate($text)
+            fn (): array => $this->embeddingService->embed($text)
         );
     }
 

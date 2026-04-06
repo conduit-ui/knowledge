@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a4ad8e1bb7e1e6d06fb643d78e9ed073",
+    "content-hash": "fca5186e90e3889558a21ff0b436cffb",
     "packages": [
         {
             "name": "brick/math",
@@ -6689,16 +6689,16 @@
         },
         {
             "name": "the-shit/vector",
-            "version": "v0.1.1",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/the-shit/vector.git",
-                "reference": "1bd248e9adc6a63332ecbe97817695bf7c4a17cd"
+                "reference": "47d1db39b0cc741de7175d2bec4cceb53bd09ad7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/the-shit/vector/zipball/1bd248e9adc6a63332ecbe97817695bf7c4a17cd",
-                "reference": "1bd248e9adc6a63332ecbe97817695bf7c4a17cd",
+                "url": "https://api.github.com/repos/the-shit/vector/zipball/47d1db39b0cc741de7175d2bec4cceb53bd09ad7",
+                "reference": "47d1db39b0cc741de7175d2bec4cceb53bd09ad7",
                 "shasum": ""
             },
             "require": {
@@ -6750,9 +6750,9 @@
             ],
             "support": {
                 "issues": "https://github.com/the-shit/vector/issues",
-                "source": "https://github.com/the-shit/vector/tree/v0.1.1"
+                "source": "https://github.com/the-shit/vector/tree/v0.2.0"
             },
-            "time": "2026-04-06T04:02:03+00:00"
+            "time": "2026-04-06T20:13:14+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
