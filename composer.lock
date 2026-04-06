@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5c46758a9bbfbf48911a9147412e047d",
+    "content-hash": "a4ad8e1bb7e1e6d06fb643d78e9ed073",
     "packages": [
         {
             "name": "brick/math",
@@ -6686,6 +6686,73 @@
                 }
             ],
             "time": "2026-01-01T22:13:48+00:00"
+        },
+        {
+            "name": "the-shit/vector",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/the-shit/vector.git",
+                "reference": "1bd248e9adc6a63332ecbe97817695bf7c4a17cd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/the-shit/vector/zipball/1bd248e9adc6a63332ecbe97817695bf7c4a17cd",
+                "reference": "1bd248e9adc6a63332ecbe97817695bf7c4a17cd",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.3",
+                "saloonphp/saloon": "^4.0"
+            },
+            "require-dev": {
+                "laravel/framework": "^11.0|^12.0",
+                "laravel/pint": "^1.0",
+                "nunomaduro/pao": "dev-main",
+                "opis/json-schema": "^2.6",
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-arch": "^4.0",
+                "rector/rector": "^2.0",
+                "spatie/invade": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "TheShit\\Vector\\VectorServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "TheShit\\Vector\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jordan Partridge",
+                    "email": "jordan@partridge.rocks"
+                }
+            ],
+            "description": "Thin, composable Saloon connector for the Qdrant vector database",
+            "keywords": [
+                "embeddings",
+                "laravel",
+                "qdrant",
+                "saloon",
+                "search",
+                "vector"
+            ],
+            "support": {
+                "issues": "https://github.com/the-shit/vector/issues",
+                "source": "https://github.com/the-shit/vector/tree/v0.1.1"
+            },
+            "time": "2026-04-06T04:02:03+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

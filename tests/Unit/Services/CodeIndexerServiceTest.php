@@ -3,105 +3,75 @@
 declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
-use App\Integrations\Qdrant\QdrantConnector;
-use App\Integrations\Qdrant\Requests\CreateCollection;
-use App\Integrations\Qdrant\Requests\GetCollectionInfo;
-use App\Integrations\Qdrant\Requests\SearchPoints;
-use App\Integrations\Qdrant\Requests\UpsertPoints;
 use App\Services\CodeIndexerService;
-use Saloon\Http\Response;
+use Saloon\Exceptions\Request\RequestException;
+use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Data\CollectionInfo;
+use TheShit\Vector\Data\ScoredPoint;
+use TheShit\Vector\Data\ScrollResult;
+use TheShit\Vector\Data\UpsertResult;
+use TheShit\Vector\Qdrant;
 
 uses()->group('code-indexer-unit');
 
 beforeEach(function (): void {
     $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
-    $this->mockConnector = Mockery::mock(QdrantConnector::class);
-    $this->service = new CodeIndexerService($this->mockEmbedding, 1024);
-
-    // Inject mock connector via reflection
-    $reflection = new ReflectionClass($this->service);
-    $property = $reflection->getProperty('connector');
-    $property->setAccessible(true);
-    $property->setValue($this->service, $this->mockConnector);
+    $this->mockQdrant = Mockery::mock(Qdrant::class);
+    $this->service = new CodeIndexerService($this->mockEmbedding, $this->mockQdrant, 1024);
 });
 
 afterEach(function (): void {
     Mockery::close();
 });
 
-if (! function_exists('createCodeMockResponse')) {
-    /**
-     * Create a mock Response object with common configuration.
-     */
-    function createCodeMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
+if (! function_exists('makeCodeRequestException')) {
+    function makeCodeRequestException(int $status): RequestException
     {
-        $response = Mockery::mock(Response::class);
-        $response->shouldReceive('successful')->andReturn($successful);
+        $response = Mockery::mock(SaloonResponse::class);
+        $response->shouldReceive('status')->andReturn($status);
+        $response->shouldReceive('body')->andReturn('');
 
-        if (! $successful || $status !== 200) {
-            $response->shouldReceive('status')->andReturn($status);
-        }
-
-        if ($json !== null) {
-            $response->shouldReceive('json')->andReturn($json);
-        }
-
-        return $response;
+        return new RequestException($response);
     }
 }
 
 describe('ensureCollection', function (): void {
     it('returns true when collection already exists', function (): void {
-        $response = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($response);
+            ->andReturn(new CollectionInfo('green', 0, 0, 0));
 
         expect($this->service->ensureCollection())->toBeTrue();
     });
 
     it('creates collection when it does not exist (404)', function (): void {
-        $getResponse = createCodeMockResponse(false, 404);
-        $createResponse = createCodeMockResponse(true);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($getResponse);
+            ->andThrow(makeCodeRequestException(404));
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(CreateCollection::class))
+        $this->mockQdrant->shouldReceive('createCollection')
             ->once()
-            ->andReturn($createResponse);
+            ->andReturn(true);
 
         expect($this->service->ensureCollection())->toBeTrue();
     });
 
     it('returns false when collection creation fails', function (): void {
-        $getResponse = createCodeMockResponse(false, 404);
-        $createResponse = createCodeMockResponse(false, 500);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($getResponse);
+            ->andThrow(makeCodeRequestException(404));
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(CreateCollection::class))
+        $this->mockQdrant->shouldReceive('createCollection')
             ->once()
-            ->andReturn($createResponse);
+            ->andThrow(makeCodeRequestException(500));
 
         expect($this->service->ensureCollection())->toBeFalse();
     });
 
     it('returns false on unexpected response status', function (): void {
-        $response = createCodeMockResponse(false, 500);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($response);
+            ->andThrow(makeCodeRequestException(500));
 
         expect($this->service->ensureCollection())->toBeFalse();
     });
@@ -120,7 +90,6 @@ describe('findFiles', function (): void {
         expect($files[0])->toHaveKeys(['path', 'repo']);
         expect($files[0]['repo'])->toBe(basename($tempDir));
 
-        // Cleanup
         unlink($tempDir.'/test.php');
         unlink($tempDir.'/app.js');
         rmdir($tempDir);
@@ -146,7 +115,6 @@ describe('findFiles', function (): void {
         expect($files)->toHaveCount(1);
         expect($files[0]['path'])->toContain('test.php');
 
-        // Cleanup
         unlink($tempDir.'/test.php');
         unlink($tempDir.'/vendor/vendor.php');
         unlink($tempDir.'/node_modules/module.js');
@@ -170,9 +138,8 @@ describe('findFiles', function (): void {
 
         $files = iterator_to_array($this->service->findFiles([$tempDir]));
 
-        expect($files)->toHaveCount(7); // php, py, js, ts, tsx, jsx, vue
+        expect($files)->toHaveCount(7);
 
-        // Cleanup
         foreach (['php', 'py', 'js', 'ts', 'tsx', 'jsx', 'vue', 'txt', 'md'] as $ext) {
             unlink($tempDir.'/test.'.$ext);
         }
@@ -191,7 +158,6 @@ describe('findFiles', function (): void {
 
         expect($files)->toHaveCount(2);
 
-        // Cleanup
         unlink($tempDir1.'/file1.php');
         unlink($tempDir2.'/file2.php');
         rmdir($tempDir1);
@@ -214,11 +180,9 @@ function testFunction() {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
@@ -227,7 +191,6 @@ function testFunction() {
             'success' => true,
         ]);
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -260,7 +223,6 @@ function testFunction() {
             'error' => 'Failed to generate embeddings',
         ]);
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -275,11 +237,9 @@ function testFunction() {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andThrow(makeCodeRequestException(500));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
@@ -289,7 +249,6 @@ function testFunction() {
             'error' => 'Upsert failed',
         ]);
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -298,27 +257,22 @@ function testFunction() {
         $tempDir = sys_get_temp_dir().'/code_indexer_test_'.uniqid();
         mkdir($tempDir);
         $filepath = $tempDir.'/large.php';
-        // Create content larger than CHUNK_SIZE (2000 chars) - should produce multiple chunks
         $content = "<?php\n".str_repeat("// This is line number X with some code\n", 100);
         file_put_contents($filepath, $content);
 
-        // Allow any number of generate calls (depends on content size and chunking)
         $this->mockEmbedding->shouldReceive('generate')
             ->atLeast()->times(2)
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
         expect($result['chunks'])->toBeGreaterThan(1);
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -344,17 +298,14 @@ protected function protectedMethod() {}
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -379,17 +330,14 @@ async def async_function():
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -411,17 +359,14 @@ async arrowAsync() {}
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -442,17 +387,14 @@ const constFunction = async () => {};
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -470,17 +412,14 @@ function vueFunction() {}
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -495,17 +434,14 @@ function vueFunction() {}
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -527,17 +463,14 @@ function ReactComponent() {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -556,17 +489,14 @@ function JsxComponent() {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -575,27 +505,22 @@ function JsxComponent() {
         $tempDir = sys_get_temp_dir().'/code_indexer_test_'.uniqid();
         mkdir($tempDir);
         $filepath = $tempDir.'/large.php';
-        // Create content to produce 2 chunks
         $content = "<?php\n".str_repeat("// Line of code here\n", 150);
         file_put_contents($filepath, $content);
 
-        // First chunk returns empty embedding, second succeeds
         $this->mockEmbedding->shouldReceive('generate')
             ->twice()
             ->andReturn([], array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexFile($filepath, 'test-repo');
 
         expect($result['success'])->toBeTrue();
-        expect($result['chunks'])->toBe(1); // Only one chunk succeeded
+        expect($result['chunks'])->toBe(1);
 
-        // Cleanup
         unlink($filepath);
         rmdir($tempDir);
     });
@@ -608,27 +533,19 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'abc123',
-                    'score' => 0.95,
-                    'payload' => [
-                        'filepath' => '/app/Auth/Login.php',
-                        'repo' => 'myproject',
-                        'language' => 'php',
-                        'functions' => ['authenticate', 'login'],
-                        'content' => 'function authenticate() {}',
-                        'start_line' => 10,
-                        'end_line' => 25,
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('abc123', 0.95, [
+                    'filepath' => '/app/Auth/Login.php',
+                    'repo' => 'myproject',
+                    'language' => 'php',
+                    'functions' => ['authenticate', 'login'],
+                    'content' => 'function authenticate() {}',
+                    'start_line' => 10,
+                    'end_line' => 25,
+                ]),
+            ]);
 
         $results = $this->service->search('find authentication function', 10);
 
@@ -662,11 +579,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andThrow(makeCodeRequestException(500));
 
         $results = $this->service->search('query');
 
@@ -679,11 +594,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('nonexistent code');
 
@@ -696,11 +609,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('search query', 10, ['repo' => 'myproject']);
 
@@ -713,11 +624,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('search query', 10, ['language' => 'php']);
 
@@ -730,11 +639,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('search query', 10, [
             'repo' => 'myproject',
@@ -750,11 +657,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('search', 50);
 
@@ -767,19 +672,11 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'abc123',
-                    'score' => 0.8,
-                    'payload' => [], // Empty payload
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('abc123', 0.8, []),
+            ]);
 
         $results = $this->service->search('query');
 
@@ -802,42 +699,18 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'abc123',
-                    'payload' => [
-                        'filepath' => '/test.php',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('abc123', 0.0, [
+                    'filepath' => '/test.php',
+                ]),
+            ]);
 
         $results = $this->service->search('query');
 
         expect($results)->toHaveCount(1);
         expect($results[0]['score'])->toBe(0.0);
-    });
-
-    it('handles null result in response', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
-            ->with('query')
-            ->once()
-            ->andReturn(array_fill(0, 1024, 0.1));
-
-        $searchResponse = createCodeMockResponse(true, 200, []);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
-            ->once()
-            ->andReturn($searchResponse);
-
-        $results = $this->service->search('query');
-
-        expect($results)->toBeEmpty();
     });
 
     it('handles empty filter array', function (): void {
@@ -846,11 +719,9 @@ describe('search', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createCodeMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('search', 10, []);
 
@@ -864,11 +735,9 @@ describe('indexSymbol', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexSymbol(
             text: 'class UserController extends Controller',
@@ -908,11 +777,9 @@ describe('indexSymbol', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andThrow(makeCodeRequestException(500));
 
         $result = $this->service->indexSymbol(
             text: 'class Foo',
@@ -935,14 +802,9 @@ describe('indexSymbol', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::on(function ($request) {
-                // Verify the upsert request has truncated content
-                return $request instanceof UpsertPoints;
-            }))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->indexSymbol(
             text: $longText,
@@ -962,11 +824,10 @@ describe('indexSymbol', function (): void {
 describe('vectorizeFromIndex', function (): void {
     it('returns zeros for non-existent file', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
-        unlink($tempFile); // Ensure it doesn't exist
+        unlink($tempFile);
 
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
 
-        // Suppress the E_WARNING from file_get_contents on non-existent file
         $result = @$this->service->vectorizeFromIndex(
             $tempFile,
             'local/test',
@@ -1029,11 +890,9 @@ describe('vectorizeFromIndex', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
 
@@ -1057,11 +916,9 @@ describe('vectorizeFromIndex', function (): void {
 
         $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex, ['class']);
 
@@ -1086,11 +943,9 @@ describe('vectorizeFromIndex', function (): void {
 
         $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex, [], 'php');
 
@@ -1114,11 +969,9 @@ describe('vectorizeFromIndex', function (): void {
 
         $this->mockEmbedding->shouldReceive('generate')->once()->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $progressCalled = false;
         $result = $this->service->vectorizeFromIndex(
@@ -1148,9 +1001,6 @@ describe('vectorizeFromIndex', function (): void {
         file_put_contents($tempFile, json_encode($indexData));
 
         $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
-
-        // buildSymbolText produces "class \n\n\nfile: " which has content, so it won't fail on empty text.
-        // Instead, simulate an embedding failure.
         $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
         $this->mockEmbedding->shouldReceive('generate')->once()->andReturn([]);
 
@@ -1203,11 +1053,9 @@ describe('vectorizeFromIndex', function (): void {
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $upsertResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
 
@@ -1219,7 +1067,7 @@ describe('vectorizeFromIndex', function (): void {
 
 describe('constructor', function (): void {
     it('uses default vector size of 1024', function (): void {
-        $service = new CodeIndexerService($this->mockEmbedding);
+        $service = new CodeIndexerService($this->mockEmbedding, $this->mockQdrant);
 
         $reflection = new ReflectionClass($service);
         $property = $reflection->getProperty('vectorSize');
@@ -1229,7 +1077,7 @@ describe('constructor', function (): void {
     });
 
     it('accepts custom vector size', function (): void {
-        $service = new CodeIndexerService($this->mockEmbedding, 768);
+        $service = new CodeIndexerService($this->mockEmbedding, $this->mockQdrant, 768);
 
         $reflection = new ReflectionClass($service);
         $property = $reflection->getProperty('vectorSize');
@@ -1268,27 +1116,20 @@ describe('pruneStaleSymbols', function (): void {
         $validId = md5('local/test:Foo.php:Foo:1');
         $staleId = md5('local/test:Bar.php:Bar:1');
 
-        // Scroll returns one valid and one stale point
-        $scrollResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    ['id' => $validId, 'payload' => ['symbol_name' => 'Foo', 'repo' => 'local/test']],
-                    ['id' => $staleId, 'payload' => ['symbol_name' => 'Bar', 'repo' => 'local/test']],
-                ],
-                'next_page_offset' => null,
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+        $this->mockQdrant->shouldReceive('scrollAll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->with('code', Mockery::type('Closure'), 100, Mockery::type('array'))
+            ->andReturnUsing(function ($collection, $callback, $chunkSize, $filter) use ($validId, $staleId): void {
+                $result = new ScrollResult([
+                    new ScoredPoint($validId, 0.0, ['symbol_name' => 'Foo', 'repo' => 'local/test']),
+                    new ScoredPoint($staleId, 0.0, ['symbol_name' => 'Bar', 'repo' => 'local/test']),
+                ]);
+                $callback($result);
+            });
 
-        $deleteResponse = createCodeMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\DeletePoints::class))
+        $this->mockQdrant->shouldReceive('delete')
             ->once()
-            ->andReturn($deleteResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
 
@@ -1303,19 +1144,14 @@ describe('pruneStaleSymbols', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
         file_put_contents($tempFile, json_encode($indexData));
 
-        $scrollResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    ['id' => 'chunk-1', 'payload' => ['filepath' => 'Foo.php', 'repo' => 'local/test']],
-                ],
-                'next_page_offset' => null,
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+        $this->mockQdrant->shouldReceive('scrollAll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturnUsing(function ($collection, $callback): void {
+                $result = new ScrollResult([
+                    new ScoredPoint('chunk-1', 0.0, ['filepath' => 'Foo.php', 'repo' => 'local/test']),
+                ]);
+                $callback($result);
+            });
 
         $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
 
@@ -1330,11 +1166,9 @@ describe('pruneStaleSymbols', function (): void {
         $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
         file_put_contents($tempFile, json_encode($indexData));
 
-        $scrollResponse = createCodeMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+        $this->mockQdrant->shouldReceive('scrollAll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andThrow(makeCodeRequestException(500));
 
         $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
 
@@ -1355,19 +1189,14 @@ describe('pruneStaleSymbols', function (): void {
 
         $validId = md5('local/test:Foo.php:Foo:1');
 
-        $scrollResponse = createCodeMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    ['id' => $validId, 'payload' => ['symbol_name' => 'Foo', 'repo' => 'local/test']],
-                ],
-                'next_page_offset' => null,
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(\App\Integrations\Qdrant\Requests\ScrollPoints::class))
+        $this->mockQdrant->shouldReceive('scrollAll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturnUsing(function ($collection, $callback) use ($validId): void {
+                $result = new ScrollResult([
+                    new ScoredPoint($validId, 0.0, ['symbol_name' => 'Foo', 'repo' => 'local/test']),
+                ]);
+                $callback($result);
+            });
 
         $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
 

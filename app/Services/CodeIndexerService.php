@@ -5,19 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\EmbeddingServiceInterface;
-use App\Integrations\Qdrant\QdrantConnector;
-use App\Integrations\Qdrant\Requests\CreateCollection;
-use App\Integrations\Qdrant\Requests\DeletePoints;
-use App\Integrations\Qdrant\Requests\GetCollectionInfo;
-use App\Integrations\Qdrant\Requests\ScrollPoints;
-use App\Integrations\Qdrant\Requests\SearchPoints;
-use App\Integrations\Qdrant\Requests\UpsertPoints;
+use Saloon\Exceptions\Request\RequestException;
 use Symfony\Component\Finder\Finder;
+use TheShit\Vector\Data\ScoredPoint;
+use TheShit\Vector\Qdrant;
 
 class CodeIndexerService
 {
-    private QdrantConnector $connector;
-
     private const COLLECTION_NAME = 'code';
 
     private const CHUNK_SIZE = 2000;
@@ -41,36 +35,30 @@ class CodeIndexerService
 
     public function __construct(
         private readonly EmbeddingServiceInterface $embeddingService,
+        private readonly Qdrant $qdrant,
         private readonly int $vectorSize = 1024,
-    ) {
-        $this->connector = new QdrantConnector(
-            host: config('search.qdrant.host', 'localhost'),
-            port: (int) config('search.qdrant.port', 6333),
-            apiKey: config('search.qdrant.api_key'),
-            secure: (bool) config('search.qdrant.secure', false),
-        );
-    }
+    ) {}
 
     /**
      * Ensure the code collection exists.
      */
     public function ensureCollection(): bool
     {
-        $response = $this->connector->send(new GetCollectionInfo(self::COLLECTION_NAME));
+        try {
+            $this->qdrant->getCollection(self::COLLECTION_NAME);
 
-        if ($response->successful()) {
             return true;
+        } catch (RequestException $e) {
+            if ($e->getResponse()->status() === 404) {
+                try {
+                    return $this->qdrant->createCollection(self::COLLECTION_NAME, $this->vectorSize, 'Cosine');
+                } catch (RequestException) {
+                    return false;
+                }
+            }
+
+            return false;
         }
-
-        if ($response->status() === 404) {
-            $createResponse = $this->connector->send(
-                new CreateCollection(self::COLLECTION_NAME, $this->vectorSize, 'Cosine')
-            );
-
-            return $createResponse->successful();
-        }
-
-        return false;
     }
 
     /**
@@ -159,10 +147,9 @@ class CodeIndexerService
             return ['chunks' => 0, 'success' => false, 'error' => 'Failed to generate embeddings'];
         }
 
-        // Batch upsert
-        $response = $this->connector->send(new UpsertPoints(self::COLLECTION_NAME, $points));
-
-        if (! $response->successful()) {
+        try {
+            $this->qdrant->upsert(self::COLLECTION_NAME, $points);
+        } catch (RequestException) {
             return ['chunks' => count($points), 'success' => false, 'error' => 'Upsert failed'];
         }
 
@@ -185,26 +172,21 @@ class CodeIndexerService
 
         $qdrantFilter = $this->buildFilter($filters);
 
-        $response = $this->connector->send(
-            new SearchPoints(self::COLLECTION_NAME, $vector, $limit, 0.3, $qdrantFilter)
-        );
-
-        if (! $response->successful()) {
+        try {
+            $results = $this->qdrant->search(self::COLLECTION_NAME, $vector, $limit, $qdrantFilter, 0.3);
+        } catch (RequestException) {
             return [];
         }
 
-        $data = $response->json();
-        $results = $data['result'] ?? [];
-
-        return array_map(function (array $result): array {
-            $payload = $result['payload'] ?? [];
+        return array_map(function (ScoredPoint $point): array {
+            $payload = $point->payload;
 
             return [
                 'filepath' => $payload['filepath'] ?? '',
                 'repo' => $payload['repo'] ?? '',
                 'language' => $payload['language'] ?? '',
                 'content' => $payload['content'] ?? '',
-                'score' => $result['score'] ?? 0.0,
+                'score' => $point->score,
                 'functions' => $payload['functions'] ?? [],
                 'symbol_name' => $payload['symbol_name'] ?? null,
                 'symbol_kind' => $payload['symbol_kind'] ?? null,
@@ -254,11 +236,13 @@ class CodeIndexerService
             ],
         ]];
 
-        $response = $this->connector->send(new UpsertPoints(self::COLLECTION_NAME, $points));
+        try {
+            $this->qdrant->upsert(self::COLLECTION_NAME, $points);
+        } catch (RequestException) {
+            return ['success' => false, 'error' => 'Upsert failed'];
+        }
 
-        return $response->successful()
-            ? ['success' => true]
-            : ['success' => false, 'error' => 'Upsert failed'];
+        return ['success' => true];
     }
 
     /**
@@ -376,45 +360,35 @@ class CodeIndexerService
         // Scroll through all points for this repo in Qdrant
         $staleIds = [];
         $totalChecked = 0;
-        $offset = null;
 
-        do {
-            $filter = ['must' => [['key' => 'repo', 'match' => ['value' => $repo]]]];
-            $response = $this->connector->send(
-                new ScrollPoints(self::COLLECTION_NAME, 100, $filter, $offset)
-            );
+        $filter = ['must' => [['key' => 'repo', 'match' => ['value' => $repo]]]];
 
-            if (! $response->successful()) {
-                break;
-            }
+        try {
+            $this->qdrant->scrollAll(self::COLLECTION_NAME, function ($result) use ($validIds, &$staleIds, &$totalChecked): void {
+                foreach ($result->points as $point) {
+                    if (! isset($point->payload['symbol_name'])) {
+                        continue;
+                    }
 
-            $data = $response->json();
-            $points = $data['result']['points'] ?? [];
-            $offset = $data['result']['next_page_offset'] ?? null;
+                    $totalChecked++;
 
-            foreach ($points as $point) {
-                // Only check symbol points (they have symbol_name in payload)
-                if (! isset($point['payload']['symbol_name'])) {
-                    continue;
+                    if (! isset($validIds[$point->id])) {
+                        $staleIds[] = $point->id;
+                    }
                 }
-
-                $totalChecked++;
-                $pointId = $point['id'];
-
-                if (! isset($validIds[$pointId])) {
-                    $staleIds[] = $pointId;
-                }
-            }
-        } while ($offset !== null && $points !== []);
+            }, 100, $filter);
+        } catch (RequestException) {
+            return ['deleted' => 0, 'total_checked' => $totalChecked];
+        }
 
         // Delete stale points in batches
         $deleted = 0;
         foreach (array_chunk($staleIds, 100) as $batch) {
-            $response = $this->connector->send(
-                new DeletePoints(self::COLLECTION_NAME, $batch)
-            );
-            if ($response->successful()) {
+            try {
+                $this->qdrant->delete(self::COLLECTION_NAME, $batch);
                 $deleted += count($batch);
+            } catch (RequestException) {
+                // continue with next batch
             }
         }
 

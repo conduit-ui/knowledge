@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\SparseEmbeddingServiceInterface;
-use App\Integrations\Qdrant\QdrantConnector;
-use App\Integrations\Qdrant\Requests\CreateCollection;
-use App\Integrations\Qdrant\Requests\GetCollectionInfo;
-use App\Integrations\Qdrant\Requests\HybridSearchPoints;
-use App\Integrations\Qdrant\Requests\SearchPoints;
-use App\Integrations\Qdrant\Requests\UpsertPoints;
 use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
-use Saloon\Http\Response;
+use Saloon\Exceptions\Request\RequestException;
+use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Data\CollectionInfo;
+use TheShit\Vector\Data\ScoredPoint;
+use TheShit\Vector\Data\UpsertResult;
+use TheShit\Vector\Qdrant;
 
 uses()->group('hybrid-search');
 
@@ -21,16 +20,16 @@ beforeEach(function (): void {
 
     $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
     $this->mockSparseEmbedding = Mockery::mock(SparseEmbeddingServiceInterface::class);
-    $this->mockConnector = Mockery::mock(QdrantConnector::class);
-    $this->mockConnectorDense = Mockery::mock(QdrantConnector::class);
+    $this->mockQdrant = Mockery::mock(Qdrant::class);
+    $this->mockQdrantDense = Mockery::mock(Qdrant::class);
 
     // Create service with hybrid enabled
     $this->hybridService = new QdrantService(
         embeddingService: $this->mockEmbedding,
+        qdrant: $this->mockQdrant,
         vectorSize: 1024,
         scoreThreshold: 0.7,
         cacheTtl: 604800,
-        secure: false,
         hybridEnabled: true,
     );
     $this->hybridService->setSparseEmbeddingService($this->mockSparseEmbedding);
@@ -38,64 +37,48 @@ beforeEach(function (): void {
     // Create service without hybrid
     $this->denseOnlyService = new QdrantService(
         embeddingService: $this->mockEmbedding,
+        qdrant: $this->mockQdrantDense,
         vectorSize: 1024,
         scoreThreshold: 0.7,
         cacheTtl: 604800,
-        secure: false,
         hybridEnabled: false,
     );
-
-    // Inject mock connector via reflection for hybrid service
-    $reflection = new ReflectionClass($this->hybridService);
-    $property = $reflection->getProperty('connector');
-    $property->setAccessible(true);
-    $property->setValue($this->hybridService, $this->mockConnector);
-
-    // Inject separate mock connector for dense-only service
-    $reflection2 = new ReflectionClass($this->denseOnlyService);
-    $property2 = $reflection2->getProperty('connector');
-    $property2->setAccessible(true);
-    $property2->setValue($this->denseOnlyService, $this->mockConnectorDense);
 });
 
 afterEach(function (): void {
     Mockery::close();
 });
 
-/**
- * Create a mock Response object.
- */
-function createHybridMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
-{
-    $response = Mockery::mock(Response::class);
-    $response->shouldReceive('successful')->andReturn($successful);
-
-    if (! $successful || $status !== 200) {
-        $response->shouldReceive('status')->andReturn($status);
+if (! function_exists('makeHybridCollectionInfo')) {
+    function makeHybridCollectionInfo(): CollectionInfo
+    {
+        return new CollectionInfo('green', 0, 0, 0);
     }
-
-    if ($json !== null) {
-        $response->shouldReceive('json')->andReturn($json);
-    }
-
-    return $response;
 }
 
-/**
- * Mock collection exists check.
- */
-function mockHybridCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
-{
-    $response = createHybridMockResponse(true);
-    $connector->shouldReceive('send')
-        ->with(Mockery::type(GetCollectionInfo::class))
-        ->times($times)
-        ->andReturn($response);
+if (! function_exists('makeHybridRequestException')) {
+    function makeHybridRequestException(int $status): RequestException
+    {
+        $response = Mockery::mock(SaloonResponse::class);
+        $response->shouldReceive('status')->andReturn($status);
+        $response->shouldReceive('body')->andReturn('');
+
+        return new RequestException($response);
+    }
+}
+
+if (! function_exists('mockHybridCollectionExists')) {
+    function mockHybridCollectionExists(Mockery\MockInterface $qdrant, int $times = 1): void
+    {
+        $qdrant->shouldReceive('getCollection')
+            ->times($times)
+            ->andReturn(makeHybridCollectionInfo());
+    }
 }
 
 describe('hybridSearch', function (): void {
     it('performs hybrid search with RRF fusion', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
@@ -107,27 +90,16 @@ describe('hybridSearch', function (): void {
             ->once()
             ->andReturn(['indices' => [1, 5, 10], 'values' => [0.5, 0.3, 0.2]]);
 
-        $searchResponse = createHybridMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    [
-                        'id' => 'result-1',
-                        'score' => 0.85,
-                        'payload' => [
-                            'title' => 'Hybrid Result',
-                            'content' => 'Content from hybrid search',
-                            'tags' => ['test'],
-                            'category' => 'testing',
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(HybridSearchPoints::class))
+        $this->mockQdrant->shouldReceive('hybridSearch')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('result-1', 0.85, [
+                    'title' => 'Hybrid Result',
+                    'content' => 'Content from hybrid search',
+                    'tags' => ['test'],
+                    'category' => 'testing',
+                ]),
+            ]);
 
         $results = $this->hybridService->hybridSearch('test query');
 
@@ -140,35 +112,21 @@ describe('hybridSearch', function (): void {
     });
 
     it('falls back to dense search when hybrid not enabled', function (): void {
-        // Use separate mock for dense-only service
-        // hybridSearch calls search() which calls ensureCollection
-        $collectionResponse = createHybridMockResponse(true);
-        $this->mockConnectorDense->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
-            ->andReturn($collectionResponse);
+        mockHybridCollectionExists($this->mockQdrantDense);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
-        $searchResponse = createHybridMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'dense-result',
-                    'score' => 0.9,
-                    'payload' => [
-                        'title' => 'Dense Result',
-                        'content' => 'From dense search',
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->mockConnectorDense->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrantDense->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('dense-result', 0.9, [
+                    'title' => 'Dense Result',
+                    'content' => 'From dense search',
+                ]),
+            ]);
 
         $results = $this->denseOnlyService->hybridSearch('test query');
 
@@ -177,10 +135,8 @@ describe('hybridSearch', function (): void {
     });
 
     it('falls back to dense search when sparse embedding fails', function (): void {
-        // First call for hybridSearch, second for fallback search()
-        mockHybridCollectionExists($this->mockConnector, 2);
+        mockHybridCollectionExists($this->mockQdrant, 2);
 
-        // The embedding is called once in hybridSearch, cached, then reused in search() fallback
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
             ->once()
@@ -191,23 +147,14 @@ describe('hybridSearch', function (): void {
             ->once()
             ->andReturn(['indices' => [], 'values' => []]);
 
-        $searchResponse = createHybridMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'fallback-result',
-                    'score' => 0.8,
-                    'payload' => [
-                        'title' => 'Fallback Result',
-                        'content' => 'From fallback',
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                new ScoredPoint('fallback-result', 0.8, [
+                    'title' => 'Fallback Result',
+                    'content' => 'From fallback',
+                ]),
+            ]);
 
         $results = $this->hybridService->hybridSearch('test query');
 
@@ -216,7 +163,7 @@ describe('hybridSearch', function (): void {
     });
 
     it('returns empty collection when dense embedding fails', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
@@ -229,7 +176,7 @@ describe('hybridSearch', function (): void {
     });
 
     it('returns empty collection when search fails', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
@@ -241,12 +188,9 @@ describe('hybridSearch', function (): void {
             ->once()
             ->andReturn(['indices' => [1, 5], 'values' => [0.5, 0.3]]);
 
-        $searchResponse = createHybridMockResponse(false, 500);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(HybridSearchPoints::class))
+        $this->mockQdrant->shouldReceive('hybridSearch')
             ->once()
-            ->andReturn($searchResponse);
+            ->andThrow(makeHybridRequestException(500));
 
         $results = $this->hybridService->hybridSearch('test query');
 
@@ -254,7 +198,7 @@ describe('hybridSearch', function (): void {
     });
 
     it('applies filters to hybrid search', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('test query')
@@ -266,16 +210,9 @@ describe('hybridSearch', function (): void {
             ->once()
             ->andReturn(['indices' => [1, 5], 'values' => [0.5, 0.3]]);
 
-        $searchResponse = createHybridMockResponse(true, 200, [
-            'result' => [
-                'points' => [],
-            ],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(HybridSearchPoints::class))
+        $this->mockQdrant->shouldReceive('hybridSearch')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $filters = ['category' => 'testing', 'priority' => 'high'];
         $results = $this->hybridService->hybridSearch('test query', $filters);
@@ -284,7 +221,7 @@ describe('hybridSearch', function (): void {
     });
 
     it('respects custom limit and prefetch limit', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
@@ -294,14 +231,9 @@ describe('hybridSearch', function (): void {
             ->once()
             ->andReturn(['indices' => [1], 'values' => [0.5]]);
 
-        $searchResponse = createHybridMockResponse(true, 200, [
-            'result' => ['points' => []],
-        ]);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(HybridSearchPoints::class))
+        $this->mockQdrant->shouldReceive('hybridSearch')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->hybridService->hybridSearch('test', [], 10, 50);
 
@@ -311,28 +243,14 @@ describe('hybridSearch', function (): void {
 
 describe('hybrid collection creation', function (): void {
     it('creates collection with hybrid vectors when enabled', function (): void {
-        $getResponse = createHybridMockResponse(false, 404);
-        $createResponse = createHybridMockResponse(true);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($getResponse);
+            ->andThrow(makeHybridRequestException(404));
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::on(function ($request): bool {
-                if (! $request instanceof CreateCollection) {
-                    return false;
-                }
-                // Check that the request has hybrid enabled
-                $reflection = new ReflectionClass($request);
-                $property = $reflection->getProperty('hybridEnabled');
-                $property->setAccessible(true);
-
-                return $property->getValue($request) === true;
-            }))
+        $this->mockQdrant->shouldReceive('createCollection')
             ->once()
-            ->andReturn($createResponse);
+            ->with('knowledge_test-project', 1024, 'Cosine', Mockery::on(fn ($val) => is_array($val) && isset($val['sparse'])))
+            ->andReturn(true);
 
         $result = $this->hybridService->ensureCollection('test-project');
 
@@ -342,7 +260,7 @@ describe('hybrid collection creation', function (): void {
 
 describe('hybrid upsert', function (): void {
     it('upserts with both dense and sparse vectors when hybrid enabled', function (): void {
-        mockHybridCollectionExists($this->mockConnector);
+        mockHybridCollectionExists($this->mockQdrant);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Title Test content')
@@ -354,23 +272,12 @@ describe('hybrid upsert', function (): void {
             ->once()
             ->andReturn(['indices' => [1, 5, 10], 'values' => [0.5, 0.3, 0.2]]);
 
-        $upsertResponse = createHybridMockResponse(true);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::on(function ($request): bool {
-                if (! $request instanceof UpsertPoints) {
-                    return false;
-                }
-                // Check that the point has named vectors
-                $reflection = new ReflectionClass($request);
-                $property = $reflection->getProperty('points');
-                $property->setAccessible(true);
-                $points = $property->getValue($request);
-
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->with('knowledge_default', Mockery::on(function ($points) {
                 return isset($points[0]['vector']['dense']) && isset($points[0]['vector']['sparse']);
             }))
-            ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(new UpsertResult('completed'));
 
         $entry = [
             'id' => 'test-123',
@@ -378,7 +285,6 @@ describe('hybrid upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        // Skip duplicate check to simplify test
         $result = $this->hybridService->upsert($entry, 'default', checkDuplicates: false);
 
         expect($result)->toBeTrue();
