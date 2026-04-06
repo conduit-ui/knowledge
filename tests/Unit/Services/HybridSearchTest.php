@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\SparseEmbeddingServiceInterface;
 use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
 use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Data\CollectionInfo;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Data\UpsertResult;
@@ -18,7 +18,7 @@ uses()->group('hybrid-search');
 beforeEach(function (): void {
     Cache::flush();
 
-    $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+    $this->mockEmbedding = Mockery::mock(EmbeddingClient::class);
     $this->mockSparseEmbedding = Mockery::mock(SparseEmbeddingServiceInterface::class);
     $this->mockQdrant = Mockery::mock(Qdrant::class);
     $this->mockQdrantDense = Mockery::mock(Qdrant::class);
@@ -80,7 +80,7 @@ describe('hybridSearch', function (): void {
     it('performs hybrid search with RRF fusion', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -114,7 +114,7 @@ describe('hybridSearch', function (): void {
     it('falls back to dense search when hybrid not enabled', function (): void {
         mockHybridCollectionExists($this->mockQdrantDense);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -137,7 +137,7 @@ describe('hybridSearch', function (): void {
     it('falls back to dense search when sparse embedding fails', function (): void {
         mockHybridCollectionExists($this->mockQdrant, 2);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -165,7 +165,7 @@ describe('hybridSearch', function (): void {
     it('returns empty collection when dense embedding fails', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn([]);
@@ -178,7 +178,7 @@ describe('hybridSearch', function (): void {
     it('returns empty collection when search fails', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -200,7 +200,7 @@ describe('hybridSearch', function (): void {
     it('applies filters to hybrid search', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
@@ -223,7 +223,7 @@ describe('hybridSearch', function (): void {
     it('respects custom limit and prefetch limit', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));
 
@@ -262,7 +262,7 @@ describe('hybrid upsert', function (): void {
     it('upserts with both dense and sparse vectors when hybrid enabled', function (): void {
         mockHybridCollectionExists($this->mockQdrant);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn(array_fill(0, 1024, 0.1));

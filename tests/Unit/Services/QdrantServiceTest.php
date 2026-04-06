@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Exceptions\Qdrant\CollectionCreationException;
 use App\Exceptions\Qdrant\ConnectionException;
 use App\Exceptions\Qdrant\DuplicateEntryException;
@@ -13,6 +12,7 @@ use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
 use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Data\CollectionInfo;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Data\ScrollResult;
@@ -24,7 +24,7 @@ uses()->group('qdrant-unit');
 beforeEach(function (): void {
     Cache::flush();
 
-    $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+    $this->mockEmbedding = Mockery::mock(EmbeddingClient::class);
     $this->mockQdrant = Mockery::mock(Qdrant::class);
     $this->service = new QdrantService($this->mockEmbedding, $this->mockQdrant);
 });
@@ -140,7 +140,7 @@ describe('ensureCollection', function (): void {
 
 describe('upsert', function (): void {
     it('successfully upserts an entry with all fields', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content here')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -168,7 +168,7 @@ describe('upsert', function (): void {
     });
 
     it('successfully upserts an entry with minimal fields', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Minimal Title Minimal content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -189,7 +189,7 @@ describe('upsert', function (): void {
     });
 
     it('throws exception when embedding generation fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([]);
@@ -207,7 +207,7 @@ describe('upsert', function (): void {
     });
 
     it('throws exception when upsert request fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -231,7 +231,7 @@ describe('upsert', function (): void {
     it('uses cached embeddings when caching is enabled', function (): void {
         config(['search.qdrant.cache_embeddings' => true]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -258,7 +258,7 @@ describe('upsert', function (): void {
     it('does not cache embeddings when caching is disabled', function (): void {
         config(['search.qdrant.cache_embeddings' => false]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->twice()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -285,7 +285,7 @@ describe('upsert', function (): void {
 
 describe('search', function (): void {
     it('successfully searches entries with query and filters', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('laravel testing')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -328,7 +328,7 @@ describe('search', function (): void {
     });
 
     it('returns empty collection when search fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -345,7 +345,7 @@ describe('search', function (): void {
     });
 
     it('returns empty collection when embedding generation fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('query')
             ->once()
             ->andReturn([]);
@@ -358,7 +358,7 @@ describe('search', function (): void {
     });
 
     it('handles search with tag filter', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test query')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -377,7 +377,7 @@ describe('search', function (): void {
     });
 
     it('handles search with custom limit', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -394,7 +394,7 @@ describe('search', function (): void {
     });
 
     it('handles search with custom project', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('test')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -603,7 +603,7 @@ describe('incrementUsage', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Entry Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -655,7 +655,7 @@ describe('incrementUsage', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -680,7 +680,7 @@ describe('incrementUsage', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -715,7 +715,7 @@ describe('updateFields', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Updated Title Original content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -748,7 +748,7 @@ describe('updateFields', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -798,7 +798,7 @@ describe('updateFields', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -826,7 +826,7 @@ describe('updateFields', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Original Title Original Content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -855,7 +855,7 @@ describe('updateFields', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -871,7 +871,7 @@ describe('updateFields', function (): void {
 
 describe('upsert duplicate detection', function (): void {
     it('throws hash match exception when exact duplicate content exists', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -899,7 +899,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('throws similarity match exception when similar entry exists', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content here')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -927,7 +927,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('skips duplicate detection when checkDuplicates is false', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -951,7 +951,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('proceeds when no similar entries found', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Unique Title Unique content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -977,7 +977,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('throws when fingerprint tag matches existing entry', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1003,7 +1003,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('throws when title and commit hash match existing entry', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1029,7 +1029,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('proceeds when fingerprint has no match', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Unique Title Unique content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1061,7 +1061,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('stores commit field in payload', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1083,7 +1083,7 @@ describe('upsert duplicate detection', function (): void {
     });
 
     it('stores superseded fields in payload', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1174,7 +1174,7 @@ describe('markSuperseded', function (): void {
                 ]),
             ]);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
@@ -1429,7 +1429,7 @@ describe('searchRawCollection', function (): void {
     it('returns results from any collection by name', function (): void {
         $embedding = array_fill(0, 384, 0.1);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->with('punk rock')
             ->andReturn($embedding);
@@ -1450,7 +1450,7 @@ describe('searchRawCollection', function (): void {
     });
 
     it('returns empty collection when embedding fails', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn([]);
 
@@ -1462,7 +1462,7 @@ describe('searchRawCollection', function (): void {
     it('returns empty collection on failed response', function (): void {
         $embedding = array_fill(0, 384, 0.1);
 
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->once()
             ->andReturn($embedding);
 
@@ -1507,7 +1507,7 @@ describe('normalizeTags', function (): void {
 
 describe('findByFingerprint error handling', function (): void {
     it('returns null when scroll fails during fingerprint lookup', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
@@ -1542,7 +1542,7 @@ describe('findByFingerprint error handling', function (): void {
 
 describe('findByTitleAndCommit error handling', function (): void {
     it('returns null when scroll fails during commit lookup', function (): void {
-        $this->mockEmbedding->shouldReceive('generate')
+        $this->mockEmbedding->shouldReceive('embed')
             ->with('Test Title Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);

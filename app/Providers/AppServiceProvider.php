@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\HealthCheckInterface;
 use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
@@ -17,10 +16,10 @@ use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
 use App\Services\RemoteSyncService;
 use App\Services\RuntimeEnvironment;
-use App\Services\StubEmbeddingService;
 use App\Services\TieredSearchService;
 use App\Services\WriteGateService;
 use Illuminate\Support\ServiceProvider;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Qdrant;
 
 class AppServiceProvider extends ServiceProvider
@@ -95,9 +94,24 @@ class AppServiceProvider extends ServiceProvider
             config(['search.qdrant.collection' => $userConfig['qdrant']['collection']]);
         }
 
-        // embeddings.url -> search.qdrant.embedding_server
+        // embeddings.provider -> vector.embeddings.provider
+        if (isset($userConfig['embeddings']['provider']) && is_string($userConfig['embeddings']['provider'])) {
+            config(['vector.embeddings.provider' => $userConfig['embeddings']['provider']]);
+        }
+
+        // embeddings.model -> vector.embeddings.model
+        if (isset($userConfig['embeddings']['model']) && is_string($userConfig['embeddings']['model'])) {
+            config(['vector.embeddings.model' => $userConfig['embeddings']['model']]);
+        }
+
+        // embeddings.url -> vector.embeddings.url
         if (isset($userConfig['embeddings']['url']) && is_string($userConfig['embeddings']['url'])) {
-            config(['search.qdrant.embedding_server' => $userConfig['embeddings']['url']]);
+            config(['vector.embeddings.url' => $userConfig['embeddings']['url']]);
+        }
+
+        // embeddings.api_key -> vector.embeddings.api_key
+        if (isset($userConfig['embeddings']['api_key']) && is_string($userConfig['embeddings']['api_key'])) {
+            config(['vector.embeddings.api_key' => $userConfig['embeddings']['api_key']]);
         }
 
         // write_gate.criteria -> write-gate.criteria (per-project overrides)
@@ -128,17 +142,6 @@ class AppServiceProvider extends ServiceProvider
             $app->make(RuntimeEnvironment::class)
         ));
 
-        // Embedding service
-        $this->app->singleton(EmbeddingServiceInterface::class, function (): \App\Services\StubEmbeddingService|\App\Services\EmbeddingService {
-            if (config('search.embedding_provider') === 'none') {
-                return new StubEmbeddingService;
-            }
-
-            return new \App\Services\EmbeddingService(
-                config('search.qdrant.embedding_server', 'http://localhost:8001')
-            );
-        });
-
         // Knowledge cache service
         $this->app->singleton(KnowledgeCacheService::class, fn (): \App\Services\KnowledgeCacheService => new KnowledgeCacheService);
 
@@ -157,7 +160,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
-            embeddingService: $app->make(EmbeddingServiceInterface::class),
+            embeddingService: $app->make(EmbeddingClient::class),
             qdrant: $app->make(Qdrant::class),
             vectorSize: (int) config('search.embedding_dimension', 1024),
             scoreThreshold: (float) config('search.minimum_similarity', 0.7),

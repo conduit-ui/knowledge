@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Contracts\EmbeddingServiceInterface;
 use Saloon\Exceptions\Request\RequestException;
 use Symfony\Component\Finder\Finder;
+use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Qdrant;
 
@@ -34,7 +34,7 @@ class CodeIndexerService
     private const FILE_EXTENSIONS = ['php', 'py', 'js', 'ts', 'tsx', 'jsx', 'vue'];
 
     public function __construct(
-        private readonly EmbeddingServiceInterface $embeddingService,
+        private readonly EmbeddingClient $embeddingService,
         private readonly Qdrant $qdrant,
         private readonly int $vectorSize = 1024,
     ) {}
@@ -119,7 +119,7 @@ class CodeIndexerService
             $id = md5($filepath.'_'.$index);
             $text = $this->buildSearchableText($chunk['content'], $filepath, $functions);
 
-            $vector = $this->embeddingService->generate($text);
+            $vector = $this->embeddingService->embed($text);
 
             if ($vector === []) {
                 continue;
@@ -164,7 +164,7 @@ class CodeIndexerService
      */
     public function search(string $query, int $limit = 10, array $filters = []): array
     {
-        $vector = $this->embeddingService->generate($query);
+        $vector = $this->embeddingService->embed($query);
 
         if ($vector === []) {
             return [];
@@ -212,7 +212,7 @@ class CodeIndexerService
         int $line,
         string $signature,
     ): array {
-        $vector = $this->embeddingService->generate($text);
+        $vector = $this->embeddingService->embed($text);
 
         if ($vector === []) {
             return ['success' => false, 'error' => 'Empty embedding'];

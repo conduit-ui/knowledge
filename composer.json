@@ -22,7 +22,7 @@
         "laravel/mcp": "^0.6.0",
         "saloonphp/saloon": "^4.0",
         "symfony/uid": "^8.0",
-        "the-shit/vector": "^0.1.1"
+        "the-shit/vector": "^0.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

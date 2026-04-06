@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\HealthCheckInterface;
-use App\Services\EmbeddingService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgePathService;
 use App\Services\QdrantService;
 use App\Services\RuntimeEnvironment;
-use App\Services\StubEmbeddingService;
+use TheShit\Vector\Contracts\EmbeddingClient;
+use TheShit\Vector\Embeddings\NullEmbeddings;
+use TheShit\Vector\Embeddings\OllamaEmbeddings;
 
 describe('AppServiceProvider', function (): void {
     it('registers RuntimeEnvironment', function (): void {
@@ -24,29 +24,32 @@ describe('AppServiceProvider', function (): void {
         expect($service)->toBeInstanceOf(KnowledgePathService::class);
     });
 
-    it('registers StubEmbeddingService by default', function (): void {
-        config(['search.embedding_provider' => 'none']);
+    it('resolves NullEmbeddings when provider is none', function (): void {
+        config(['vector.embeddings.provider' => 'none']);
 
-        app()->forgetInstance(EmbeddingServiceInterface::class);
+        app()->forgetInstance(EmbeddingClient::class);
 
-        $service = app(EmbeddingServiceInterface::class);
+        $service = app(EmbeddingClient::class);
 
-        expect($service)->toBeInstanceOf(StubEmbeddingService::class);
+        expect($service)->toBeInstanceOf(NullEmbeddings::class);
     });
 
-    it('registers EmbeddingService when provider is qdrant', function (): void {
-        config(['search.embedding_provider' => 'qdrant']);
+    it('resolves OllamaEmbeddings when provider is ollama', function (): void {
+        config([
+            'vector.embeddings.provider' => 'ollama',
+            'vector.embeddings.url' => 'http://localhost:11434',
+        ]);
 
-        app()->forgetInstance(EmbeddingServiceInterface::class);
+        app()->forgetInstance(EmbeddingClient::class);
 
-        $service = app(EmbeddingServiceInterface::class);
+        $service = app(EmbeddingClient::class);
 
-        expect($service)->toBeInstanceOf(EmbeddingService::class);
+        expect($service)->toBeInstanceOf(OllamaEmbeddings::class);
     });
 
     it('registers QdrantService with mocked embedding service', function (): void {
-        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
-        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
+        $mockEmbedding = Mockery::mock(EmbeddingClient::class);
+        app()->instance(EmbeddingClient::class, $mockEmbedding);
 
         config([
             'search.embedding_dimension' => 384,
@@ -63,8 +66,8 @@ describe('AppServiceProvider', function (): void {
     });
 
     it('registers QdrantService with secure connection configuration', function (): void {
-        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
-        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
+        $mockEmbedding = Mockery::mock(EmbeddingClient::class);
+        app()->instance(EmbeddingClient::class, $mockEmbedding);
 
         config([
             'search.embedding_dimension' => 1536,
@@ -86,18 +89,10 @@ describe('AppServiceProvider', function (): void {
         expect($service)->toBeInstanceOf(HealthCheckService::class);
     });
 
-    it('uses custom embedding server configuration for qdrant provider', function (): void {
-        config([
-            'search.embedding_provider' => 'qdrant',
-            'search.qdrant.embedding_server' => 'http://custom-server:8001',
-            'search.qdrant.model' => 'custom-model',
-        ]);
+    it('resolves EmbeddingClient from container', function (): void {
+        $service = app(EmbeddingClient::class);
 
-        app()->forgetInstance(EmbeddingServiceInterface::class);
-
-        $service = app(EmbeddingServiceInterface::class);
-
-        expect($service)->toBeInstanceOf(EmbeddingService::class);
+        expect($service)->toBeInstanceOf(EmbeddingClient::class);
     });
 });
 
@@ -187,11 +182,14 @@ describe('AppServiceProvider user config loading', function (): void {
         expect(config('search.qdrant.collection'))->toBe('my-custom-collection');
     });
 
-    it('loads embeddings url into embedding_server config', function (): void {
+    it('loads embeddings config into vector.embeddings', function (): void {
         $configPath = $this->testConfigDir.'/config.json';
         $config = [
             'embeddings' => [
-                'url' => 'http://custom-embeddings:9001',
+                'provider' => 'openai',
+                'model' => 'text-embedding-3-large',
+                'url' => 'https://api.openai.com',
+                'api_key' => 'sk-test-key',
             ],
         ];
         file_put_contents($configPath, json_encode($config));
@@ -206,7 +204,10 @@ describe('AppServiceProvider user config loading', function (): void {
         $provider = new \App\Providers\AppServiceProvider(app());
         $provider->boot();
 
-        expect(config('search.qdrant.embedding_server'))->toBe('http://custom-embeddings:9001');
+        expect(config('vector.embeddings.provider'))->toBe('openai');
+        expect(config('vector.embeddings.model'))->toBe('text-embedding-3-large');
+        expect(config('vector.embeddings.url'))->toBe('https://api.openai.com');
+        expect(config('vector.embeddings.api_key'))->toBe('sk-test-key');
     });
 
     it('loads all config values together', function (): void {
@@ -217,7 +218,8 @@ describe('AppServiceProvider user config loading', function (): void {
                 'collection' => 'test-knowledge',
             ],
             'embeddings' => [
-                'url' => 'http://embedding-server:8002',
+                'provider' => 'ollama',
+                'url' => 'http://ollama:11434',
             ],
         ];
         file_put_contents($configPath, json_encode($config));
@@ -235,7 +237,8 @@ describe('AppServiceProvider user config loading', function (): void {
         expect(config('search.qdrant.host'))->toBe('qdrant-server');
         expect(config('search.qdrant.port'))->toBe(6334);
         expect(config('search.qdrant.collection'))->toBe('test-knowledge');
-        expect(config('search.qdrant.embedding_server'))->toBe('http://embedding-server:8002');
+        expect(config('vector.embeddings.provider'))->toBe('ollama');
+        expect(config('vector.embeddings.url'))->toBe('http://ollama:11434');
     });
 
     it('does not modify config when config file does not exist', function (): void {

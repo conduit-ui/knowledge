@@ -17,19 +17,5 @@ services:
       timeout: 10s
       retries: 3
 
-  embedding-server:
-    build:
-      context: ./docker/embedding-server
-      dockerfile: Dockerfile
-    container_name: knowledge-embeddings
-    restart: unless-stopped
-    ports:
-      - "8001:8001"
-    volumes:
-      - embedding_cache:/root/.cache
-    depends_on:
-      - qdrant
-
 volumes:
   qdrant_storage:
-  embedding_cache:

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Contracts\EmbeddingServiceInterface;
 use LaravelZero\Framework\Commands\Command;
+use TheShit\Vector\Contracts\EmbeddingClient;
 
 use function Termwind\render;
 
@@ -21,7 +21,7 @@ class KnowledgeSearchStatusCommand extends Command
      */
     protected $description = 'Show search capabilities and configuration status';
 
-    public function handle(EmbeddingServiceInterface $embeddingService): int
+    public function handle(EmbeddingClient $embeddingService): int
     {
         // Gather data
         /** @var bool $semanticEnabled */
@@ -31,7 +31,7 @@ class KnowledgeSearchStatusCommand extends Command
         /** @var string|null $embeddingProvider */
         $embeddingProvider = config('search.embedding_provider') ?: 'none';
 
-        $testEmbedding = $embeddingService->generate('test');
+        $testEmbedding = $embeddingService->embed('test');
         $hasEmbeddingSupport = $testEmbedding !== [];
 
         $qdrant = app(\App\Services\QdrantService::class);
