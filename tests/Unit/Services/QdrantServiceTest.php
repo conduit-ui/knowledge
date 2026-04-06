@@ -1504,3 +1504,73 @@ describe('normalizeTags', function (): void {
             ->and($method->invoke($this->service, '[not valid json'))->toBe([]);
     });
 });
+
+describe('findByFingerprint error handling', function (): void {
+    it('returns null when scroll fails during fingerprint lookup', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockQdrant, 2);
+
+        // findByFingerprint scroll throws
+        $this->mockQdrant->shouldReceive('scroll')
+            ->once()
+            ->andThrow(makeRequestException(500));
+
+        // Since fingerprint lookup fails (returns null), duplicate check continues
+        // findSimilar search returns no results
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->andReturn([]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->andReturn(makeUpsertResult());
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'tags' => ['fingerprint:abc123'],
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
+    });
+});
+
+describe('findByTitleAndCommit error handling', function (): void {
+    it('returns null when scroll fails during commit lookup', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockQdrant, 2);
+
+        // findByTitleAndCommit scroll throws
+        $this->mockQdrant->shouldReceive('scroll')
+            ->once()
+            ->andThrow(makeRequestException(500));
+
+        // Since commit lookup fails (returns null), duplicate check continues
+        // findSimilar search returns no results
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->andReturn([]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->andReturn(makeUpsertResult());
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'commit' => 'abc1234',
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
+    });
+});

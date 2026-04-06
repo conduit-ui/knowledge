@@ -1206,3 +1206,61 @@ describe('pruneStaleSymbols', function (): void {
         unlink($tempFile);
     });
 });
+
+describe('pruneStaleSymbols delete failure', function (): void {
+    it('handles delete failure gracefully', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['name' => 'Foo', 'file' => 'Foo.php', 'line' => 1, 'kind' => 'class'],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $staleId = md5('local/test:Bar.php:Bar:1');
+
+        $this->mockQdrant->shouldReceive('scrollAll')
+            ->once()
+            ->andReturnUsing(function ($collection, $callback) use ($staleId): void {
+                $result = new ScrollResult([
+                    new ScoredPoint($staleId, 0.0, ['symbol_name' => 'Bar', 'repo' => 'local/test']),
+                ]);
+                $callback($result);
+            });
+
+        $this->mockQdrant->shouldReceive('delete')
+            ->once()
+            ->andThrow(makeCodeRequestException(500));
+
+        $result = $this->service->pruneStaleSymbols($tempFile, 'local/test');
+
+        expect($result['deleted'])->toBe(0)
+            ->and($result['total_checked'])->toBe(1);
+
+        unlink($tempFile);
+    });
+});
+
+describe('vectorizeFromIndex empty symbol text', function (): void {
+    it('counts as failed when buildSymbolText produces empty text', function (): void {
+        $indexData = [
+            'symbols' => [
+                ['id' => 'sym-1', 'kind' => 'class', 'name' => '', 'file' => '', 'line' => 0, 'signature' => '', 'summary' => '', 'docstring' => ''],
+            ],
+        ];
+        $tempFile = tempnam(sys_get_temp_dir(), 'idx_');
+        file_put_contents($tempFile, json_encode($indexData));
+
+        $symbolIndex = Mockery::mock(\App\Services\SymbolIndexService::class);
+        // buildSymbolText produces "class \n\n\nfile: " which isn't empty, so it proceeds
+        $symbolIndex->shouldReceive('getSymbolSource')->once()->andReturnNull();
+        $this->mockEmbedding->shouldReceive('generate')->once()->andReturn([]);
+
+        $result = $this->service->vectorizeFromIndex($tempFile, 'local/test', $symbolIndex);
+
+        expect($result['failed'])->toBe(1)
+            ->and($result['success'])->toBe(0);
+
+        unlink($tempFile);
+    });
+});
