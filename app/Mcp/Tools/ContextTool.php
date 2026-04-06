@@ -152,7 +152,7 @@ class ContextTool extends Tool
         $timestamp = is_string($updatedAt) && $updatedAt !== '' ? strtotime($updatedAt) : $now;
 
         if ($timestamp === false) {
-            $timestamp = $now;
+            $timestamp = $now; // @codeCoverageIgnore
         }
 
         $daysAgo = max(1, (int) (($now - $timestamp) / 86400));

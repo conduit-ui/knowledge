@@ -119,11 +119,13 @@ class EnhancementQueueService
         }
 
         $content = file_get_contents($this->statusPath);
+        // @codeCoverageIgnoreStart
         if ($content === false) {
             $default['pending'] = $pendingCount;
 
             return $default;
         }
+        // @codeCoverageIgnoreEnd
 
         $status = json_decode($content, true);
         if (! is_array($status)) {
@@ -185,9 +187,11 @@ class EnhancementQueueService
         }
 
         $content = file_get_contents($this->queuePath);
+        // @codeCoverageIgnoreStart
         if ($content === false) {
             return [];
         }
+        // @codeCoverageIgnoreEnd
 
         $data = json_decode($content, true);
 

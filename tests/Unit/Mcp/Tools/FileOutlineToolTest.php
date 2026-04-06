@@ -79,3 +79,11 @@ describe('file outline tool', function (): void {
         $this->tool->handle($request);
     });
 });
+
+describe('schema', function (): void {
+    it('returns valid schema definition', function (): void {
+        $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+        $result = $this->tool->schema($schema);
+        expect($result)->toBeArray()->not->toBeEmpty();
+    });
+});

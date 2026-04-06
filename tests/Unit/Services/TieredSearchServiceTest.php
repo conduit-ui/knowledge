@@ -470,6 +470,58 @@ describe('calculateScore', function (): void {
     });
 });
 
+describe('deduplication in searchAllTiers', function (): void {
+    it('deduplicates results keeping highest scored version when same ID appears in multiple tiers', function (): void {
+        Carbon::setTestNow('2026-02-10');
+
+        $sharedEntry = [
+            'id' => 'uuid-shared',
+            'score' => 0.50,
+            'title' => 'Shared Entry',
+            'content' => 'Content',
+            'tags' => [],
+            'category' => null,
+            'module' => null,
+            'priority' => 'medium',
+            'status' => 'draft',
+            'confidence' => 50,
+            'usage_count' => 1,
+            'created_at' => '2026-02-09T00:00:00+00:00',
+            'updated_at' => '2026-02-09T00:00:00+00:00',
+            'last_verified' => '2026-02-09T00:00:00+00:00',
+            'evidence' => null,
+        ];
+
+        $higherScoredEntry = array_merge($sharedEntry, ['score' => 0.70, 'confidence' => 70, 'status' => 'validated']);
+
+        // Working tier — low score, no confident match
+        $this->qdrantService->shouldReceive('search')
+            ->with('dup query', ['status' => 'draft'], 20, 'default')
+            ->andReturn(collect([$sharedEntry]));
+
+        // Recent tier — no results
+        $this->qdrantService->shouldReceive('search')
+            ->with('dup query', [], 20, 'default')
+            ->andReturn(collect([]));
+
+        // Structured tier — same ID with higher score, no confident match
+        $this->qdrantService->shouldReceive('search')
+            ->with('dup query', ['status' => 'validated'], 20, 'default')
+            ->andReturn(collect([$higherScoredEntry]));
+
+        // Archive tier — no results
+        $this->qdrantService->shouldReceive('search')
+            ->with('dup query', ['status' => 'deprecated'], 20, 'default')
+            ->andReturn(collect([]));
+
+        $results = $this->service->search('dup query');
+
+        // Should deduplicate to single result with the higher tiered_score
+        expect($results)->toHaveCount(1);
+        expect($results->first()['id'])->toBe('uuid-shared');
+    });
+});
+
 describe('calculateConfidenceWeight', function (): void {
     it('returns normalized confidence as 0-1 value', function (): void {
         $entry = [

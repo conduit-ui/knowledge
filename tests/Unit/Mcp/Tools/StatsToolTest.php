@@ -61,3 +61,11 @@ describe('stats tool', function (): void {
             ->and($data['current_project_entries'])->toBe(3);
     });
 });
+
+describe('schema', function (): void {
+    it('returns valid schema definition', function (): void {
+        $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+        $result = $this->tool->schema($schema);
+        expect($result)->toBeArray()->not->toBeEmpty();
+    });
+});

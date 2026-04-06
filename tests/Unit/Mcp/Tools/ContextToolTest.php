@@ -125,3 +125,112 @@ describe('context tool', function (): void {
         $this->tool->handle($request);
     });
 });
+
+describe('schema', function (): void {
+    it('returns valid schema definition', function (): void {
+        $schema = new \Illuminate\JsonSchema\JsonSchemaTypeFactory;
+        $result = $this->tool->schema($schema);
+        expect($result)->toBeArray()->not->toBeEmpty();
+    });
+});
+
+describe('context tool edge cases', function (): void {
+    it('handles entry with invalid date string in updated_at', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('test-project');
+        $this->qdrant->shouldReceive('scroll')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'entry-bad-date',
+                    'title' => 'Bad Date Entry',
+                    'content' => 'Some content here.',
+                    'category' => 'architecture',
+                    'tags' => [],
+                    'priority' => 'medium',
+                    'usage_count' => 1,
+                    'updated_at' => 'not-a-date',
+                    'confidence' => 70,
+                ],
+            ]));
+
+        $this->metadata->shouldReceive('calculateEffectiveConfidence')->once()->andReturn(70);
+        $this->metadata->shouldReceive('isStale')->once()->andReturn(false);
+
+        $request = new Request([]);
+        $response = $this->tool->handle($request);
+
+        expect($response->isError())->toBeFalse();
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['total'])->toBe(1);
+    });
+
+    it('groups entry with null category into uncategorized', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('test-project');
+        $this->qdrant->shouldReceive('scroll')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'entry-no-cat',
+                    'title' => 'No Category Entry',
+                    'content' => 'Some content here.',
+                    'category' => null,
+                    'tags' => [],
+                    'priority' => 'medium',
+                    'usage_count' => 1,
+                    'updated_at' => now()->toIso8601String(),
+                    'confidence' => 70,
+                ],
+            ]));
+
+        $this->metadata->shouldReceive('calculateEffectiveConfidence')->once()->andReturn(70);
+        $this->metadata->shouldReceive('isStale')->once()->andReturn(false);
+
+        $request = new Request([]);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['categories'])->toHaveKey('uncategorized');
+    });
+
+    it('truncates output when max_tokens budget is exceeded', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('test-project');
+        $this->qdrant->shouldReceive('scroll')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'entry-1',
+                    'title' => 'First Entry',
+                    'content' => 'Some content here that is reasonably long.',
+                    'category' => 'architecture',
+                    'tags' => [],
+                    'priority' => 'high',
+                    'usage_count' => 5,
+                    'updated_at' => now()->toIso8601String(),
+                    'confidence' => 80,
+                ],
+                [
+                    'id' => 'entry-2',
+                    'title' => 'Second Entry',
+                    'content' => 'More content here that pushes over the tiny budget.',
+                    'category' => 'debugging',
+                    'tags' => [],
+                    'priority' => 'medium',
+                    'usage_count' => 2,
+                    'updated_at' => now()->toIso8601String(),
+                    'confidence' => 60,
+                ],
+            ]));
+
+        $this->metadata->shouldReceive('calculateEffectiveConfidence')->andReturn(80, 60);
+        $this->metadata->shouldReceive('isStale')->andReturn(false, false);
+
+        // max_tokens=1 means max 4 chars — both entries will exceed the budget
+        $request = new Request(['max_tokens' => 1]);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['total'])->toBe(0)
+            ->and($data['categories'])->toBeEmpty();
+    });
+});

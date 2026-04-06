@@ -555,3 +555,74 @@ describe('detectChanges edge cases', function (): void {
         expect($changes['deleted'])->toBeEmpty();
     });
 });
+
+describe('getSymbolSourceByNameAndFile', function (): void {
+    it('returns source code for a symbol found by name and file', function (): void {
+        $source = $this->service->getSymbolSourceByNameAndFile(
+            'authenticate',
+            'app/Services/UserService.php',
+            'local/test-repo'
+        );
+
+        expect($source)->not->toBeNull();
+        expect($source)->toContain('function authenticate');
+    });
+
+    it('returns null when name does not match any symbol in the file', function (): void {
+        $source = $this->service->getSymbolSourceByNameAndFile(
+            'nonExistentMethod',
+            'app/Services/UserService.php',
+            'local/test-repo'
+        );
+
+        expect($source)->toBeNull();
+    });
+
+    it('returns null when repo does not exist', function (): void {
+        $source = $this->service->getSymbolSourceByNameAndFile(
+            'authenticate',
+            'app/Services/UserService.php',
+            'local/nonexistent'
+        );
+
+        expect($source)->toBeNull();
+    });
+});
+
+describe('getSymbolSourceByNameAndFile content file missing', function (): void {
+    it('returns null when content file does not exist on disk', function (): void {
+        // Create an index with a symbol pointing to a file that doesn't exist on disk
+        $indexDir = $this->tempDir.'/.code-index';
+        mkdir($indexDir, 0755, true);
+        $repoDir = $indexDir.'/local-ghost-repo';
+        mkdir($repoDir, 0755, true);
+
+        $indexData = [
+            'repo' => 'local/ghost-repo',
+            'owner' => 'local',
+            'name' => 'ghost-repo',
+            'symbols' => [
+                [
+                    'id' => 'ghost-1',
+                    'name' => 'GhostClass',
+                    'kind' => 'class',
+                    'file' => 'app/Ghost.php',
+                    'line' => 1,
+                    'signature' => 'class GhostClass',
+                    'byte_offset' => 0,
+                    'byte_length' => 100,
+                ],
+            ],
+            'file_hashes' => [],
+            'source_files' => ['app/Ghost.php'],
+            'languages' => ['php' => 1],
+            'indexed_at' => '2026-01-01T00:00:00+00:00',
+        ];
+        file_put_contents($repoDir.'/index.json', json_encode($indexData));
+        // Intentionally do NOT create app/Ghost.php on disk
+
+        $result = $this->service->getSymbolSourceByNameAndFile('GhostClass', 'app/Ghost.php', 'local/ghost-repo');
+
+        expect($result)->toBeNull();
+    });
+});

@@ -122,4 +122,59 @@ describe('vectorize-code command', function (): void {
 
         @unlink($indexPath);
     });
+
+    it('invokes progress callback during vectorization', function (): void {
+        $home = getenv('HOME') !== false ? (string) getenv('HOME') : '/tmp';
+        $indexPath = "{$home}/.code-index/local-progress-test.json";
+
+        @mkdir(dirname($indexPath), 0755, true);
+        file_put_contents($indexPath, json_encode(['symbols' => []]));
+
+        $this->codeIndexerMock->shouldReceive('ensureCollection')->once()->andReturn(true);
+
+        $this->codeIndexerMock->shouldReceive('vectorizeFromIndex')
+            ->withArgs(function (string $path, string $repo, $si, array $kinds, ?string $language, ?callable $onProgress): bool {
+                // Simulate the callback being invoked so we exercise lines 71-74
+                if ($onProgress !== null) {
+                    $onProgress(100, 0, 100);
+                    $onProgress(200, 5, 200);
+                }
+
+                return true;
+            })
+            ->once()
+            ->andReturn(['success' => 200, 'failed' => 5, 'total' => 200]);
+
+        $this->codeIndexerMock->shouldReceive('pruneStaleSymbols')
+            ->once()
+            ->andReturn(['deleted' => 0, 'total_checked' => 200]);
+
+        $this->artisan('vectorize-code', ['repo' => 'local/progress-test'])
+            ->assertSuccessful();
+
+        @unlink($indexPath);
+    });
+
+    it('outputs prune note when stale symbols are deleted', function (): void {
+        $home = getenv('HOME') !== false ? (string) getenv('HOME') : '/tmp';
+        $indexPath = "{$home}/.code-index/local-prune-test.json";
+
+        @mkdir(dirname($indexPath), 0755, true);
+        file_put_contents($indexPath, json_encode(['symbols' => []]));
+
+        $this->codeIndexerMock->shouldReceive('ensureCollection')->once()->andReturn(true);
+
+        $this->codeIndexerMock->shouldReceive('vectorizeFromIndex')
+            ->once()
+            ->andReturn(['success' => 10, 'failed' => 0, 'total' => 10]);
+
+        $this->codeIndexerMock->shouldReceive('pruneStaleSymbols')
+            ->once()
+            ->andReturn(['deleted' => 5, 'total_checked' => 15]);
+
+        $this->artisan('vectorize-code', ['repo' => 'local/prune-test'])
+            ->assertSuccessful();
+
+        @unlink($indexPath);
+    });
 });

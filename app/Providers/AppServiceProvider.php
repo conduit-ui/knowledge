@@ -21,6 +21,7 @@ use App\Services\StubEmbeddingService;
 use App\Services\TieredSearchService;
 use App\Services\WriteGateService;
 use Illuminate\Support\ServiceProvider;
+use TheShit\Vector\Qdrant;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -156,12 +157,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Qdrant vector database service
         $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
-            $app->make(EmbeddingServiceInterface::class),
-            (int) config('search.embedding_dimension', 1024),
-            (float) config('search.minimum_similarity', 0.7),
-            (int) config('search.qdrant.cache_ttl', 604800),
-            (bool) config('search.qdrant.secure', false),
-            cacheService: $app->make(KnowledgeCacheService::class)
+            embeddingService: $app->make(EmbeddingServiceInterface::class),
+            qdrant: $app->make(Qdrant::class),
+            vectorSize: (int) config('search.embedding_dimension', 1024),
+            scoreThreshold: (float) config('search.minimum_similarity', 0.7),
+            cacheTtl: (int) config('search.qdrant.cache_ttl', 604800),
+            cacheService: $app->make(KnowledgeCacheService::class),
         ));
 
         // Tiered search service

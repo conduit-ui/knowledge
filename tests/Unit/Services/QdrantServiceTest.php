@@ -3,19 +3,21 @@
 declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
+use App\Exceptions\Qdrant\CollectionCreationException;
+use App\Exceptions\Qdrant\ConnectionException;
 use App\Exceptions\Qdrant\DuplicateEntryException;
-use App\Integrations\Qdrant\QdrantConnector;
-use App\Integrations\Qdrant\Requests\CreateCollection;
-use App\Integrations\Qdrant\Requests\DeletePoints;
-use App\Integrations\Qdrant\Requests\GetCollectionInfo;
-use App\Integrations\Qdrant\Requests\GetPoints;
-use App\Integrations\Qdrant\Requests\ScrollPoints;
-use App\Integrations\Qdrant\Requests\SearchPoints;
-use App\Integrations\Qdrant\Requests\UpsertPoints;
+use App\Exceptions\Qdrant\EmbeddingException;
+use App\Exceptions\Qdrant\UpsertException;
+use App\Services\KnowledgeCacheService;
 use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
-use Saloon\Exceptions\Request\ClientException;
-use Saloon\Http\Response;
+use Saloon\Exceptions\Request\RequestException;
+use Saloon\Http\Response as SaloonResponse;
+use TheShit\Vector\Data\CollectionInfo;
+use TheShit\Vector\Data\ScoredPoint;
+use TheShit\Vector\Data\ScrollResult;
+use TheShit\Vector\Data\UpsertResult;
+use TheShit\Vector\Qdrant;
 
 uses()->group('qdrant-unit');
 
@@ -23,121 +25,116 @@ beforeEach(function (): void {
     Cache::flush();
 
     $this->mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
-    $this->mockConnector = Mockery::mock(QdrantConnector::class);
-    $this->service = new QdrantService($this->mockEmbedding);
-
-    // Inject mock connector via reflection
-    $reflection = new ReflectionClass($this->service);
-    $property = $reflection->getProperty('connector');
-    $property->setAccessible(true);
-    $property->setValue($this->service, $this->mockConnector);
+    $this->mockQdrant = Mockery::mock(Qdrant::class);
+    $this->service = new QdrantService($this->mockEmbedding, $this->mockQdrant);
 });
 
 afterEach(function (): void {
     Mockery::close();
 });
 
-if (! function_exists('createMockResponse')) {
-    /**
-     * Create a mock Response object with common configuration.
-     */
-    function createMockResponse(bool $successful, int $status = 200, ?array $json = null): Response
+if (! function_exists('makeCollectionInfo')) {
+    function makeCollectionInfo(): CollectionInfo
     {
-        $response = Mockery::mock(Response::class);
-        $response->shouldReceive('successful')->andReturn($successful);
+        return new CollectionInfo('green', 0, 0, 0);
+    }
+}
 
-        if (! $successful || $status !== 200) {
-            $response->shouldReceive('status')->andReturn($status);
-        }
+if (! function_exists('makeRequestException')) {
+    function makeRequestException(int $status, string $body = ''): RequestException
+    {
+        $response = Mockery::mock(SaloonResponse::class);
+        $response->shouldReceive('status')->andReturn($status);
+        $response->shouldReceive('body')->andReturn($body);
 
-        if ($json !== null) {
-            $response->shouldReceive('json')->andReturn($json);
-        }
+        return new RequestException($response);
+    }
+}
 
-        return $response;
+if (! function_exists('makeUpsertResult')) {
+    function makeUpsertResult(): UpsertResult
+    {
+        return new UpsertResult('completed');
+    }
+}
+
+if (! function_exists('makeScoredPoint')) {
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    function makeScoredPoint(string|int $id, float $score = 0.0, array $payload = []): ScoredPoint
+    {
+        return new ScoredPoint($id, $score, $payload);
+    }
+}
+
+if (! function_exists('makeScrollResult')) {
+    /**
+     * @param  array<ScoredPoint>  $points
+     */
+    function makeScrollResult(array $points = []): ScrollResult
+    {
+        return new ScrollResult($points);
     }
 }
 
 if (! function_exists('mockCollectionExists')) {
-    /**
-     * Set up mock for ensureCollection to return success (collection exists).
-     */
-    function mockCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
+    function mockCollectionExists(Mockery\MockInterface $qdrant, int $times = 1): void
     {
-        $response = createMockResponse(true);
-        $connector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $qdrant->shouldReceive('getCollection')
             ->times($times)
-            ->andReturn($response);
+            ->andReturn(makeCollectionInfo());
     }
 }
 
 describe('ensureCollection', function (): void {
     it('returns true when collection already exists', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
         expect($this->service->ensureCollection('test-project'))->toBeTrue();
     });
 
     it('creates collection when it does not exist (404)', function (): void {
-        $getResponse = createMockResponse(false, 404);
-        $createResponse = createMockResponse(true);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($getResponse);
+            ->andThrow(makeRequestException(404));
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(CreateCollection::class))
+        $this->mockQdrant->shouldReceive('createCollection')
             ->once()
-            ->andReturn($createResponse);
+            ->andReturn(true);
 
         expect($this->service->ensureCollection('test-project'))->toBeTrue();
     });
 
     it('throws exception when collection creation fails', function (): void {
-        $getResponse = createMockResponse(false, 404);
-        $createResponse = createMockResponse(false, 500, ['error' => 'Failed to create']);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($getResponse);
+            ->andThrow(makeRequestException(404));
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(CreateCollection::class))
+        $this->mockQdrant->shouldReceive('createCollection')
             ->once()
-            ->andReturn($createResponse);
+            ->andThrow(makeRequestException(500, 'server error'));
 
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(RuntimeException::class, 'Failed to create collection');
+            ->toThrow(CollectionCreationException::class, 'Failed to create collection');
     });
 
     it('throws exception on unexpected response status', function (): void {
-        $response = createMockResponse(false, 500);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andReturn($response);
+            ->andThrow(makeRequestException(500));
 
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(RuntimeException::class, 'Unexpected response: 500');
+            ->toThrow(ConnectionException::class);
     });
 
     it('throws exception when Qdrant connection fails', function (): void {
-        $response = Mockery::mock(Response::class);
-        $response->shouldReceive('status')->andReturn(500);
-        $response->shouldReceive('body')->andReturn('Connection failed');
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetCollectionInfo::class))
+        $this->mockQdrant->shouldReceive('getCollection')
             ->once()
-            ->andThrow(new ClientException($response, 'Connection failed'));
+            ->andThrow(makeRequestException(503, 'Connection failed'));
 
         expect(fn () => $this->service->ensureCollection('test-project'))
-            ->toThrow(RuntimeException::class, 'Qdrant connection failed: Connection failed');
+            ->toThrow(ConnectionException::class, 'Qdrant connection failed');
     });
 });
 
@@ -148,13 +145,11 @@ describe('upsert', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => '123',
@@ -178,13 +173,11 @@ describe('upsert', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => '456',
@@ -201,7 +194,7 @@ describe('upsert', function (): void {
             ->once()
             ->andReturn([]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
         $entry = [
             'id' => '789',
@@ -210,7 +203,7 @@ describe('upsert', function (): void {
         ];
 
         expect(fn () => $this->service->upsert($entry, 'default', false))
-            ->toThrow(RuntimeException::class, 'Failed to generate embedding');
+            ->toThrow(EmbeddingException::class);
     });
 
     it('throws exception when upsert request fails', function (): void {
@@ -219,13 +212,11 @@ describe('upsert', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(false, 500, ['error' => 'Upsert failed']);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andThrow(makeRequestException(500, 'Upsert failed'));
 
         $entry = [
             'id' => '999',
@@ -234,7 +225,7 @@ describe('upsert', function (): void {
         ];
 
         expect(fn () => $this->service->upsert($entry, 'default', false))
-            ->toThrow(RuntimeException::class, 'Failed to upsert entry to Qdrant: {"error":"Upsert failed"}');
+            ->toThrow(UpsertException::class, 'Failed to upsert entry to Qdrant');
     });
 
     it('uses cached embeddings when caching is enabled', function (): void {
@@ -245,13 +236,11 @@ describe('upsert', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->twice()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => '111',
@@ -259,10 +248,10 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        // First call - generates embedding
+        // First call — generates embedding
         $this->service->upsert($entry, 'default', false);
 
-        // Second call - uses cached embedding
+        // Second call — uses cached embedding
         $this->service->upsert($entry, 'default', false);
     });
 
@@ -274,13 +263,11 @@ describe('upsert', function (): void {
             ->twice()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->twice()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => '222',
@@ -288,10 +275,10 @@ describe('upsert', function (): void {
             'content' => 'Test content',
         ];
 
-        // First call - generates embedding
+        // First call — generates embedding
         $this->service->upsert($entry, 'default', false);
 
-        // Second call - generates embedding again (not cached)
+        // Second call — generates embedding again (not cached)
         $this->service->upsert($entry, 'default', false);
     });
 });
@@ -303,33 +290,25 @@ describe('search', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-1',
-                    'score' => 0.95,
-                    'payload' => [
-                        'title' => 'Laravel Testing Guide',
-                        'content' => 'Testing with Pest',
-                        'tags' => ['laravel', 'pest'],
-                        'category' => 'testing',
-                        'module' => 'Testing',
-                        'priority' => 'high',
-                        'status' => 'validated',
-                        'confidence' => 90,
-                        'usage_count' => 10,
-                        'created_at' => '2025-01-01T00:00:00Z',
-                        'updated_at' => '2025-01-01T00:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                makeScoredPoint('test-1', 0.95, [
+                    'title' => 'Laravel Testing Guide',
+                    'content' => 'Testing with Pest',
+                    'tags' => ['laravel', 'pest'],
+                    'category' => 'testing',
+                    'module' => 'Testing',
+                    'priority' => 'high',
+                    'status' => 'validated',
+                    'confidence' => 90,
+                    'usage_count' => 10,
+                    'created_at' => '2025-01-01T00:00:00Z',
+                    'updated_at' => '2025-01-01T00:00:00Z',
+                ]),
+            ]);
 
         $filters = [
             'category' => 'testing',
@@ -354,13 +333,11 @@ describe('search', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andThrow(makeRequestException(500));
 
         $results = $this->service->search('query');
 
@@ -373,7 +350,7 @@ describe('search', function (): void {
             ->once()
             ->andReturn([]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
         $results = $this->service->search('query');
 
@@ -386,13 +363,11 @@ describe('search', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $filters = ['tag' => 'laravel'];
 
@@ -407,13 +382,11 @@ describe('search', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('test', [], 50);
 
@@ -426,13 +399,11 @@ describe('search', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->search('test', [], 20, 'custom-project');
 
@@ -442,13 +413,11 @@ describe('search', function (): void {
 
 describe('delete', function (): void {
     it('successfully deletes entries by ID', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $deleteResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(DeletePoints::class))
+        $this->mockQdrant->shouldReceive('delete')
             ->once()
-            ->andReturn($deleteResponse);
+            ->andReturn(makeUpsertResult());
 
         $ids = ['id-1', 'id-2', 'id-3'];
 
@@ -456,13 +425,11 @@ describe('delete', function (): void {
     });
 
     it('returns false when delete request fails', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $deleteResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(DeletePoints::class))
+        $this->mockQdrant->shouldReceive('delete')
             ->once()
-            ->andReturn($deleteResponse);
+            ->andThrow(makeRequestException(500));
 
         $ids = ['id-1'];
 
@@ -470,13 +437,11 @@ describe('delete', function (): void {
     });
 
     it('handles delete with custom project', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $deleteResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(DeletePoints::class))
+        $this->mockQdrant->shouldReceive('delete')
             ->once()
-            ->andReturn($deleteResponse);
+            ->andReturn(makeUpsertResult());
 
         $ids = ['id-1'];
 
@@ -486,32 +451,25 @@ describe('delete', function (): void {
 
 describe('getById', function (): void {
     it('successfully retrieves entry by ID with all fields', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-123',
-                    'payload' => [
-                        'title' => 'Test Entry',
-                        'content' => 'Test content here',
-                        'tags' => ['tag1', 'tag2'],
-                        'category' => 'testing',
-                        'module' => 'TestModule',
-                        'priority' => 'high',
-                        'status' => 'validated',
-                        'confidence' => 85,
-                        'usage_count' => 5,
-                        'created_at' => '2025-01-01T00:00:00Z',
-                        'updated_at' => '2025-01-10T00:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-123', 0.0, [
+                    'title' => 'Test Entry',
+                    'content' => 'Test content here',
+                    'tags' => ['tag1', 'tag2'],
+                    'category' => 'testing',
+                    'module' => 'TestModule',
+                    'priority' => 'high',
+                    'status' => 'validated',
+                    'confidence' => 85,
+                    'usage_count' => 5,
+                    'created_at' => '2025-01-01T00:00:00Z',
+                    'updated_at' => '2025-01-10T00:00:00Z',
+                ]),
+            ]);
 
         $result = $this->service->getById('test-123');
 
@@ -533,23 +491,16 @@ describe('getById', function (): void {
     });
 
     it('successfully retrieves entry with minimal payload fields', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'minimal-456',
-                    'payload' => [
-                        'title' => 'Minimal Entry',
-                        'content' => 'Minimal content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('minimal-456', 0.0, [
+                    'title' => 'Minimal Entry',
+                    'content' => 'Minimal content',
+                ]),
+            ]);
 
         $result = $this->service->getById('minimal-456');
 
@@ -571,13 +522,11 @@ describe('getById', function (): void {
     });
 
     it('returns null when request fails', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andThrow(makeRequestException(500));
 
         $result = $this->service->getById('nonexistent');
 
@@ -585,13 +534,11 @@ describe('getById', function (): void {
     });
 
     it('returns null when no points found in response', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([]);
 
         $result = $this->service->getById('nonexistent');
 
@@ -599,23 +546,16 @@ describe('getById', function (): void {
     });
 
     it('handles integer ID', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 123,
-                    'payload' => [
-                        'title' => 'Integer ID Entry',
-                        'content' => 'Content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint(123, 0.0, [
+                    'title' => 'Integer ID Entry',
+                    'content' => 'Content',
+                ]),
+            ]);
 
         $result = $this->service->getById(123);
 
@@ -624,23 +564,16 @@ describe('getById', function (): void {
     });
 
     it('handles custom project namespace', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                ]),
+            ]);
 
         $result = $this->service->getById('test-id', 'custom-project');
 
@@ -650,47 +583,34 @@ describe('getById', function (): void {
 
 describe('incrementUsage', function (): void {
     it('successfully increments usage count for existing entry', function (): void {
-        // Mock ensureCollection for getById and upsert
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock getById response
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-123',
-                    'payload' => [
-                        'title' => 'Test Entry',
-                        'content' => 'Test content',
-                        'tags' => ['tag1'],
-                        'category' => 'testing',
-                        'module' => 'TestModule',
-                        'priority' => 'high',
-                        'status' => 'validated',
-                        'confidence' => 85,
-                        'usage_count' => 5,
-                        'created_at' => '2025-01-01T00:00:00Z',
-                        'updated_at' => '2025-01-05T00:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-123', 0.0, [
+                    'title' => 'Test Entry',
+                    'content' => 'Test content',
+                    'tags' => ['tag1'],
+                    'category' => 'testing',
+                    'module' => 'TestModule',
+                    'priority' => 'high',
+                    'status' => 'validated',
+                    'confidence' => 85,
+                    'usage_count' => 5,
+                    'created_at' => '2025-01-01T00:00:00Z',
+                    'updated_at' => '2025-01-05T00:00:00Z',
+                ]),
+            ]);
 
-        // Mock embedding generation for upsert
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Test Entry Test content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        // Mock upsert response
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->incrementUsage('test-123');
 
@@ -698,13 +618,11 @@ describe('incrementUsage', function (): void {
     });
 
     it('returns false when entry does not exist', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([]);
 
         $result = $this->service->incrementUsage('nonexistent');
 
@@ -712,13 +630,11 @@ describe('incrementUsage', function (): void {
     });
 
     it('returns false when getById fails', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andThrow(makeRequestException(500));
 
         $result = $this->service->incrementUsage('test-id');
 
@@ -726,35 +642,26 @@ describe('incrementUsage', function (): void {
     });
 
     it('handles custom project namespace', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                        'tags' => [],
-                        'usage_count' => 0,
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                    'tags' => [],
+                    'usage_count' => 0,
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->incrementUsage('test-id', 'custom-project');
 
@@ -762,33 +669,24 @@ describe('incrementUsage', function (): void {
     });
 
     it('increments from zero when usage_count is not set', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->incrementUsage('test-id');
 
@@ -798,42 +696,33 @@ describe('incrementUsage', function (): void {
 
 describe('updateFields', function (): void {
     it('successfully updates multiple fields', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-123',
-                    'payload' => [
-                        'title' => 'Original Title',
-                        'content' => 'Original content',
-                        'tags' => ['tag1'],
-                        'category' => 'original',
-                        'priority' => 'low',
-                        'status' => 'draft',
-                        'confidence' => 50,
-                        'usage_count' => 3,
-                        'created_at' => '2025-01-01T00:00:00Z',
-                        'updated_at' => '2025-01-05T00:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-123', 0.0, [
+                    'title' => 'Original Title',
+                    'content' => 'Original content',
+                    'tags' => ['tag1'],
+                    'category' => 'original',
+                    'priority' => 'low',
+                    'status' => 'draft',
+                    'confidence' => 50,
+                    'usage_count' => 3,
+                    'created_at' => '2025-01-01T00:00:00Z',
+                    'updated_at' => '2025-01-05T00:00:00Z',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Updated Title Original content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $fieldsToUpdate = [
             'title' => 'Updated Title',
@@ -847,34 +736,25 @@ describe('updateFields', function (): void {
     });
 
     it('successfully updates single field', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-456',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                        'status' => 'draft',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-456', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                    'status' => 'draft',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->updateFields('test-456', ['status' => 'validated']);
 
@@ -882,13 +762,11 @@ describe('updateFields', function (): void {
     });
 
     it('returns false when entry does not exist', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([]);
 
         $result = $this->service->updateFields('nonexistent', ['status' => 'validated']);
 
@@ -896,13 +774,11 @@ describe('updateFields', function (): void {
     });
 
     it('returns false when getById fails', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andThrow(makeRequestException(500));
 
         $result = $this->service->updateFields('test-id', ['status' => 'validated']);
 
@@ -910,34 +786,25 @@ describe('updateFields', function (): void {
     });
 
     it('handles custom project namespace', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                        'status' => 'draft',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                    'status' => 'draft',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->updateFields('test-id', ['status' => 'validated'], 'custom-project');
 
@@ -945,37 +812,28 @@ describe('updateFields', function (): void {
     });
 
     it('merges updated fields with existing entry data', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-789',
-                    'payload' => [
-                        'title' => 'Original Title',
-                        'content' => 'Original Content',
-                        'tags' => ['tag1', 'tag2'],
-                        'category' => 'test',
-                        'priority' => 'low',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-789', 0.0, [
+                    'title' => 'Original Title',
+                    'content' => 'Original Content',
+                    'tags' => ['tag1', 'tag2'],
+                    'category' => 'test',
+                    'priority' => 'low',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Original Title Original Content')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->updateFields('test-789', [
             'priority' => 'high',
@@ -986,33 +844,24 @@ describe('updateFields', function (): void {
     });
 
     it('updates empty fields array does not fail', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Title',
-                        'content' => 'Content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Title',
+                    'content' => 'Content',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->updateFields('test-id', []);
 
@@ -1027,25 +876,17 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock findSimilar search returning exact match
-        $searchResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'existing-id',
-                    'score' => 0.99,
-                    'payload' => [
-                        'title' => 'Test Title',
-                        'content' => 'Test content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        // findSimilar search returning exact match
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                makeScoredPoint('existing-id', 0.99, [
+                    'title' => 'Test Title',
+                    'content' => 'Test content',
+                ]),
+            ]);
 
         $entry = [
             'id' => 'new-id',
@@ -1063,25 +904,17 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock findSimilar search returning similar (not exact) match
-        $searchResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'existing-id',
-                    'score' => 0.97,
-                    'payload' => [
-                        'title' => 'Test Title',
-                        'content' => 'Different content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        // findSimilar search returning similar (not exact) match
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                makeScoredPoint('existing-id', 0.97, [
+                    'title' => 'Test Title',
+                    'content' => 'Different content',
+                ]),
+            ]);
 
         $entry = [
             'id' => 'new-id',
@@ -1099,23 +932,20 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
+
+        // Should NOT make a search call for duplicate detection
+        $this->mockQdrant->shouldNotReceive('search');
 
         $entry = [
             'id' => 'new-id',
             'title' => 'Test Title',
             'content' => 'Test content',
         ];
-
-        // Should NOT make a search call for duplicate detection
-        $this->mockConnector->shouldNotReceive('send')
-            ->with(Mockery::type(SearchPoints::class));
 
         expect($this->service->upsert($entry, 'default', false))->toBeTrue();
     });
@@ -1126,20 +956,16 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock findSimilar returning no results
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        // findSimilar returning no results
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => 'new-id',
@@ -1156,20 +982,14 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        // Mock findByFingerprint scroll returning a match
-        $scrollResponse = createMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    ['id' => 'existing-fingerprint-id'],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        // findByFingerprint scroll returning a match
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturn(makeScrollResult([
+                makeScoredPoint('existing-fingerprint-id'),
+            ]));
 
         $entry = [
             'id' => 'new-id',
@@ -1188,20 +1008,14 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        // Mock findByTitleAndCommit scroll returning a match
-        $scrollResponse = createMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    ['id' => 'existing-commit-id'],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        // findByTitleAndCommit scroll returning a match
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturn(makeScrollResult([
+                makeScoredPoint('existing-commit-id'),
+            ]));
 
         $entry = [
             'id' => 'new-id',
@@ -1220,29 +1034,21 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock findByFingerprint scroll returning no match
-        $scrollResponse = createMockResponse(true, 200, [
-            'result' => ['points' => []],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        // findByFingerprint scroll returning no match
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturn(makeScrollResult([]));
 
-        // Mock findSimilar returning no results (content hash check)
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        // findSimilar returning no results (content hash check)
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => 'new-id',
@@ -1260,13 +1066,11 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => 'test-id',
@@ -1284,13 +1088,11 @@ describe('upsert duplicate detection', function (): void {
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $entry = [
             'id' => 'test-id',
@@ -1307,24 +1109,16 @@ describe('upsert duplicate detection', function (): void {
 
 describe('findSimilar', function (): void {
     it('returns similar entries above threshold', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'similar-1',
-                    'score' => 0.97,
-                    'payload' => [
-                        'title' => 'Similar Entry',
-                        'content' => 'Similar content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([
+                makeScoredPoint('similar-1', 0.97, [
+                    'title' => 'Similar Entry',
+                    'content' => 'Similar content',
+                ]),
+            ]);
 
         $results = $this->service->findSimilar([0.1, 0.2, 0.3], 'default', 0.95);
 
@@ -1334,13 +1128,11 @@ describe('findSimilar', function (): void {
     });
 
     it('returns empty collection when no similar entries found', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andReturn([]);
 
         $results = $this->service->findSimilar([0.1, 0.2, 0.3]);
 
@@ -1348,13 +1140,11 @@ describe('findSimilar', function (): void {
     });
 
     it('returns empty collection when search fails', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $searchResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($searchResponse);
+            ->andThrow(makeRequestException(500));
 
         $results = $this->service->findSimilar([0.1, 0.2, 0.3]);
 
@@ -1364,43 +1154,33 @@ describe('findSimilar', function (): void {
 
 describe('markSuperseded', function (): void {
     it('marks an existing entry as superseded', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock getById for updateFields
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'old-id',
-                    'payload' => [
-                        'title' => 'Old Entry',
-                        'content' => 'Old content',
-                        'tags' => [],
-                        'category' => null,
-                        'module' => null,
-                        'priority' => 'medium',
-                        'status' => 'draft',
-                        'confidence' => 50,
-                        'usage_count' => 0,
-                        'created_at' => '2025-01-01T00:00:00Z',
-                        'updated_at' => '2025-01-01T00:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('old-id', 0.0, [
+                    'title' => 'Old Entry',
+                    'content' => 'Old content',
+                    'tags' => [],
+                    'category' => null,
+                    'module' => null,
+                    'priority' => 'medium',
+                    'status' => 'draft',
+                    'confidence' => 50,
+                    'usage_count' => 0,
+                    'created_at' => '2025-01-01T00:00:00Z',
+                    'updated_at' => '2025-01-01T00:00:00Z',
+                ]),
+            ]);
 
         $this->mockEmbedding->shouldReceive('generate')
             ->once()
             ->andReturn([0.1, 0.2, 0.3]);
 
-        $upsertResponse = createMockResponse(true);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(UpsertPoints::class))
+        $this->mockQdrant->shouldReceive('upsert')
             ->once()
-            ->andReturn($upsertResponse);
+            ->andReturn(makeUpsertResult());
 
         $result = $this->service->markSuperseded('old-id', 'new-id', 'Newer knowledge available');
 
@@ -1408,13 +1188,11 @@ describe('markSuperseded', function (): void {
     });
 
     it('returns false when entry does not exist', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([]);
 
         $result = $this->service->markSuperseded('nonexistent', 'new-id');
 
@@ -1424,13 +1202,11 @@ describe('markSuperseded', function (): void {
 
 describe('getSupersessionHistory', function (): void {
     it('returns empty history when entry does not exist', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, ['result' => []]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([]);
 
         $history = $this->service->getSupersessionHistory('nonexistent');
 
@@ -1439,50 +1215,32 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns successor when entry is superseded', function (): void {
-        // Mock getById for the entry itself
-        mockCollectionExists($this->mockConnector, 3);
+        mockCollectionExists($this->mockQdrant, 3);
 
-        $entryResponse = createMockResponse(true, 200, [
-            'result' => [
+        $this->mockQdrant->shouldReceive('getPoints')
+            ->twice()
+            ->andReturn(
                 [
-                    'id' => 'old-id',
-                    'payload' => [
+                    makeScoredPoint('old-id', 0.0, [
                         'title' => 'Old Entry',
                         'content' => 'Old content',
                         'superseded_by' => 'new-id',
                         'superseded_date' => '2026-01-15T00:00:00Z',
                         'superseded_reason' => 'Updated',
-                    ],
+                    ]),
                 ],
-            ],
-        ]);
-
-        // Mock getById for the successor
-        $successorResponse = createMockResponse(true, 200, [
-            'result' => [
                 [
-                    'id' => 'new-id',
-                    'payload' => [
+                    makeScoredPoint('new-id', 0.0, [
                         'title' => 'New Entry',
                         'content' => 'New content',
-                    ],
+                    ]),
                 ],
-            ],
-        ]);
+            );
 
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
-            ->twice()
-            ->andReturn($entryResponse, $successorResponse);
-
-        // Mock scroll for predecessors
-        $scrollResponse = createMockResponse(true, 200, [
-            'result' => ['points' => []],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        // scroll for predecessors
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturn(makeScrollResult([]));
 
         $history = $this->service->getSupersessionHistory('old-id');
 
@@ -1492,55 +1250,35 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns predecessors when entry supersedes others', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        // Mock getById for the entry itself (not superseded)
-        $entryResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'new-id',
-                    'payload' => [
-                        'title' => 'New Entry',
-                        'content' => 'New content',
-                        'superseded_by' => null,
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($entryResponse);
+            ->andReturn([
+                makeScoredPoint('new-id', 0.0, [
+                    'title' => 'New Entry',
+                    'content' => 'New content',
+                    'superseded_by' => null,
+                ]),
+            ]);
 
-        // Mock scroll for predecessors
-        $scrollResponse = createMockResponse(true, 200, [
-            'result' => [
-                'points' => [
-                    [
-                        'id' => 'old-id-1',
-                        'payload' => [
-                            'title' => 'Old Entry 1',
-                            'content' => 'Old content 1',
-                            'superseded_by' => 'new-id',
-                            'superseded_reason' => 'Updated by new entry',
-                        ],
-                    ],
-                    [
-                        'id' => 'old-id-2',
-                        'payload' => [
-                            'title' => 'Old Entry 2',
-                            'content' => 'Old content 2',
-                            'superseded_by' => 'new-id',
-                            'superseded_reason' => 'Also updated',
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        // scroll for predecessors
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andReturn(makeScrollResult([
+                makeScoredPoint('old-id-1', 0.0, [
+                    'title' => 'Old Entry 1',
+                    'content' => 'Old content 1',
+                    'superseded_by' => 'new-id',
+                    'superseded_reason' => 'Updated by new entry',
+                ]),
+                makeScoredPoint('old-id-2', 0.0, [
+                    'title' => 'Old Entry 2',
+                    'content' => 'Old content 2',
+                    'superseded_by' => 'new-id',
+                    'superseded_reason' => 'Also updated',
+                ]),
+            ]));
 
         $history = $this->service->getSupersessionHistory('new-id');
 
@@ -1551,30 +1289,21 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns empty predecessors when scroll fails', function (): void {
-        mockCollectionExists($this->mockConnector, 2);
+        mockCollectionExists($this->mockQdrant, 2);
 
-        $entryResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Entry',
-                        'content' => 'Content',
-                        'superseded_by' => null,
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($entryResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Entry',
+                    'content' => 'Content',
+                    'superseded_by' => null,
+                ]),
+            ]);
 
-        $scrollResponse = createMockResponse(false, 500);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(ScrollPoints::class))
+        $this->mockQdrant->shouldReceive('scroll')
             ->once()
-            ->andReturn($scrollResponse);
+            ->andThrow(makeRequestException(500));
 
         $history = $this->service->getSupersessionHistory('test-id');
 
@@ -1585,26 +1314,19 @@ describe('getSupersessionHistory', function (): void {
 
 describe('getById with superseded fields', function (): void {
     it('includes superseded fields in response', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Test Entry',
-                        'content' => 'Content',
-                        'superseded_by' => 'new-id',
-                        'superseded_date' => '2026-01-15T00:00:00Z',
-                        'superseded_reason' => 'Replaced',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Test Entry',
+                    'content' => 'Content',
+                    'superseded_by' => 'new-id',
+                    'superseded_date' => '2026-01-15T00:00:00Z',
+                    'superseded_reason' => 'Replaced',
+                ]),
+            ]);
 
         $result = $this->service->getById('test-id');
 
@@ -1615,23 +1337,16 @@ describe('getById with superseded fields', function (): void {
     });
 
     it('returns null superseded fields when not set', function (): void {
-        mockCollectionExists($this->mockConnector);
+        mockCollectionExists($this->mockQdrant);
 
-        $getPointsResponse = createMockResponse(true, 200, [
-            'result' => [
-                [
-                    'id' => 'test-id',
-                    'payload' => [
-                        'title' => 'Test Entry',
-                        'content' => 'Content',
-                    ],
-                ],
-            ],
-        ]);
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(GetPoints::class))
+        $this->mockQdrant->shouldReceive('getPoints')
             ->once()
-            ->andReturn($getPointsResponse);
+            ->andReturn([
+                makeScoredPoint('test-id', 0.0, [
+                    'title' => 'Test Entry',
+                    'content' => 'Content',
+                ]),
+            ]);
 
         $result = $this->service->getById('test-id');
 
@@ -1650,22 +1365,16 @@ describe('getCacheService', function (): void {
 
 describe('search with cache service', function (): void {
     it('uses cache service rememberSearch when cache service is present', function (): void {
-        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $mockCacheService = Mockery::mock(KnowledgeCacheService::class);
         $serviceWithCache = new QdrantService(
             $this->mockEmbedding,
+            $this->mockQdrant,
             384,
             0.7,
             604800,
             false,
-            false,
             $mockCacheService,
         );
-
-        // Inject mock connector
-        $reflection = new ReflectionClass($serviceWithCache);
-        $property = $reflection->getProperty('connector');
-        $property->setAccessible(true);
-        $property->setValue($serviceWithCache, $this->mockConnector);
 
         $cachedResults = [
             ['id' => 'cached-1', 'title' => 'Cached Result', 'score' => 0.95],
@@ -1685,36 +1394,28 @@ describe('search with cache service', function (): void {
 
 describe('getCachedEmbedding with cache service', function (): void {
     it('uses cache service rememberEmbedding when cache service is present', function (): void {
-        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $mockCacheService = Mockery::mock(KnowledgeCacheService::class);
         $serviceWithCache = new QdrantService(
             $this->mockEmbedding,
+            $this->mockQdrant,
             384,
             0.7,
             604800,
             false,
-            false,
             $mockCacheService,
         );
 
-        // Inject mock connector
-        $reflection = new ReflectionClass($serviceWithCache);
-        $connProp = $reflection->getProperty('connector');
-        $connProp->setAccessible(true);
-        $connProp->setValue($serviceWithCache, $this->mockConnector);
-
         $embedding = array_fill(0, 384, 0.1);
 
-        // Mock cache service to return embedding
         $mockCacheService->shouldReceive('rememberEmbedding')
             ->once()
             ->with('test text', Mockery::type('Closure'))
             ->andReturn($embedding);
 
-        // Mock cache service for search (since search calls getCachedEmbedding)
         $mockCacheService->shouldReceive('rememberSearch')
             ->never();
 
-        // Use reflection to call the private getCachedEmbedding method
+        $reflection = new ReflectionClass($serviceWithCache);
         $method = $reflection->getMethod('getCachedEmbedding');
         $method->setAccessible(true);
 
@@ -1733,19 +1434,12 @@ describe('searchRawCollection', function (): void {
             ->with('punk rock')
             ->andReturn($embedding);
 
-        $searchResults = [
-            ['id' => 'abc', 'score' => 0.95, 'payload' => ['track' => 'Punkrocker', 'artist' => 'Teddybears']],
-            ['id' => 'def', 'score' => 0.85, 'payload' => ['track' => 'Blitzkrieg Bop', 'artist' => 'Ramones']],
-        ];
-
-        $mockResponse = Mockery::mock(\Saloon\Http\Response::class);
-        $mockResponse->shouldReceive('successful')->andReturn(true);
-        $mockResponse->shouldReceive('json')->with('result')->andReturn($searchResults);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($mockResponse);
+            ->andReturn([
+                makeScoredPoint('abc', 0.95, ['track' => 'Punkrocker', 'artist' => 'Teddybears']),
+                makeScoredPoint('def', 0.85, ['track' => 'Blitzkrieg Bop', 'artist' => 'Ramones']),
+            ]);
 
         $results = $this->service->searchRawCollection('music_events', 'punk rock', 10);
 
@@ -1772,12 +1466,9 @@ describe('searchRawCollection', function (): void {
             ->once()
             ->andReturn($embedding);
 
-        $mockResponse = createMockResponse(false, 500);
-
-        $this->mockConnector->shouldReceive('send')
-            ->with(Mockery::type(SearchPoints::class))
+        $this->mockQdrant->shouldReceive('search')
             ->once()
-            ->andReturn($mockResponse);
+            ->andThrow(makeRequestException(500));
 
         $results = $this->service->searchRawCollection('music_events', 'test', 10);
 
@@ -1811,5 +1502,75 @@ describe('normalizeTags', function (): void {
         expect($method->invoke($this->service, 'just a string'))->toBe([])
             ->and($method->invoke($this->service, null))->toBe([])
             ->and($method->invoke($this->service, '[not valid json'))->toBe([]);
+    });
+});
+
+describe('findByFingerprint error handling', function (): void {
+    it('returns null when scroll fails during fingerprint lookup', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockQdrant, 2);
+
+        // findByFingerprint scroll throws
+        $this->mockQdrant->shouldReceive('scroll')
+            ->once()
+            ->andThrow(makeRequestException(500));
+
+        // Since fingerprint lookup fails (returns null), duplicate check continues
+        // findSimilar search returns no results
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->andReturn([]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->andReturn(makeUpsertResult());
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'tags' => ['fingerprint:abc123'],
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
+    });
+});
+
+describe('findByTitleAndCommit error handling', function (): void {
+    it('returns null when scroll fails during commit lookup', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Test Title Test content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockQdrant, 2);
+
+        // findByTitleAndCommit scroll throws
+        $this->mockQdrant->shouldReceive('scroll')
+            ->once()
+            ->andThrow(makeRequestException(500));
+
+        // Since commit lookup fails (returns null), duplicate check continues
+        // findSimilar search returns no results
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->andReturn([]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->andReturn(makeUpsertResult());
+
+        $entry = [
+            'id' => 'new-id',
+            'title' => 'Test Title',
+            'content' => 'Test content',
+            'commit' => 'abc1234',
+        ];
+
+        expect($this->service->upsert($entry, 'default', true))->toBeTrue();
     });
 });
