@@ -37,7 +37,8 @@ class RecallTool extends Tool
             return Response::error('A search query of at least 2 characters is required.');
         }
 
-        $project = is_string($request->get('project')) ? $request->get('project') : $this->projectDetector->detect();
+        $projectProvided = is_string($request->get('project'));
+        $project = $projectProvided ? $request->get('project') : $this->projectDetector->detect();
         $limit = is_int($request->get('limit')) ? min($request->get('limit'), 20) : 5;
         $global = (bool) ($request->get('global') ?? false);
 
@@ -51,6 +52,23 @@ class RecallTool extends Tool
         }
 
         $results = $this->tieredSearch->search($query, $filters, $limit, project: $project);
+        $searchedProject = $project;
+        $fallbackUsed = false;
+
+        // Namespace routing fallback: a git-detected project often resolves to a
+        // collection that holds no entries (knowledge frequently lives in the
+        // shared `default` bucket). When an auto-detected scope comes up empty,
+        // retry once against `default` so recall does not silently return zero.
+        // Explicitly requested projects are respected and never fall back.
+        if ($results->isEmpty() && ! $projectProvided && $project !== 'default') {
+            $fallback = $this->tieredSearch->search($query, $filters, $limit, project: 'default');
+
+            if ($fallback->isNotEmpty()) {
+                $results = $fallback;
+                $searchedProject = 'default';
+                $fallbackUsed = true;
+            }
+        }
 
         if ($results->isEmpty()) {
             return Response::text(json_encode([
@@ -58,6 +76,8 @@ class RecallTool extends Tool
                 'meta' => [
                     'query' => $query,
                     'project' => $project,
+                    'searched_project' => $searchedProject,
+                    'fallback_used' => $fallbackUsed,
                     'total' => 0,
                 ],
             ], JSON_THROW_ON_ERROR));
@@ -70,6 +90,8 @@ class RecallTool extends Tool
             'meta' => [
                 'query' => $query,
                 'project' => $project,
+                'searched_project' => $searchedProject,
+                'fallback_used' => $fallbackUsed,
                 'total' => count($formatted),
                 'search_tier' => $results->first()['tier_label'] ?? 'unknown',
             ],

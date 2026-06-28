@@ -44,8 +44,9 @@ describe('recall tool', function (): void {
 
     it('returns empty results when nothing found', function (): void {
         $this->projectDetector->shouldReceive('detect')->once()->andReturn('test-project');
+        // Detected project is empty, so recall also probes the `default` bucket.
         $this->tieredSearch->shouldReceive('search')
-            ->once()
+            ->twice()
             ->andReturn(collect());
 
         $request = new Request(['query' => 'test query']);
@@ -56,7 +57,61 @@ describe('recall tool', function (): void {
         $data = json_decode((string) $response->content(), true);
         expect($data['results'])->toBeEmpty()
             ->and($data['meta']['total'])->toBe(0)
-            ->and($data['meta']['project'])->toBe('test-project');
+            ->and($data['meta']['project'])->toBe('test-project')
+            ->and($data['meta']['fallback_used'])->toBeFalse();
+    });
+
+    it('falls back to the default bucket when a detected project is empty', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('some-repo');
+
+        // First call (detected project) is empty; second call (default) has a hit.
+        $this->tieredSearch->shouldReceive('search')
+            ->withArgs(fn ($q, $f, $l, $forceTier, $p): bool => $p === 'some-repo')
+            ->once()
+            ->andReturn(collect());
+        $this->tieredSearch->shouldReceive('search')
+            ->withArgs(fn ($q, $f, $l, $forceTier, $p): bool => $p === 'default')
+            ->once()
+            ->andReturn(collect([
+                [
+                    'id' => 'entry-1',
+                    'title' => 'Found in default',
+                    'content' => 'Some content',
+                    'category' => null,
+                    'tags' => [],
+                    'tiered_score' => 0.9,
+                    'tier_label' => 'recent',
+                    'confidence' => 70,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ]));
+
+        $this->metadata->shouldReceive('calculateEffectiveConfidence')->once()->andReturn(70);
+        $this->metadata->shouldReceive('isStale')->once()->andReturn(false);
+
+        $request = new Request(['query' => 'test query']);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['results'])->toHaveCount(1)
+            ->and($data['meta']['project'])->toBe('some-repo')
+            ->and($data['meta']['searched_project'])->toBe('default')
+            ->and($data['meta']['fallback_used'])->toBeTrue();
+    });
+
+    it('does not fall back when a project is explicitly provided', function (): void {
+        $this->projectDetector->shouldNotReceive('detect');
+        $this->tieredSearch->shouldReceive('search')
+            ->withArgs(fn ($q, $f, $l, $forceTier, $p): bool => $p === 'my-project')
+            ->once()
+            ->andReturn(collect());
+
+        $request = new Request(['query' => 'test', 'project' => 'my-project']);
+        $response = $this->tool->handle($request);
+
+        $data = json_decode((string) $response->content(), true);
+        expect($data['meta']['fallback_used'])->toBeFalse()
+            ->and($data['meta']['searched_project'])->toBe('my-project');
     });
 
     it('returns formatted results with confidence and freshness', function (): void {
