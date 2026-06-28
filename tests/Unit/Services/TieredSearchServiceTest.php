@@ -210,6 +210,95 @@ describe('search', function (): void {
     });
 });
 
+describe('metadata-agnostic fallback', function (): void {
+    it('surfaces entries lacking status and timestamps when every tier excludes them', function (): void {
+        Carbon::setTestNow('2026-02-10');
+
+        // An entry ingested by a foreign pipeline: no status, no timestamps.
+        // It matches no status-scoped tier and is time-gated out of the Recent tier,
+        // so without the fallback it is permanently unrecallable.
+        $foreignEntry = [
+            'id' => 'pkg-1',
+            'score' => 0.85,
+            'title' => 'Laravel Package Doc',
+            'content' => 'Harvested documentation content',
+            'tags' => [],
+            'category' => 'patterns',
+            'module' => null,
+            'priority' => null,
+            'status' => null,
+            'confidence' => 50,
+            'usage_count' => 0,
+            'created_at' => '',
+            'updated_at' => '',
+            'last_verified' => null,
+            'evidence' => null,
+        ];
+
+        // Status-scoped tiers return nothing (no status match in Qdrant).
+        $this->qdrantService->shouldReceive('search')
+            ->with('docs', ['status' => 'draft'], 20, 'default')
+            ->andReturn(collect([]));
+        $this->qdrantService->shouldReceive('search')
+            ->with('docs', ['status' => 'validated'], 20, 'default')
+            ->andReturn(collect([]));
+        $this->qdrantService->shouldReceive('search')
+            ->with('docs', ['status' => 'deprecated'], 20, 'default')
+            ->andReturn(collect([]));
+
+        // Unfiltered query (Recent tier + the metadata-agnostic fallback) returns it.
+        $this->qdrantService->shouldReceive('search')
+            ->with('docs', [], 20, 'default')
+            ->andReturn(collect([$foreignEntry]));
+
+        $results = $this->service->search('docs');
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()['id'])->toBe('pkg-1');
+    });
+
+    it('does not duplicate an entry returned by both a tier and the fallback', function (): void {
+        Carbon::setTestNow('2026-02-10');
+
+        // A recent, statusless entry: surfaces via Recent tier AND the fallback.
+        $entry = [
+            'id' => 'dup-1',
+            'score' => 0.80,
+            'title' => 'Recent statusless entry',
+            'content' => 'Content',
+            'tags' => [],
+            'category' => null,
+            'module' => null,
+            'priority' => null,
+            'status' => null,
+            'confidence' => 60,
+            'usage_count' => 0,
+            'created_at' => '2026-02-08T00:00:00+00:00',
+            'updated_at' => '2026-02-08T00:00:00+00:00',
+            'last_verified' => null,
+            'evidence' => null,
+        ];
+
+        $this->qdrantService->shouldReceive('search')
+            ->with('q', ['status' => 'draft'], 20, 'default')
+            ->andReturn(collect([]));
+        $this->qdrantService->shouldReceive('search')
+            ->with('q', ['status' => 'validated'], 20, 'default')
+            ->andReturn(collect([]));
+        $this->qdrantService->shouldReceive('search')
+            ->with('q', ['status' => 'deprecated'], 20, 'default')
+            ->andReturn(collect([]));
+        $this->qdrantService->shouldReceive('search')
+            ->with('q', [], 20, 'default')
+            ->andReturn(collect([$entry]));
+
+        $results = $this->service->search('q');
+
+        expect($results)->toHaveCount(1);
+        expect($results->first()['id'])->toBe('dup-1');
+    });
+});
+
 describe('searchTier', function (): void {
     it('adds tier and tier_label to results', function (): void {
         Carbon::setTestNow('2026-02-10');
