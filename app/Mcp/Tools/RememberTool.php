@@ -56,16 +56,24 @@ class RememberTool extends Tool
             'confidence' => is_int($request->get('confidence')) ? $request->get('confidence') : 50,
             'status' => 'draft',
             'evidence' => is_string($request->get('evidence')) ? $request->get('evidence') : null,
+            'subject' => is_string($request->get('subject')) ? $request->get('subject') : null,
             'last_verified' => now()->toIso8601String(),
         ];
 
-        // Auto-populate git context
+        // Auto-populate git context (author = git user; overridden below if the
+        // caller declares who is capturing this).
         if ($this->gitContext->isGitRepository()) {
             $context = $this->gitContext->getContext();
             $entry['repo'] = $context['repo'] ?? null;
             $entry['branch'] = $context['branch'] ?? null;
             $entry['commit'] = $context['commit'] ?? null;
             $entry['author'] = $context['author'] ?? null;
+        }
+
+        // Provenance contract: author = WHO captured it. An explicit author wins
+        // over the git user so agents (lexi, claude-code, …) attribute correctly.
+        if (is_string($request->get('author')) && $request->get('author') !== '') {
+            $entry['author'] = $request->get('author');
         }
 
         // Write gate validation
@@ -124,6 +132,10 @@ class RememberTool extends Tool
                 ->default(50),
             'evidence' => $schema->string()
                 ->description('Supporting evidence or reference URL.'),
+            'subject' => $schema->string()
+                ->description('WHO/WHAT this knowledge is about (e.g. "jordan", "bob-partridge", a repo name). Defaults to null.'),
+            'author' => $schema->string()
+                ->description('WHO is capturing this (e.g. "lexi", "claude-code", "jordan"). Defaults to the git user.'),
             'project' => $schema->string()
                 ->description('Project namespace. Auto-detected from git if omitted.'),
         ];

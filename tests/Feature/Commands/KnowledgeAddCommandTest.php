@@ -46,6 +46,22 @@ it('adds a knowledge entry with all options', function (): void {
     ])->assertSuccessful();
 });
 
+it('passes --subject and --author through to the stored entry', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::on(fn ($data): bool => ($data['subject'] ?? null) === 'bob-partridge'
+            && ($data['author'] ?? null) === 'jordan'), Mockery::any(), Mockery::any())
+        ->andReturn(true);
+
+    $this->artisan('add', [
+        'title' => 'Subject Bearing Entry',
+        '--content' => 'This entry is about a specific subject and author.',
+        '--subject' => 'bob-partridge',
+        '--author' => 'jordan',
+        '--no-git' => true,
+    ])->assertSuccessful();
+});
+
 it('adds a knowledge entry with minimal options', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()

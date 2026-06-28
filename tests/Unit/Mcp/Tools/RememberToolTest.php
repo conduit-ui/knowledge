@@ -131,6 +131,31 @@ describe('remember tool', function (): void {
             ->and($data['existing_id'])->toBe('existing-id');
     });
 
+    it('stores subject and an explicit author override', function (): void {
+        $this->projectDetector->shouldReceive('detect')->once()->andReturn('default');
+        $this->gitContext->shouldReceive('isGitRepository')->once()->andReturn(false);
+        $this->writeGate->shouldReceive('evaluate')->once()->andReturn(['passed' => true]);
+        $this->qdrant->shouldReceive('upsert')
+            ->withArgs(fn ($entry, $project): bool => ($entry['subject'] ?? null) === 'lexi-agent'
+                && ($entry['author'] ?? null) === 'claude-code')
+            ->once()
+            ->andReturn(true);
+        $this->enhancementQueue->shouldReceive('queue')->once();
+
+        config(['search.ollama.enabled' => true]);
+
+        $request = new Request([
+            'title' => 'Provenance Discovery',
+            'content' => 'A discovery that records who captured it and what it is about.',
+            'subject' => 'lexi-agent',
+            'author' => 'claude-code',
+        ]);
+
+        $response = $this->tool->handle($request);
+
+        expect($response->isError())->toBeFalse();
+    });
+
     it('uses explicit project when provided', function (): void {
         $this->projectDetector->shouldNotReceive('detect');
         $this->gitContext->shouldReceive('isGitRepository')->once()->andReturn(false);
