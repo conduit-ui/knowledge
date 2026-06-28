@@ -48,6 +48,11 @@ return [
     |--------------------------------------------------------------------------
     | Search Configuration
     |--------------------------------------------------------------------------
+    |
+    | minimum_similarity: dense-cosine pre-rank floor; tiering does the real ranking.
+    | 0.3 is intentionally lenient so the tiered scorer (relevance*confidence*freshness)
+    | can rank moderate matches instead of cutting them prematurely.
+    |
     */
 
     'minimum_similarity' => env('SEARCH_MIN_SIMILARITY', 0.3),
