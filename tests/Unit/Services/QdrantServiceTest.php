@@ -12,8 +12,10 @@ use App\Integrations\Qdrant\Requests\GetPoints;
 use App\Integrations\Qdrant\Requests\ScrollPoints;
 use App\Integrations\Qdrant\Requests\SearchPoints;
 use App\Integrations\Qdrant\Requests\UpsertPoints;
+use App\Services\KnowledgeCacheService;
 use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
+use Mockery\MockInterface;
 use Saloon\Exceptions\Request\ClientException;
 use Saloon\Http\Response;
 
@@ -62,7 +64,7 @@ if (! function_exists('mockCollectionExists')) {
     /**
      * Set up mock for ensureCollection to return success (collection exists).
      */
-    function mockCollectionExists(Mockery\MockInterface $connector, int $times = 1): void
+    function mockCollectionExists(MockInterface $connector, int $times = 1): void
     {
         $response = createMockResponse(true);
         $connector->shouldReceive('send')
@@ -1522,7 +1524,7 @@ describe('getCacheService', function (): void {
 
 describe('search with cache service', function (): void {
     it('uses cache service rememberSearch when cache service is present', function (): void {
-        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $mockCacheService = Mockery::mock(KnowledgeCacheService::class);
         $serviceWithCache = new QdrantService(
             $this->mockEmbedding,
             384,
@@ -1557,7 +1559,7 @@ describe('search with cache service', function (): void {
 
 describe('getCachedEmbedding with cache service', function (): void {
     it('uses cache service rememberEmbedding when cache service is present', function (): void {
-        $mockCacheService = Mockery::mock(\App\Services\KnowledgeCacheService::class);
+        $mockCacheService = Mockery::mock(KnowledgeCacheService::class);
         $serviceWithCache = new QdrantService(
             $this->mockEmbedding,
             384,
@@ -1593,5 +1595,95 @@ describe('getCachedEmbedding with cache service', function (): void {
         $result = $method->invoke($serviceWithCache, 'test text');
 
         expect($result)->toBe($embedding);
+    });
+});
+
+describe('search with provenance filters (subject/author)', function (): void {
+    function captureSearchFilter(QdrantService $service, array $filters): ?array
+    {
+        // Use reflection to capture the filter built by buildFilter
+        $method = (new ReflectionClass($service))->getMethod('buildFilter');
+        $method->setAccessible(true);
+
+        return $method->invoke($service, $filters);
+    }
+
+    it('adds subject filter as a must condition', function (): void {
+        $filter = captureSearchFilter($this->service, ['subject' => 'dad-journals']);
+
+        expect($filter)->toHaveKey('must');
+        $must = $filter['must'];
+        $subjectCondition = collect($must)->firstWhere('key', 'subject');
+        expect($subjectCondition)->toMatchArray([
+            'key' => 'subject',
+            'match' => ['value' => 'dad-journals'],
+        ]);
+    });
+
+    it('adds author filter as a must condition', function (): void {
+        $filter = captureSearchFilter($this->service, ['author' => 'jordan']);
+
+        expect($filter)->toHaveKey('must');
+        $must = $filter['must'];
+        $authorCondition = collect($must)->firstWhere('key', 'author');
+        expect($authorCondition)->toMatchArray([
+            'key' => 'author',
+            'match' => ['value' => 'jordan'],
+        ]);
+    });
+
+    it('combines subject, author, and category into 3 must conditions plus default superseded', function (): void {
+        $filter = captureSearchFilter($this->service, [
+            'subject' => 'dad-journals',
+            'author' => 'jordan',
+            'category' => 'personal',
+        ]);
+
+        expect($filter)->toHaveKey('must');
+        expect($filter['must'])->toHaveCount(4);
+
+        $keys = collect($filter['must'])->pluck('key')->filter()->values()->all();
+        expect($keys)->toContain('subject', 'author', 'category');
+    });
+
+    it('returns only default superseded condition when no filters provided', function (): void {
+        $filter = captureSearchFilter($this->service, []);
+
+        expect($filter)->toHaveKey('must');
+        expect($filter['must'])->toHaveCount(1);
+        expect($filter['must'][0])->toHaveKey('is_empty');
+        expect($filter['must'][0]['is_empty']['key'])->toBe('superseded_by');
+    });
+
+    it('drives subject filter via public search() path with mocked connector', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('test query')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        $capturedFilter = null;
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::on(function ($request) use (&$capturedFilter) {
+                if ($request instanceof SearchPoints) {
+                    $ref = new ReflectionClass($request);
+                    $prop = $ref->getProperty('filter');
+                    $prop->setAccessible(true);
+                    $capturedFilter = $prop->getValue($request);
+                }
+
+                return true;
+            }))
+            ->once()
+            ->andReturn(createMockResponse(true, 200, ['result' => []]));
+
+        $this->service->search('test query', ['subject' => 'dad-journals', 'author' => 'jordan']);
+
+        expect($capturedFilter)->not()->toBeNull();
+        expect($capturedFilter)->toHaveKey('must');
+
+        $mustKeys = collect($capturedFilter['must'])->pluck('key')->filter()->values()->all();
+        expect($mustKeys)->toContain('subject', 'author');
     });
 });
