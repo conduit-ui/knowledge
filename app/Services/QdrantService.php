@@ -183,7 +183,7 @@ class QdrantService
             'payload' => $payload,
         ];
 
-        if ($this->hybridEnabled && $this->sparseEmbeddingService instanceof \App\Contracts\SparseEmbeddingServiceInterface) {
+        if ($this->hybridEnabled && $this->sparseEmbeddingService instanceof SparseEmbeddingServiceInterface) {
             $sparseVector = $this->sparseEmbeddingService->generate($text);
             $point['vector'] = [
                 'dense' => $vector,
@@ -336,6 +336,8 @@ class QdrantService
      *     module?: string,
      *     priority?: string,
      *     status?: string,
+     *     subject?: string,
+     *     author?: string,
      *     include_superseded?: bool
      * }  $filters
      * @return Collection<int, array{
@@ -447,7 +449,9 @@ class QdrantService
      *     category?: string,
      *     module?: string,
      *     priority?: string,
-     *     status?: string
+     *     status?: string,
+     *     subject?: string,
+     *     author?: string
      * }  $filters
      * @return Collection<int, array{
      *     id: string|int,
@@ -478,7 +482,7 @@ class QdrantService
         string $project = 'default'
     ): Collection {
         // Fall back to dense search if hybrid not enabled or no sparse service
-        if (! $this->hybridEnabled || ! $this->sparseEmbeddingService instanceof \App\Contracts\SparseEmbeddingServiceInterface) {
+        if (! $this->hybridEnabled || ! $this->sparseEmbeddingService instanceof SparseEmbeddingServiceInterface) {
             return $this->search($query, $filters, $limit, $project);
         }
 
@@ -713,6 +717,8 @@ class QdrantService
      *     module?: string,
      *     priority?: string,
      *     status?: string,
+     *     subject?: string,
+     *     author?: string,
      *     include_superseded?: bool
      * }  $filters
      * @return array<string, mixed>|null
@@ -732,7 +738,7 @@ class QdrantService
         }
 
         // Exact match filters
-        foreach (['category', 'module', 'priority', 'status'] as $field) {
+        foreach (['category', 'module', 'priority', 'status', 'subject', 'author'] as $field) {
             if (isset($filters[$field])) {
                 $must[] = [
                     'key' => $field,
