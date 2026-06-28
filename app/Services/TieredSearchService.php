@@ -215,6 +215,7 @@ class TieredSearchService
             SearchTier::Recent => $filters,
             SearchTier::Structured => array_merge($filters, ['status' => 'validated']),
             SearchTier::Archive => array_merge($filters, ['status' => 'deprecated']),
+            SearchTier::Fallback => $filters,
         };
     }
 
