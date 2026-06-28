@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Enums\SearchTier;
 
 describe('SearchTier', function (): void {
-    it('has four cases', function (): void {
-        expect(SearchTier::cases())->toHaveCount(4);
+    it('has five cases', function (): void {
+        expect(SearchTier::cases())->toHaveCount(5);
     });
 
     it('has correct string values', function (): void {
@@ -14,6 +14,7 @@ describe('SearchTier', function (): void {
         expect(SearchTier::Recent->value)->toBe('recent');
         expect(SearchTier::Structured->value)->toBe('structured');
         expect(SearchTier::Archive->value)->toBe('archive');
+        expect(SearchTier::Fallback->value)->toBe('fallback');
     });
 
     it('returns human-readable labels', function (): void {
@@ -21,9 +22,10 @@ describe('SearchTier', function (): void {
         expect(SearchTier::Recent->label())->toBe('Recent (14 days)');
         expect(SearchTier::Structured->label())->toBe('Structured Storage');
         expect(SearchTier::Archive->label())->toBe('Archive');
+        expect(SearchTier::Fallback->label())->toBe('Fallback (metadata-agnostic)');
     });
 
-    it('returns search order from narrow to wide', function (): void {
+    it('returns search order from narrow to wide, excluding the fallback tier', function (): void {
         $order = SearchTier::searchOrder();
 
         expect($order)->toHaveCount(4);
@@ -31,6 +33,7 @@ describe('SearchTier', function (): void {
         expect($order[1])->toBe(SearchTier::Recent);
         expect($order[2])->toBe(SearchTier::Structured);
         expect($order[3])->toBe(SearchTier::Archive);
+        expect($order)->not->toContain(SearchTier::Fallback);
     });
 
     it('can be created from string value', function (): void {

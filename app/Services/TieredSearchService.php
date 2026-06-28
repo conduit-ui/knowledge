@@ -148,6 +148,14 @@ class TieredSearchService
             $allResults = $allResults->merge($results);
         }
 
+        // Metadata-agnostic safety net. Entries ingested by other pipelines (e.g.
+        // harvested package docs) often carry no `status` and no timestamps. Such
+        // entries match none of the status-scoped tiers (working/structured/archive)
+        // and are time-gated out of the recent tier, leaving them permanently
+        // unrecallable despite being semantically relevant. This pass searches
+        // without a status constraint and without the recency gate so they survive.
+        $allResults = $allResults->merge($this->searchUntiered($query, $filters, $limit, $project));
+
         // Deduplicate by ID, keeping the highest scored version
         return $allResults
             ->groupBy('id')
@@ -164,6 +172,37 @@ class TieredSearchService
     }
 
     /**
+     * Search without any tier-specific status or recency constraint.
+     *
+     * Applies only the caller's explicit filters, then ranks by the standard
+     * tiered score (which already degrades gracefully when dates are absent).
+     * Results are labelled with a dedicated fallback tier so callers can tell
+     * they surfaced outside the normal tier ordering.
+     *
+     * @param  array<string, string>  $filters
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function searchUntiered(
+        string $query,
+        array $filters,
+        int $limit,
+        string $project,
+    ): Collection {
+        $results = $this->qdrantService->search($query, $filters, $limit, $project);
+
+        return $results
+            ->map(function (array $entry): array {
+                $entry['tier'] = SearchTier::Fallback->value;
+                $entry['tier_label'] = SearchTier::Fallback->label();
+                $entry['tiered_score'] = $this->calculateScore($entry);
+
+                return $entry;
+            })
+            ->sortByDesc('tiered_score')
+            ->values();
+    }
+
+    /**
      * Build Qdrant filters for a specific tier.
      *
      * @param  array<string, string>  $filters
@@ -176,6 +215,7 @@ class TieredSearchService
             SearchTier::Recent => $filters,
             SearchTier::Structured => array_merge($filters, ['status' => 'validated']),
             SearchTier::Archive => array_merge($filters, ['status' => 'deprecated']),
+            SearchTier::Fallback => $filters,
         };
     }
 
