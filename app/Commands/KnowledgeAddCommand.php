@@ -33,7 +33,8 @@ class KnowledgeAddCommand extends Command
                             {--confidence=50 : Confidence level (0-100)}
                             {--source= : Source URL or reference}
                             {--ticket= : Related ticket number}
-                            {--author= : Author name}
+                            {--author= : Author name (WHO captured this — e.g. lexi, claude-code, jordan, health-sync)}
+                            {--subject= : Subject — WHO/WHAT this is about (e.g. jordan, bob-partridge, <repo>)}
                             {--status=draft : Status (draft, validated, deprecated)}
                             {--evidence= : Supporting evidence or reference for this entry}
                             {--repo= : Repository URL or path}
@@ -75,6 +76,8 @@ class KnowledgeAddCommand extends Command
         $ticket = is_string($this->option('ticket')) ? $this->option('ticket') : null;
         /** @var string|null $author */
         $author = is_string($this->option('author')) ? $this->option('author') : null;
+        /** @var string|null $subject */
+        $subject = is_string($this->option('subject')) ? $this->option('subject') : null;
         /** @var string $status */
         $status = is_string($this->option('status')) ? $this->option('status') : 'draft';
         /** @var string|null $evidence */
@@ -135,6 +138,7 @@ class KnowledgeAddCommand extends Command
             'priority' => $priority,
             'confidence' => (int) $confidence,
             'source' => $source,
+            'subject' => $subject,
             'ticket' => $ticket,
             'status' => $status,
             'evidence' => $evidence,

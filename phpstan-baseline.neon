@@ -31,7 +31,7 @@ parameters:
 			path: app/Commands/KnowledgeAddCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\{title\\: string, content\\: non\\-empty\\-string, category\\: 'architecture'\\|'debugging'\\|'deployment'\\|'security'\\|'testing'\\|null, module\\: string\\|null, priority\\: 'critical'\\|'high'\\|'low'\\|'medium', confidence\\: int, source\\: string\\|null, ticket\\: string\\|null, \\.\\.\\.\\} given\\.$#"
+			message: "#^Parameter \\#1 \\$entry of method App\\\\Services\\\\QdrantService\\:\\:upsert\\(\\) expects array\\{id\\: int\\|string, title\\: string, content\\: string, tags\\?\\: array\\<string\\>, category\\?\\: string, module\\?\\: string, priority\\?\\: string, status\\?\\: string, \\.\\.\\.\\}, array\\{title\\: string, content\\: non\\-empty\\-string, category\\: 'architecture'\\|'debugging'\\|'deployment'\\|'security'\\|'testing'\\|null, module\\: string\\|null, priority\\: 'critical'\\|'high'\\|'low'\\|'medium', confidence\\: int, source\\: string\\|null, subject\\: string\\|null, \\.\\.\\.\\} given\\.$#"
 			count: 1
 			path: app/Commands/KnowledgeAddCommand.php
 

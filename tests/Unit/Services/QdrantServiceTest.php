@@ -174,6 +174,55 @@ describe('upsert', function (): void {
         expect($this->service->upsert($entry, 'default', false))->toBeTrue();
     });
 
+    it('persists provenance fields (subject, author, source, repo) in the payload', function (): void {
+        $this->mockEmbedding->shouldReceive('generate')
+            ->with('Provenance Title Provenance content')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        mockCollectionExists($this->mockConnector);
+
+        $captured = null;
+        $this->mockConnector->shouldReceive('send')
+            ->with(Mockery::on(function ($request) use (&$captured): bool {
+                if ($request instanceof UpsertPoints) {
+                    $captured = $request;
+
+                    return true;
+                }
+
+                return false;
+            }))
+            ->once()
+            ->andReturn(createMockResponse(true));
+
+        $entry = [
+            'id' => 'prov-1',
+            'title' => 'Provenance Title',
+            'content' => 'Provenance content',
+            'author' => 'claude-code',
+            'subject' => 'lexi-agent',
+            'source' => 'https://example.test/ref',
+            'repo' => 'conduit-ui/knowledge',
+            'branch' => 'feat/native-mcp-server',
+            'commit' => 'abc123',
+            'ticket' => 'KNOW-42',
+        ];
+
+        $this->service->upsert($entry, 'default', false);
+
+        $points = (new ReflectionProperty(UpsertPoints::class, 'points'))->getValue($captured);
+        $payload = $points[0]['payload'];
+
+        expect($payload['author'])->toBe('claude-code')
+            ->and($payload['subject'])->toBe('lexi-agent')
+            ->and($payload['source'])->toBe('https://example.test/ref')
+            ->and($payload['repo'])->toBe('conduit-ui/knowledge')
+            ->and($payload['branch'])->toBe('feat/native-mcp-server')
+            ->and($payload['commit'])->toBe('abc123')
+            ->and($payload['ticket'])->toBe('KNOW-42');
+    });
+
     it('successfully upserts an entry with minimal fields', function (): void {
         $this->mockEmbedding->shouldReceive('generate')
             ->with('Minimal Title Minimal content')
