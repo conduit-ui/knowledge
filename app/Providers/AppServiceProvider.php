@@ -6,6 +6,7 @@ use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\HealthCheckInterface;
 use App\Services\DailyLogService;
 use App\Services\DeletionTracker;
+use App\Services\EmbeddingService;
 use App\Services\EnhancementQueueService;
 use App\Services\EntryMetadataService;
 use App\Services\GitContextService;
@@ -120,34 +121,34 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Runtime environment (must be first)
-        $this->app->singleton(RuntimeEnvironment::class, fn (): \App\Services\RuntimeEnvironment => new RuntimeEnvironment);
+        $this->app->singleton(RuntimeEnvironment::class, fn (): RuntimeEnvironment => new RuntimeEnvironment);
 
         // Knowledge path service
-        $this->app->singleton(KnowledgePathService::class, fn ($app): \App\Services\KnowledgePathService => new KnowledgePathService(
+        $this->app->singleton(KnowledgePathService::class, fn ($app): KnowledgePathService => new KnowledgePathService(
             $app->make(RuntimeEnvironment::class)
         ));
 
         // Embedding service
-        $this->app->singleton(EmbeddingServiceInterface::class, function (): \App\Services\StubEmbeddingService|\App\Services\EmbeddingService {
+        $this->app->singleton(EmbeddingServiceInterface::class, function (): StubEmbeddingService|EmbeddingService {
             if (config('search.embedding_provider') === 'none') {
                 return new StubEmbeddingService;
             }
 
-            return new \App\Services\EmbeddingService(
+            return new EmbeddingService(
                 config('search.qdrant.embedding_server', 'http://localhost:8001')
             );
         });
 
         // Knowledge cache service
-        $this->app->singleton(KnowledgeCacheService::class, fn (): \App\Services\KnowledgeCacheService => new KnowledgeCacheService);
+        $this->app->singleton(KnowledgeCacheService::class, fn (): KnowledgeCacheService => new KnowledgeCacheService);
 
         // Deletion tracker service
-        $this->app->singleton(DeletionTracker::class, fn ($app): \App\Services\DeletionTracker => new DeletionTracker(
+        $this->app->singleton(DeletionTracker::class, fn ($app): DeletionTracker => new DeletionTracker(
             $app->make(KnowledgePathService::class)
         ));
 
         // Write gate service
-        $this->app->singleton(WriteGateService::class, fn (): \App\Services\WriteGateService => new WriteGateService);
+        $this->app->singleton(WriteGateService::class, fn (): WriteGateService => new WriteGateService);
 
         // Project detector service
         $this->app->singleton(ProjectDetectorService::class, fn ($app): ProjectDetectorService => new ProjectDetectorService(
@@ -155,28 +156,28 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         // Qdrant vector database service
-        $this->app->singleton(QdrantService::class, fn ($app): \App\Services\QdrantService => new QdrantService(
+        $this->app->singleton(QdrantService::class, fn ($app): QdrantService => new QdrantService(
             $app->make(EmbeddingServiceInterface::class),
             (int) config('search.embedding_dimension', 1024),
-            (float) config('search.minimum_similarity', 0.7),
+            (float) config('search.minimum_similarity', 0.3),
             (int) config('search.qdrant.cache_ttl', 604800),
             (bool) config('search.qdrant.secure', false),
             cacheService: $app->make(KnowledgeCacheService::class)
         ));
 
         // Tiered search service
-        $this->app->singleton(TieredSearchService::class, fn ($app): \App\Services\TieredSearchService => new TieredSearchService(
+        $this->app->singleton(TieredSearchService::class, fn ($app): TieredSearchService => new TieredSearchService(
             $app->make(QdrantService::class),
             $app->make(EntryMetadataService::class),
         ));
 
         // Remote sync service
-        $this->app->singleton(RemoteSyncService::class, fn ($app): \App\Services\RemoteSyncService => new RemoteSyncService(
+        $this->app->singleton(RemoteSyncService::class, fn ($app): RemoteSyncService => new RemoteSyncService(
             $app->make(KnowledgePathService::class)
         ));
 
         // Daily log staging service
-        $this->app->singleton(DailyLogService::class, fn ($app): \App\Services\DailyLogService => new DailyLogService(
+        $this->app->singleton(DailyLogService::class, fn ($app): DailyLogService => new DailyLogService(
             $app->make(KnowledgePathService::class)
         ));
 
@@ -184,10 +185,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(HealthCheckInterface::class, fn (): HealthCheckService => new HealthCheckService);
 
         // Ollama service
-        $this->app->singleton(OllamaService::class, fn (): \App\Services\OllamaService => new OllamaService);
+        $this->app->singleton(OllamaService::class, fn (): OllamaService => new OllamaService);
 
         // Enhancement queue service
-        $this->app->singleton(EnhancementQueueService::class, fn ($app): \App\Services\EnhancementQueueService => new EnhancementQueueService(
+        $this->app->singleton(EnhancementQueueService::class, fn ($app): EnhancementQueueService => new EnhancementQueueService(
             $app->make(KnowledgePathService::class)
         ));
     }

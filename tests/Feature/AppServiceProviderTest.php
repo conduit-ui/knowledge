@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Contracts\EmbeddingServiceInterface;
 use App\Contracts\HealthCheckInterface;
+use App\Providers\AppServiceProvider;
 use App\Services\EmbeddingService;
 use App\Services\HealthCheckService;
 use App\Services\KnowledgePathService;
@@ -80,6 +81,25 @@ describe('AppServiceProvider', function (): void {
         expect($service)->toBeInstanceOf(QdrantService::class);
     });
 
+    it('uses config default 0.3 for minimum_similarity when no env overrides', function (): void {
+        expect(config('search.minimum_similarity'))->toBe(0.3);
+    });
+
+    it('binds QdrantService with scoreThreshold matching config minimum_similarity', function (): void {
+        $mockEmbedding = Mockery::mock(EmbeddingServiceInterface::class);
+        app()->instance(EmbeddingServiceInterface::class, $mockEmbedding);
+
+        app()->forgetInstance(QdrantService::class);
+
+        $service = app(QdrantService::class);
+
+        $reflection = new ReflectionClass($service);
+        $property = $reflection->getProperty('scoreThreshold');
+        $property->setAccessible(true);
+
+        expect($property->getValue($service))->toBe(0.3);
+    });
+
     it('registers HealthCheckService', function (): void {
         $service = app(HealthCheckInterface::class);
 
@@ -133,7 +153,7 @@ describe('AppServiceProvider user config loading', function (): void {
         app()->instance(KnowledgePathService::class, $mock);
 
         // Call boot to load user config
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.host'))->toBe('custom-host');
@@ -157,7 +177,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.host'))->toBe('secure-host');
@@ -181,7 +201,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.collection'))->toBe('my-custom-collection');
@@ -203,7 +223,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.embedding_server'))->toBe('http://custom-embeddings:9001');
@@ -229,7 +249,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.host'))->toBe('qdrant-server');
@@ -252,7 +272,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         // Config should remain unchanged
@@ -276,7 +296,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         // Config should remain unchanged
@@ -298,7 +318,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.host'))->toBe('default-host');
@@ -329,7 +349,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         // Config should remain unchanged since values are not strings
@@ -357,7 +377,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         expect(config('search.qdrant.host'))->toBe('qdrant-server');
@@ -395,7 +415,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         $criteria = config('write-gate.criteria');
@@ -432,7 +452,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         $criteria = config('write-gate.criteria');
@@ -465,7 +485,7 @@ describe('AppServiceProvider user config loading', function (): void {
 
         app()->instance(KnowledgePathService::class, $mock);
 
-        $provider = new \App\Providers\AppServiceProvider(app());
+        $provider = new AppServiceProvider(app());
         $provider->boot();
 
         $criteria = config('write-gate.criteria');
