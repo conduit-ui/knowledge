@@ -193,7 +193,7 @@ class SynthesizeCommand extends Command
             'priority' => 'medium',
             'confidence' => 85,
             'status' => 'validated',
-        ], $project);
+        ], $project, checkDuplicates: false);
 
         info("Digest created for {$today}");
 
