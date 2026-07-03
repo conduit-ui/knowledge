@@ -139,7 +139,7 @@ describe('digest', function (): void {
             ->once()
             ->with(Mockery::on(fn ($data): bool => str_contains((string) $data['title'], 'Daily Synthesis - 2026-02-03')
                 && $data['status'] === 'validated'
-                && in_array('daily-synthesis', $data['tags'])), 'default')
+                && in_array('daily-synthesis', $data['tags'])), 'default', false)
             ->andReturn(true);
 
         $this->artisan('synthesize', ['--digest' => true])
@@ -307,7 +307,7 @@ describe('project scoping', function (): void {
 
         $this->qdrantMock->shouldReceive('upsert')
             ->once()
-            ->with(Mockery::type('array'), 'homelab')
+            ->with(Mockery::type('array'), 'homelab', false)
             ->andReturn(true);
 
         $this->qdrantMock->shouldReceive('scroll')
