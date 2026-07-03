@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
 use Carbon\Carbon;
 
 beforeEach(function (): void {
     $this->qdrantMock = Mockery::mock(QdrantService::class);
     $this->app->instance(QdrantService::class, $this->qdrantMock);
+
+    $detector = Mockery::mock(ProjectDetectorService::class);
+    $detector->shouldReceive('detect')->andReturn('default');
+    $this->app->instance(ProjectDetectorService::class, $detector);
     Carbon::setTestNow(Carbon::parse('2026-02-03 10:00:00'));
 });
 
@@ -22,7 +27,7 @@ describe('dedupe', function (): void {
 
         $this->qdrantMock->shouldReceive('scroll')
             ->once()
-            ->with(['status' => 'draft'], 100)
+            ->with(['status' => 'draft'], 100, 'default')
             ->andReturn(collect([$candidate]));
 
         $this->qdrantMock->shouldReceive('search')
@@ -31,7 +36,7 @@ describe('dedupe', function (): void {
 
         $this->qdrantMock->shouldReceive('updateFields')
             ->once()
-            ->with('1', Mockery::on(fn ($fields): bool => $fields['status'] === 'deprecated'))
+            ->with('1', Mockery::on(fn ($fields): bool => $fields['status'] === 'deprecated'), 'default')
             ->andReturn(true);
 
         // Mock digest and archive operations to return empty
@@ -47,7 +52,7 @@ describe('dedupe', function (): void {
 
         $this->qdrantMock->shouldReceive('scroll')
             ->once()
-            ->with(['status' => 'draft'], 100)
+            ->with(['status' => 'draft'], 100, 'default')
             ->andReturn(collect([$candidate]));
 
         $this->qdrantMock->shouldReceive('search')
@@ -91,7 +96,7 @@ describe('dedupe', function (): void {
         $higherConfidenceMatch = createEntry('2', 'Better Entry', 80, 'validated', 0.95);
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'draft'], 100)
+            ->with(['status' => 'draft'], 100, 'default')
             ->andReturn(collect([$candidate, $duplicateCandidate]));
 
         // First iteration: finds a match and processes it
@@ -103,7 +108,7 @@ describe('dedupe', function (): void {
         // Only one merge should happen
         $this->qdrantMock->shouldReceive('updateFields')
             ->once()
-            ->with('1', Mockery::on(fn ($fields): bool => $fields['status'] === 'deprecated'))
+            ->with('1', Mockery::on(fn ($fields): bool => $fields['status'] === 'deprecated'), 'default')
             ->andReturn(true);
 
         mockEmptyDigestAndArchive($this->qdrantMock);
@@ -117,7 +122,7 @@ describe('digest', function (): void {
     it('creates a daily digest', function (): void {
         // No existing digest
         $this->qdrantMock->shouldReceive('search')
-            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'default')
             ->andReturn(collect());
 
         // Recent validated entries
@@ -127,14 +132,14 @@ describe('digest', function (): void {
         ]);
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'validated'], 50)
+            ->with(['status' => 'validated'], 50, 'default')
             ->andReturn($entries);
 
         $this->qdrantMock->shouldReceive('upsert')
             ->once()
             ->with(Mockery::on(fn ($data): bool => str_contains((string) $data['title'], 'Daily Synthesis - 2026-02-03')
                 && $data['status'] === 'validated'
-                && in_array('daily-synthesis', $data['tags'])))
+                && in_array('daily-synthesis', $data['tags'])), 'default')
             ->andReturn(true);
 
         $this->artisan('synthesize', ['--digest' => true])
@@ -145,7 +150,7 @@ describe('digest', function (): void {
         $existingDigest = createEntry('existing', 'Daily Synthesis - 2026-02-03', 85, 'validated');
 
         $this->qdrantMock->shouldReceive('search')
-            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'default')
             ->andReturn(collect([$existingDigest]));
 
         // Should NOT create new digest
@@ -171,7 +176,7 @@ describe('digest', function (): void {
     it('shows digest preview in dry-run mode', function (): void {
         // No existing digest
         $this->qdrantMock->shouldReceive('search')
-            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'default')
             ->andReturn(collect());
 
         // Recent validated entries with high confidence
@@ -180,7 +185,7 @@ describe('digest', function (): void {
         ]);
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'validated'], 50)
+            ->with(['status' => 'validated'], 50, 'default')
             ->andReturn($entries);
 
         // Should NOT upsert in dry-run mode
@@ -194,7 +199,7 @@ describe('digest', function (): void {
     it('truncates long content in digest preview', function (): void {
         // No existing digest
         $this->qdrantMock->shouldReceive('search')
-            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'default')
             ->andReturn(collect());
 
         // Entry with long content (>100 chars)
@@ -203,7 +208,7 @@ describe('digest', function (): void {
         $entryWithLongContent['content'] = $longContent;
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'validated'], 50)
+            ->with(['status' => 'validated'], 50, 'default')
             ->andReturn(collect([$entryWithLongContent]));
 
         // Should NOT upsert in dry-run mode
@@ -222,12 +227,12 @@ describe('archive-stale', function (): void {
         $staleEntry['usage_count'] = 0;
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'draft'], 200)
+            ->with(['status' => 'draft'], 200, 'default')
             ->andReturn(collect([$staleEntry]));
 
         $this->qdrantMock->shouldReceive('updateFields')
             ->once()
-            ->with('1', ['status' => 'deprecated'])
+            ->with('1', ['status' => 'deprecated'], 'default')
             ->andReturn(true);
 
         $this->artisan('synthesize', ['--archive-stale' => true])
@@ -275,10 +280,42 @@ describe('archive-stale', function (): void {
         // With 7 day threshold, this entry IS stale
         $this->qdrantMock->shouldReceive('updateFields')
             ->once()
-            ->with('1', ['status' => 'deprecated'])
+            ->with('1', ['status' => 'deprecated'], 'default')
             ->andReturn(true);
 
         $this->artisan('synthesize', ['--archive-stale' => true, '--stale-days' => '7'])
+            ->assertSuccessful();
+    });
+});
+
+describe('project scoping', function (): void {
+    it('threads the resolved project through every qdrant operation', function (): void {
+        $this->qdrantMock->shouldReceive('scroll')
+            ->once()
+            ->with(['status' => 'draft'], 100, 'homelab')
+            ->andReturn(collect());
+
+        $this->qdrantMock->shouldReceive('search')
+            ->once()
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'homelab')
+            ->andReturn(collect());
+
+        $this->qdrantMock->shouldReceive('scroll')
+            ->once()
+            ->with(['status' => 'validated'], 50, 'homelab')
+            ->andReturn(collect([createEntry('9', 'High Value Win', 90, 'validated')]));
+
+        $this->qdrantMock->shouldReceive('upsert')
+            ->once()
+            ->with(Mockery::type('array'), 'homelab')
+            ->andReturn(true);
+
+        $this->qdrantMock->shouldReceive('scroll')
+            ->once()
+            ->with(['status' => 'draft'], 200, 'homelab')
+            ->andReturn(collect());
+
+        $this->artisan('synthesize', ['--project' => 'homelab'])
             ->assertSuccessful();
     });
 });
@@ -287,21 +324,21 @@ describe('full run', function (): void {
     it('runs all operations when no flags specified', function (): void {
         // Dedupe
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'draft'], 100)
+            ->with(['status' => 'draft'], 100, 'default')
             ->andReturn(collect());
 
         // Digest
         $this->qdrantMock->shouldReceive('search')
-            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1)
+            ->with('Daily Synthesis - 2026-02-03', ['tag' => 'daily-synthesis'], 1, 'default')
             ->andReturn(collect());
 
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'validated'], 50)
+            ->with(['status' => 'validated'], 50, 'default')
             ->andReturn(collect());
 
         // Archive
         $this->qdrantMock->shouldReceive('scroll')
-            ->with(['status' => 'draft'], 200)
+            ->with(['status' => 'draft'], 200, 'default')
             ->andReturn(collect());
 
         $this->artisan('synthesize')
@@ -338,15 +375,15 @@ function mockEmptyDigestAndArchive(Mockery\MockInterface $mock): void
 {
     // Digest check
     $mock->shouldReceive('search')
-        ->with(Mockery::pattern('/Daily Synthesis/'), Mockery::any(), 1)
+        ->with(Mockery::pattern('/Daily Synthesis/'), Mockery::any(), 1, 'default')
         ->andReturn(collect());
 
     $mock->shouldReceive('scroll')
-        ->with(['status' => 'validated'], 50)
+        ->with(['status' => 'validated'], 50, 'default')
         ->andReturn(collect());
 
     // Archive stale
     $mock->shouldReceive('scroll')
-        ->with(['status' => 'draft'], 200)
+        ->with(['status' => 'draft'], 200, 'default')
         ->andReturn(collect());
 }

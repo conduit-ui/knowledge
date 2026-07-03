@@ -45,6 +45,7 @@ class SynthesizeCommand extends Command
         $digest = (bool) $this->option('digest');
         $archiveStale = (bool) $this->option('archive-stale');
         $dryRun = (bool) $this->option('dry-run');
+        $project = $this->resolveProject();
 
         // If no specific option, run all
         $runAll = ! $dedupe && ! $digest && ! $archiveStale;
@@ -57,15 +58,15 @@ class SynthesizeCommand extends Command
         ];
 
         if ($runAll || $dedupe) {
-            $stats = array_merge($stats, $this->runDedupe($qdrant, $dryRun));
+            $stats = array_merge($stats, $this->runDedupe($qdrant, $dryRun, $project));
         }
 
         if ($runAll || $digest) {
-            $stats['digest_created'] = $this->runDigest($qdrant, $dryRun);
+            $stats['digest_created'] = $this->runDigest($qdrant, $dryRun, $project);
         }
 
         if ($runAll || $archiveStale) {
-            $stats['stale_archived'] = $this->runArchiveStale($qdrant, $dryRun);
+            $stats['stale_archived'] = $this->runArchiveStale($qdrant, $dryRun, $project);
         }
 
         $this->displaySummary($stats, $dryRun);
@@ -78,7 +79,7 @@ class SynthesizeCommand extends Command
      *
      * @return array{duplicates_found: int, duplicates_merged: int}
      */
-    private function runDedupe(QdrantService $qdrant, bool $dryRun): array
+    private function runDedupe(QdrantService $qdrant, bool $dryRun, string $project): array
     {
         $similarity = (float) ($this->option('similarity') ?? self::DEDUPE_SIMILARITY_DEFAULT);
 
@@ -86,7 +87,7 @@ class SynthesizeCommand extends Command
 
         // Get all entries with low confidence (these are candidates for deduplication)
         $candidates = spin(
-            fn (): \Illuminate\Support\Collection => $qdrant->scroll(['status' => 'draft'], 100),
+            fn (): \Illuminate\Support\Collection => $qdrant->scroll(['status' => 'draft'], 100, $project),
             'Fetching draft entries...'
         );
 
@@ -106,7 +107,8 @@ class SynthesizeCommand extends Command
             $similar = $qdrant->search(
                 $candidate['title'].' '.$candidate['content'],
                 [],
-                10
+                10,
+                $project
             );
 
             // Find duplicates (high similarity, different ID, higher confidence)
@@ -123,7 +125,7 @@ class SynthesizeCommand extends Command
                     $qdrant->updateFields($id, [
                         'status' => 'deprecated',
                         'content' => $candidate['content']."\n\n[Merged into: ".$best['id'].']',
-                    ]);
+                    ], $project);
                     $duplicatesMerged++;
                 }
 
@@ -143,14 +145,14 @@ class SynthesizeCommand extends Command
     /**
      * Generate a daily digest of recent high-value entries.
      */
-    private function runDigest(QdrantService $qdrant, bool $dryRun): bool
+    private function runDigest(QdrantService $qdrant, bool $dryRun, string $project): bool
     {
         $today = Carbon::today()->format('Y-m-d');
 
         info("Generating digest for {$today}...");
 
         // Check if digest already exists for today
-        $existing = $qdrant->search("Daily Synthesis - {$today}", ['tag' => 'daily-synthesis'], 1);
+        $existing = $qdrant->search("Daily Synthesis - {$today}", ['tag' => 'daily-synthesis'], 1, $project);
 
         if ($existing->isNotEmpty() && Str::contains($existing->first()['title'], $today)) {
             warning("Digest for {$today} already exists, skipping.");
@@ -160,7 +162,7 @@ class SynthesizeCommand extends Command
 
         // Get recent validated/high-confidence entries from last 24 hours
         $recentEntries = spin(
-            fn (): \Illuminate\Support\Collection => $this->getRecentHighValueEntries($qdrant),
+            fn (): \Illuminate\Support\Collection => $this->getRecentHighValueEntries($qdrant, $project),
             'Analyzing recent entries...'
         );
 
@@ -191,7 +193,7 @@ class SynthesizeCommand extends Command
             'priority' => 'medium',
             'confidence' => 85,
             'status' => 'validated',
-        ]);
+        ], $project);
 
         info("Digest created for {$today}");
 
@@ -201,7 +203,7 @@ class SynthesizeCommand extends Command
     /**
      * Archive stale low-confidence entries.
      */
-    private function runArchiveStale(QdrantService $qdrant, bool $dryRun): int
+    private function runArchiveStale(QdrantService $qdrant, bool $dryRun, string $project): int
     {
         $staleDays = (int) ($this->option('stale-days') ?? self::STALE_DAYS_DEFAULT);
         $confidenceFloor = (int) ($this->option('confidence-floor') ?? self::CONFIDENCE_FLOOR_DEFAULT);
@@ -212,7 +214,7 @@ class SynthesizeCommand extends Command
 
         // Get draft entries
         $candidates = spin(
-            fn (): \Illuminate\Support\Collection => $qdrant->scroll(['status' => 'draft'], 200),
+            fn (): \Illuminate\Support\Collection => $qdrant->scroll(['status' => 'draft'], 200, $project),
             'Scanning for stale entries...'
         );
 
@@ -226,7 +228,7 @@ class SynthesizeCommand extends Command
 
             if ($isOld && $isLowConfidence && $isUnused) {
                 if (! $dryRun) {
-                    $qdrant->updateFields($entry['id'], ['status' => 'deprecated']);
+                    $qdrant->updateFields($entry['id'], ['status' => 'deprecated'], $project);
                 }
 
                 $archived++;
@@ -242,12 +244,12 @@ class SynthesizeCommand extends Command
      *
      * @return Collection<int, array<string, mixed>>
      */
-    private function getRecentHighValueEntries(QdrantService $qdrant): Collection
+    private function getRecentHighValueEntries(QdrantService $qdrant, string $project): Collection
     {
         $yesterday = Carbon::yesterday()->toIso8601String();
 
         // Get validated entries
-        $validated = $qdrant->scroll(['status' => 'validated'], 50);
+        $validated = $qdrant->scroll(['status' => 'validated'], 50, $project);
 
         // Filter to recent and high confidence
         return $validated->filter(function (array $entry) use ($yesterday): bool {
