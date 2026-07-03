@@ -1,7 +1,5 @@
 # Knowledge
 
-[![Sentinel Gate](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml/badge.svg)](https://github.com/conduit-ui/knowledge/actions/workflows/gate.yml)
-
 A semantic knowledge base that lives in your terminal — and talks directly to your AI tools.
 
 Knowledge captures the technical decisions, gotchas, and context you accumulate while working, then hands the right pieces back to you (or to Claude Code) via semantic vector search. It's a [Laravel Zero](https://laravel-zero.com) CLI backed entirely by [Qdrant](https://qdrant.tech) — no relational database, no schema migrations, just vectors and JSON payloads. Every entry is namespaced to a project automatically, detected from your git repository.
@@ -265,7 +263,7 @@ composer analyse        # PHPStan level 8, strict rules
 composer test           # Pest, parallel
 ```
 
-Quality gates are enforced in CI by the **Sentinel Gate** workflow: **95% coverage minimum**, **PHPStan level 8**, and Pint formatting. Keep the suite green — the gate certifies PRs before merge.
+Quality gates are enforced in CI: **95% coverage minimum**, **PHPStan level 8**, and Pint formatting. Keep the suite green — automated PR review runs via [Epic Werkflow](https://github.com/the-shit/epic-werkflow).
 
 ## Stack
 
@@ -276,11 +274,11 @@ Quality gates are enforced in CI by the **Sentinel Gate** workflow: **95% covera
 - **AI protocol** — [`laravel/mcp`](https://github.com/laravel/mcp) local server
 - **HTTP** — Saloon (used internally by the Qdrant and code-indexing services)
 - **Testing** — Pest 4
-- **CI** — GitHub Actions (Sentinel Gate)
+- **CI** — GitHub Actions
 
 ## Contributing
 
-The workflow is test-first: write a failing test, make it pass, then run `composer format` and `composer analyse` before pushing. PRs must clear the Sentinel Gate (95% coverage, PHPStan level 8, Pint) to merge.
+The workflow is test-first: write a failing test, make it pass, then run `composer format` and `composer analyse` before pushing. PRs must maintain 95% coverage, PHPStan level 8, and Pint formatting to merge.
 
 ## License
 
