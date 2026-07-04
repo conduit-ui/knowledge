@@ -192,7 +192,7 @@ class KnowledgeAddCommand extends Command
 
         // Queue for Ollama enhancement unless skipped
         if (! $skipEnhance && (bool) config('search.ollama.enabled', true)) {
-            $enhancementQueue->queue($data);
+            $enhancementQueue->queue($data, $this->resolveProject());
         }
 
         info('Knowledge entry created!');
