@@ -166,6 +166,14 @@ class QdrantService
             'superseded_reason' => $entry['superseded_reason'] ?? null,
         ];
 
+        // Enhancement fields are optional: only present once the Ollama worker
+        // has processed the entry, and must survive later re-upserts.
+        foreach (['enhanced', 'enhanced_at', 'summary', 'concepts'] as $enhancementField) {
+            if (array_key_exists($enhancementField, $entry)) {
+                $payload[$enhancementField] = $entry[$enhancementField];
+            }
+        }
+
         $point = ['id' => $entry['id'], 'payload' => $payload];
 
         if ($this->hybridEnabled && $this->sparseEmbeddingService instanceof SparseEmbeddingServiceInterface) {
@@ -661,6 +669,11 @@ class QdrantService
             'superseded_by' => $p['superseded_by'] ?? null,
             'superseded_date' => $p['superseded_date'] ?? null,
             'superseded_reason' => $p['superseded_reason'] ?? null,
+            'commit' => $p['commit'] ?? null,
+            'enhanced' => $p['enhanced'] ?? null,
+            'enhanced_at' => $p['enhanced_at'] ?? null,
+            'summary' => $p['summary'] ?? null,
+            'concepts' => $p['concepts'] ?? null,
         ];
     }
 
