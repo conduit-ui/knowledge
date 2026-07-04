@@ -199,7 +199,7 @@ it('queues entry for enhancement by default', function (): void {
 
     $this->enhancementQueue->shouldReceive('queue')
         ->once()
-        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Enhanced Entry'));
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Enhanced Entry'), 'default');
 
     $this->artisan('add', [
         'title' => 'Enhanced Entry',
