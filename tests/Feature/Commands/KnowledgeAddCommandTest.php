@@ -376,3 +376,25 @@ it('passes checkDuplicates=true by default', function (): void {
         '--content' => 'Content',
     ])->assertSuccessful();
 });
+
+it('queues enhancement under the resolved project namespace', function (): void {
+    mockProjectDetector('mesh-status');
+
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::any(), 'mesh-status', Mockery::any())
+        ->andReturn(true);
+
+    $mockQueue = Mockery::mock(\App\Services\EnhancementQueueService::class);
+    $mockQueue->shouldReceive('queue')
+        ->once()
+        ->with(Mockery::type('array'), 'mesh-status');
+    $this->app->instance(\App\Services\EnhancementQueueService::class, $mockQueue);
+
+    config(['search.ollama.enabled' => true]);
+
+    $this->artisan('add', [
+        'title' => 'Project Scoped Entry',
+        '--content' => 'Enhancement must look in the same collection the entry was stored in',
+    ])->assertSuccessful();
+});
