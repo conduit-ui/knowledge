@@ -1574,3 +1574,45 @@ describe('findByTitleAndCommit error handling', function (): void {
         expect($this->service->upsert($entry, 'default', true))->toBeTrue();
     });
 });
+
+describe('enhancement field round-trip', function (): void {
+    it('persists enhancement fields through updateFields', function (): void {
+        mockCollectionExists($this->mockQdrant, 2);
+
+        $this->mockQdrant->shouldReceive('getPoints')
+            ->once()
+            ->andReturn([
+                makeScoredPoint('enh-1', 0.0, [
+                    'title' => 'Entry',
+                    'content' => 'Body',
+                    'commit' => 'abc123',
+                ]),
+            ]);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->with(Mockery::any(), Mockery::on(function (array $points): bool {
+                $payload = $points[0]['payload'];
+
+                return ($payload['enhanced'] ?? null) === true
+                    && ($payload['enhanced_at'] ?? null) === '2026-07-03T00:00:00+00:00'
+                    && ($payload['summary'] ?? null) === 'A summary'
+                    && ($payload['concepts'] ?? null) === ['mesh', 'router']
+                    && ($payload['commit'] ?? null) === 'abc123';
+            }))
+            ->andReturn(makeUpsertResult());
+
+        $result = $this->service->updateFields('enh-1', [
+            'enhanced' => true,
+            'enhanced_at' => '2026-07-03T00:00:00+00:00',
+            'summary' => 'A summary',
+            'concepts' => ['mesh', 'router'],
+        ]);
+
+        expect($result)->toBeTrue();
+    });
+});
