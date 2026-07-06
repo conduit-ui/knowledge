@@ -611,12 +611,18 @@ class QdrantService
     private function buildFilter(array $filters): ?array
     {
         $includeSuperseded = (bool) ($filters['include_superseded'] ?? false);
-        unset($filters['include_superseded']);
+        $includeArchived = (bool) ($filters['include_archived'] ?? false);
+        unset($filters['include_superseded'], $filters['include_archived']);
 
         $must = [];
+        $mustNot = [];
 
         if (! $includeSuperseded) {
             $must[] = ['is_empty' => ['key' => 'superseded_by']];
+        }
+
+        if (! $includeArchived) {
+            $mustNot[] = ['key' => 'status', 'match' => ['value' => 'archived']];
         }
 
         foreach (['category', 'module', 'priority', 'status'] as $field) {
@@ -629,7 +635,15 @@ class QdrantService
             $must[] = ['key' => 'tags', 'match' => ['value' => $filters['tag']]];
         }
 
-        return $must === [] ? null : ['must' => $must];
+        $filter = [];
+        if ($must !== []) {
+            $filter['must'] = $must;
+        }
+        if ($mustNot !== []) {
+            $filter['must_not'] = $mustNot;
+        }
+
+        return $filter === [] ? null : $filter;
     }
 
     /**
