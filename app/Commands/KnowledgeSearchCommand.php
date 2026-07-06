@@ -25,7 +25,8 @@ class KnowledgeSearchCommand extends Command
                             {--status= : Filter by status}
                             {--limit=20 : Maximum number of results}
                             {--semantic : Use semantic search if available}
-                            {--include-superseded : Include superseded entries in results}
+                             {--include-superseded : Include superseded entries in results}
+                             {--include-archived : Include archived entries in results}
                             {--project= : Override project namespace}
                             {--global : Search across all projects}
                             {--collection= : Search a raw Qdrant collection directly (bypasses knowledge_ prefix)}';
@@ -46,6 +47,7 @@ class KnowledgeSearchCommand extends Command
         $limit = (int) $this->option('limit');
         $this->option('semantic');
         $includeSuperseded = (bool) $this->option('include-superseded');
+        $includeArchived = (bool) $this->option('include-archived');
 
         // Require at least one search parameter for entries
         if ($query === null && $tag === null && $category === null && $module === null && $priority === null && $status === null) {
@@ -65,6 +67,9 @@ class KnowledgeSearchCommand extends Command
 
         if ($includeSuperseded) {
             $filters['include_superseded'] = true;
+        }
+        if ($includeArchived) {
+            $filters['include_archived'] = true;
         }
 
         // Use project-aware search
