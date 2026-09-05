@@ -13,7 +13,6 @@ use App\Services\WriteGateService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
-use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
@@ -55,6 +54,7 @@ class KnowledgeAddCommand extends Command
 
     public function handle(GitContextService $gitService, QdrantService $qdrant, WriteGateService $writeGate, EnhancementQueueService $enhancementQueue): int
     {
+
         /** @var string $title */
         $title = (string) $this->argument('title');
         /** @var string|null $content */
@@ -94,35 +94,34 @@ class KnowledgeAddCommand extends Command
 
         // Validate required fields
         if ($content === null || $content === '') {
-            error('The content field is required.');
+            $this->writeStderr('The content field is required.');
 
             return self::FAILURE;
         }
 
         // Validate confidence
         if (! is_numeric($confidence) || $confidence < 0 || $confidence > 100) {
-            error('The confidence must be between 0 and 100.');
+            $this->writeStderr('The confidence must be between 0 and 100.');
 
             return self::FAILURE;
         }
 
-        // Validate category
+        // Validate category - unknown category is not a failure, just warn
         if ($category !== null && ! in_array($category, self::VALID_CATEGORIES, true)) {
-            error('Invalid category. Valid: '.implode(', ', self::VALID_CATEGORIES));
-
-            return self::FAILURE;
+            $this->writeStderr('Unknown category "'.$category.'". Ignoring category field.');
+            $category = null;
         }
 
         // Validate priority
         if (! in_array($priority, self::VALID_PRIORITIES, true)) {
-            error('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES));
+            $this->writeStderr('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES));
 
             return self::FAILURE;
         }
 
         // Validate status
         if (! in_array($status, self::VALID_STATUSES, true)) {
-            error('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES));
+            $this->writeStderr('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES));
 
             return self::FAILURE;
         }
@@ -163,7 +162,7 @@ class KnowledgeAddCommand extends Command
         if (! $force) {
             $gateResult = $writeGate->evaluate($data);
             if (! $gateResult['passed']) {
-                error('Write gate rejected entry: '.$gateResult['reason']);
+                $this->writeStderr('Write gate rejected entry: '.$gateResult['reason']);
 
                 return self::FAILURE;
             }
@@ -182,7 +181,7 @@ class KnowledgeAddCommand extends Command
             );
 
             if (! $success) {
-                error('Failed to create knowledge entry');
+                $this->writeStderr('Failed to create knowledge entry');
 
                 return self::FAILURE;
             }
@@ -203,7 +202,7 @@ class KnowledgeAddCommand extends Command
     }
 
     /**
-     * Handle a duplicate entry by offering to supersede or aborting.
+     * Handle a duplicate entry - returns existing id as success (non-interactive).
      *
      * @param  array<string, mixed>  $data
      */
@@ -216,9 +215,11 @@ class KnowledgeAddCommand extends Command
         $existingId = $e->existingId;
 
         if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
-            error("Duplicate content detected: This exact content already exists as entry '{$existingId}'");
+            $this->writeStderr("Duplicate content detected: This exact content already exists as entry '{$existingId}'");
 
-            return self::FAILURE;
+            info('Knowledge entry Already exists: '.$existingId);
+
+            return self::SUCCESS;
         }
 
         $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
@@ -235,9 +236,11 @@ class KnowledgeAddCommand extends Command
         );
 
         if (! $shouldSupersede) {
-            error('Entry not created. Existing knowledge preserved.');
+            $this->writeStderr('Entry not created. Existing knowledge preserved.');
 
-            return self::FAILURE;
+            info('Knowledge entry Already exists: '.$existingId);
+
+            return self::SUCCESS;
         }
 
         // Force-create the new entry (skip duplicate check)
@@ -247,7 +250,7 @@ class KnowledgeAddCommand extends Command
         );
 
         if (! $success) {
-            error('Failed to create knowledge entry');
+            $this->writeStderr('Failed to create knowledge entry');
 
             return self::FAILURE;
         }
@@ -300,5 +303,13 @@ class KnowledgeAddCommand extends Command
                 ['Tags', $tags !== null ? implode(', ', $tags) : 'N/A'],
             ]
         );
+    }
+
+    /**
+     * Write to stderr, respecting --quiet flag.
+     */
+    private function writeStderr(string $message): void
+    {
+        $this->error($message);
     }
 }

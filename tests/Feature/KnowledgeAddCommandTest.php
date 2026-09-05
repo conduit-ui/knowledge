@@ -143,14 +143,17 @@ it('creates entry with tags', function (): void {
     ])->assertSuccessful();
 });
 
-it('validates category is valid', function (): void {
-    $this->qdrantService->shouldNotReceive('upsert');
+it('allows unknown category with warning', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
 
     $this->artisan('add', [
-        'title' => 'Invalid Category',
+        'title' => 'Unknown Category',
         '--content' => 'Test',
         '--category' => 'invalid-category',
-    ])->assertFailed();
+    ])->assertSuccessful();
 });
 
 it('validates priority is valid', function (): void {
@@ -351,7 +354,7 @@ it('fails on exact hash duplicate', function (): void {
     $this->artisan('add', [
         'title' => 'Duplicate Entry',
         '--content' => 'Duplicate content',
-    ])->assertFailed();
+    ])->assertSuccessful()->assertExitCode(0);
 });
 
 it('prompts to supersede when similarity duplicate detected and user confirms', function (): void {
@@ -396,7 +399,7 @@ it('aborts when user declines supersession', function (): void {
         '--confidence' => 80,
     ])
         ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'no')
-        ->assertFailed();
+        ->assertSuccessful();
 });
 
 it('warns about low confidence when superseding', function (): void {

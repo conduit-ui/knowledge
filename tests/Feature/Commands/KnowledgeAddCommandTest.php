@@ -92,14 +92,16 @@ it('validates priority must be valid enum value', function (): void {
     ])->assertFailed();
 });
 
-it('validates category must be valid enum value', function (): void {
-    $this->mockQdrant->shouldNotReceive('upsert');
+it('allows unknown category with warning', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
 
     $this->artisan('add', [
-        'title' => 'Test Entry',
-        '--content' => 'Content',
+        'title' => 'Unknown Category',
+        '--content' => 'Test',
         '--category' => 'invalid-category',
-    ])->assertFailed();
+    ])->assertSuccessful();
 });
 
 it('validates status must be valid enum value', function (): void {
@@ -326,7 +328,7 @@ it('generates unique UUID for entry ID', function (): void {
     expect(strlen((string) $capturedId))->toBeGreaterThan(0);
 });
 
-it('fails when duplicate hash is detected', function (): void {
+it('succeeds when duplicate hash is detected', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
         ->andThrow(DuplicateEntryException::hashMatch('existing-id-123', 'abc123'));
@@ -334,11 +336,11 @@ it('fails when duplicate hash is detected', function (): void {
     $this->artisan('add', [
         'title' => 'Duplicate Entry',
         '--content' => 'Same content as existing',
-    ])->assertFailed()
+    ])->assertSuccessful()
         ->expectsOutputToContain('Duplicate content detected');
 });
 
-it('fails when similar entry is detected and user declines', function (): void {
+it('succeeds when similar entry is detected and user declines', function (): void {
     $this->mockQdrant->shouldReceive('upsert')
         ->once()
         ->andThrow(DuplicateEntryException::similarityMatch('similar-id-456', 0.97));
@@ -348,7 +350,7 @@ it('fails when similar entry is detected and user declines', function (): void {
         '--content' => 'Very similar content',
     ])
         ->expectsConfirmation("Supersede existing entry 'similar-id-456' with this new entry?", 'no')
-        ->assertFailed()
+        ->assertSuccessful()
         ->expectsOutputToContain('duplicate detected');
 });
 
