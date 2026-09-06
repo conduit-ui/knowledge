@@ -93,13 +93,16 @@ it('validates priority must be valid enum value', function (): void {
 });
 
 it('validates category must be valid enum value', function (): void {
-    $this->mockQdrant->shouldNotReceive('upsert');
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::on(fn ($data): bool => $data['category'] === null), Mockery::any(), Mockery::any())
+        ->andReturn(true);
 
     $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--category' => 'invalid-category',
-    ])->assertFailed();
+    ])->assertSuccessful();
 });
 
 it('validates status must be valid enum value', function (): void {
@@ -396,5 +399,23 @@ it('queues enhancement under the resolved project namespace', function (): void 
     $this->artisan('add', [
         'title' => 'Project Scoped Entry',
         '--content' => 'Enhancement must look in the same collection the entry was stored in',
+    ])->assertSuccessful();
+});
+
+it('does not queue enhancement when --skip-enhance flag is used', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
+
+    $mockQueue = Mockery::mock(\App\Services\EnhancementQueueService::class);
+    $mockQueue->shouldNotReceive('queue');
+    $this->app->instance(\App\Services\EnhancementQueueService::class, $mockQueue);
+
+    config(['search.ollama.enabled' => true]);
+
+    $this->artisan('add', [
+        'title' => 'Skip Enhancement Entry',
+        '--content' => 'Content',
+        '--skip-enhance' => true,
     ])->assertSuccessful();
 });
