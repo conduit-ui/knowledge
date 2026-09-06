@@ -93,16 +93,13 @@ it('validates priority must be valid enum value', function (): void {
 });
 
 it('validates category must be valid enum value', function (): void {
-    $this->mockQdrant->shouldReceive('upsert')
-        ->once()
-        ->with(Mockery::on(fn ($data): bool => $data['category'] === null), Mockery::any(), Mockery::any())
-        ->andReturn(true);
+    $this->mockQdrant->shouldNotReceive('upsert');
 
     $this->artisan('add', [
         'title' => 'Test Entry',
         '--content' => 'Content',
         '--category' => 'invalid-category',
-    ])->assertSuccessful();
+    ])->assertFailed();
 });
 
 it('validates status must be valid enum value', function (): void {

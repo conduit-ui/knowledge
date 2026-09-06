@@ -13,6 +13,7 @@ use App\Services\WriteGateService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
+use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
@@ -41,7 +42,6 @@ class KnowledgeAddCommand extends Command
                             {--no-git : Skip automatic git context detection}
                             {--force : Skip write gate and duplicate detection}
                             {--skip-enhance : Skip queueing for Ollama enhancement}
-                            {--quiet : Suppress stderr messages}
                             {--project= : Override project namespace}
                             {--global : Search across all projects}';
 
@@ -91,39 +91,40 @@ class KnowledgeAddCommand extends Command
         $force = (bool) $this->option('force');
         /** @var bool $skipEnhance */
         $skipEnhance = (bool) $this->option('skip-enhance');
-        /** @var bool $quiet */
-        $quiet = (bool) $this->option('quiet');
+        // Built-in -q/--quiet; do not declare {--quiet} (Symfony collision).
+        $quiet = $this->output->isQuiet();
 
         // Validate required fields
         if ($content === null || $content === '') {
-            $this->writeToStderr('The content field is required.', $quiet);
+            $this->emitError('The content field is required.', $quiet);
 
             return self::FAILURE;
         }
 
         // Validate confidence
         if (! is_numeric($confidence) || $confidence < 0 || $confidence > 100) {
-            $this->writeToStderr('The confidence must be between 0 and 100.', $quiet);
+            $this->emitError('The confidence must be between 0 and 100.', $quiet);
 
             return self::FAILURE;
         }
 
-        // Validate category - unknown category is not an error, just warn
+        // Validate category
         if ($category !== null && ! in_array($category, self::VALID_CATEGORIES, true)) {
-            $this->writeToStderr('Unknown category "'.$category.'". Ignoring category.', $quiet);
-            $category = null;
+            $this->emitError('Invalid category. Valid: '.implode(', ', self::VALID_CATEGORIES), $quiet);
+
+            return self::FAILURE;
         }
 
         // Validate priority
         if (! in_array($priority, self::VALID_PRIORITIES, true)) {
-            $this->writeToStderr('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES), $quiet);
+            $this->emitError('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES), $quiet);
 
             return self::FAILURE;
         }
 
         // Validate status
         if (! in_array($status, self::VALID_STATUSES, true)) {
-            $this->writeToStderr('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES), $quiet);
+            $this->emitError('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES), $quiet);
 
             return self::FAILURE;
         }
@@ -164,7 +165,7 @@ class KnowledgeAddCommand extends Command
         if (! $force) {
             $gateResult = $writeGate->evaluate($data);
             if (! $gateResult['passed']) {
-                $this->writeToStderr('Write gate rejected entry: '.$gateResult['reason'], $quiet);
+                $this->emitError('Write gate rejected entry: '.$gateResult['reason'], $quiet);
 
                 return self::FAILURE;
             }
@@ -183,12 +184,12 @@ class KnowledgeAddCommand extends Command
             );
 
             if (! $success) {
-                $this->writeToStderr('Failed to create knowledge entry', $quiet);
+                $this->emitError('Failed to create knowledge entry', $quiet);
 
                 return self::FAILURE;
             }
         } catch (DuplicateEntryException $e) {
-            return $this->handleDuplicate($e, $data, (int) $confidence, $quiet);
+            return $this->handleDuplicate($e, $data, $qdrant, (int) $confidence, $quiet);
         }
 
         // Queue for Ollama enhancement unless skipped
@@ -204,30 +205,31 @@ class KnowledgeAddCommand extends Command
     }
 
     /**
-     * Handle a duplicate entry.
+     * Handle a duplicate entry by offering to supersede or aborting.
      *
      * @param  array<string, mixed>  $data
      */
     private function handleDuplicate(
         DuplicateEntryException $e,
         array $data,
+        QdrantService $qdrant,
         int $confidence,
-        bool $quiet
+        bool $quiet = false
     ): int {
         $existingId = $e->existingId;
 
         if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
-            $this->writeToStderr("Duplicate content detected: This exact content already exists as entry '{$existingId}'", $quiet);
+            $this->emitError("Duplicate content detected: This exact content already exists as entry '{$existingId}'", $quiet);
 
-            return self::SUCCESS;
+            return self::FAILURE;
         }
 
         $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
-        $this->writeToStderr("Potential duplicate detected: {$percentage}% similar to existing entry '{$existingId}'", $quiet);
+        $this->emitWarning("Potential duplicate detected: {$percentage}% similar to existing entry '{$existingId}'", $quiet);
 
         // Require confirmation when confidence is low (below 70)
         if ($confidence < 70) {
-            $this->writeToStderr("Low confidence ({$confidence}%) - please confirm this supersedes the existing entry.", $quiet);
+            $this->emitWarning("Low confidence ({$confidence}%) - please confirm this supersedes the existing entry.", $quiet);
         }
 
         $shouldSupersede = $this->confirm(
@@ -236,7 +238,7 @@ class KnowledgeAddCommand extends Command
         );
 
         if (! $shouldSupersede) {
-            $this->writeToStderr('Entry not created. Existing knowledge preserved.', $quiet);
+            $this->emitError('Entry not created. Existing knowledge preserved.', $quiet);
 
             return self::FAILURE;
         }
@@ -248,7 +250,7 @@ class KnowledgeAddCommand extends Command
         );
 
         if (! $success) {
-            $this->writeToStderr('Failed to create knowledge entry', $quiet);
+            $this->emitError('Failed to create knowledge entry', $quiet);
 
             return self::FAILURE;
         }
@@ -258,7 +260,7 @@ class KnowledgeAddCommand extends Command
         $marked = $qdrant->markSuperseded($existingId, $data['id'], $reason);
 
         if (! $marked) {
-            $this->writeToStderr('New entry created but failed to mark old entry as superseded.', $quiet);
+            $this->emitWarning('New entry created but failed to mark old entry as superseded.', $quiet);
         }
 
         info('Knowledge entry created! Previous entry marked as superseded.');
@@ -277,18 +279,32 @@ class KnowledgeAddCommand extends Command
         return self::SUCCESS;
     }
 
-    private function writeToStderr(string $message, bool $quiet): void
-    {
-        if (! $quiet) {
-            fwrite(STDERR, $message.PHP_EOL);
-        }
-    }
-
     /**
      * Display the entry summary table.
      *
      * @param  array<string>|null  $tags
      */
+
+    private function emitError(string $message, bool $quiet = false): void
+    {
+        if ($quiet) {
+            return;
+        }
+
+        error($message);
+        fwrite(STDERR, $message.PHP_EOL);
+    }
+
+    private function emitWarning(string $message, bool $quiet = false): void
+    {
+        if ($quiet) {
+            return;
+        }
+
+        warning($message);
+        fwrite(STDERR, $message.PHP_EOL);
+    }
+
     private function displayEntryTable(
         string $id,
         string $title,
