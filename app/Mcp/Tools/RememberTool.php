@@ -78,12 +78,14 @@ class RememberTool extends Tool
         try {
             $this->qdrant->upsert($entry, $project, true);
         } catch (DuplicateEntryException $e) {
-            return Response::text(json_encode([
+            $response = json_encode([
                 'status' => 'duplicate_detected',
                 'existing_id' => $e->existingId,
                 'similarity' => $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : null,
                 'message' => "Similar entry already exists (ID: {$e->existingId}). Use the `correct` tool to update it, or add more distinct content.",
-            ], JSON_THROW_ON_ERROR));
+            ], JSON_THROW_ON_ERROR);
+
+            return Response::text($response);
         }
 
         // Queue for Ollama auto-tagging
@@ -111,8 +113,8 @@ class RememberTool extends Tool
                 ->description('Detailed description of the discovery or insight (10-10000 chars).')
                 ->required(),
             'category' => $schema->string()
-                ->enum(['architecture', 'patterns', 'decisions', 'gotchas', 'debugging', 'testing', 'deployment', 'security'])
-                ->description('Knowledge category. Omit to let auto-tagging classify it.'),
+                ->description('Knowledge category. Omit to let auto-tagging classify it.')
+                ->nullable(),
             'tags' => $schema->array()
                 ->description('Tags for categorization (max 10). e.g., ["laravel", "pest", "testing"]'),
             'priority' => $schema->string()

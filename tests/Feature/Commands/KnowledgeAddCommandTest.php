@@ -398,3 +398,21 @@ it('queues enhancement under the resolved project namespace', function (): void 
         '--content' => 'Enhancement must look in the same collection the entry was stored in',
     ])->assertSuccessful();
 });
+
+it('does not queue enhancement when --skip-enhance flag is used', function (): void {
+    $this->mockQdrant->shouldReceive('upsert')
+        ->once()
+        ->andReturn(true);
+
+    $mockQueue = Mockery::mock(\App\Services\EnhancementQueueService::class);
+    $mockQueue->shouldNotReceive('queue');
+    $this->app->instance(\App\Services\EnhancementQueueService::class, $mockQueue);
+
+    config(['search.ollama.enabled' => true]);
+
+    $this->artisan('add', [
+        'title' => 'Skip Enhancement Entry',
+        '--content' => 'Content',
+        '--skip-enhance' => true,
+    ])->assertSuccessful();
+});
