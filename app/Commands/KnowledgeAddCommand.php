@@ -13,11 +13,9 @@ use App\Services\WriteGateService;
 use Illuminate\Support\Str;
 use LaravelZero\Framework\Commands\Command;
 
-use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\table;
-use function Laravel\Prompts\warning;
 
 class KnowledgeAddCommand extends Command
 {
@@ -40,10 +38,10 @@ class KnowledgeAddCommand extends Command
                             {--branch= : Git branch name}
                             {--commit= : Git commit hash}
                             {--no-git : Skip automatic git context detection}
-                            {--force : Skip write gate and duplicate detection}
-                            {--skip-enhance : Skip queueing for Ollama enhancement}
-                            {--project= : Override project namespace}
-                            {--global : Search across all projects}';
+                             {--force : Skip write gate and duplicate detection}
+                             {--skip-enhance : Skip queueing for Ollama enhancement}
+                             {--project= : Override project namespace}
+                             {--global : Search across all projects}';
 
     protected $description = 'Add a new knowledge entry';
 
@@ -94,35 +92,33 @@ class KnowledgeAddCommand extends Command
 
         // Validate required fields
         if ($content === null || $content === '') {
-            error('The content field is required.');
+            $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'The content field is required.'."</n>");
 
             return self::FAILURE;
         }
 
         // Validate confidence
         if (! is_numeric($confidence) || $confidence < 0 || $confidence > 100) {
-            error('The confidence must be between 0 and 100.');
+            $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'The confidence must be between 0 and 100.'."</n>");
 
             return self::FAILURE;
         }
 
-        // Validate category
+        // Category is optional; invalid values are accepted as null per spec
         if ($category !== null && ! in_array($category, self::VALID_CATEGORIES, true)) {
-            error('Invalid category. Valid: '.implode(', ', self::VALID_CATEGORIES));
-
-            return self::FAILURE;
+            $category = null;
         }
 
         // Validate priority
         if (! in_array($priority, self::VALID_PRIORITIES, true)) {
-            error('Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES));
+            $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'Invalid priority. Valid: '.implode(', ', self::VALID_PRIORITIES)."</n>");
 
             return self::FAILURE;
         }
 
         // Validate status
         if (! in_array($status, self::VALID_STATUSES, true)) {
-            error('Invalid status. Valid: '.implode(', ', self::VALID_STATUSES));
+            $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'Invalid status. Valid: '.implode(', ', self::VALID_STATUSES)."</n>");
 
             return self::FAILURE;
         }
@@ -163,7 +159,7 @@ class KnowledgeAddCommand extends Command
         if (! $force) {
             $gateResult = $writeGate->evaluate($data);
             if (! $gateResult['passed']) {
-                error('Write gate rejected entry: '.$gateResult['reason']);
+                $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'Write gate rejected entry: '.$gateResult['reason']."</n>");
 
                 return self::FAILURE;
             }
@@ -182,7 +178,7 @@ class KnowledgeAddCommand extends Command
             );
 
             if (! $success) {
-                error('Failed to create knowledge entry');
+                $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : 'Failed to create knowledge entry'."</n>");
 
                 return self::FAILURE;
             }
@@ -203,7 +199,15 @@ class KnowledgeAddCommand extends Command
     }
 
     /**
-     * Handle a duplicate entry by offering to supersede or aborting.
+     * Determine if stderr should be silenced (--quiet flag).
+     */
+    private function shouldSilence(): bool
+    {
+        return $this->option('quiet') || $this->output->isQuiet();
+    }
+
+    /**
+     * Handle a duplicate entry.
      *
      * @param  array<string, mixed>  $data
      */
@@ -215,63 +219,15 @@ class KnowledgeAddCommand extends Command
     ): int {
         $existingId = $e->existingId;
 
-        if ($e->duplicateType === DuplicateEntryException::TYPE_HASH) {
-            error("Duplicate content detected: This exact content already exists as entry '{$existingId}'");
+        $type = match ($e->duplicateType) {
+            DuplicateEntryException::TYPE_HASH => 'exact hash',
+            DuplicateEntryException::TYPE_SIMILARITY => 'similarity',
+            default => 'duplicate',
+        };
 
-            return self::FAILURE;
-        }
+        $this->output->write($existingId);
 
-        $percentage = $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : 95;
-        warning("Potential duplicate detected: {$percentage}% similar to existing entry '{$existingId}'");
-
-        // Require confirmation when confidence is low (below 70)
-        if ($confidence < 70) {
-            warning("Low confidence ({$confidence}%) - please confirm this supersedes the existing entry.");
-        }
-
-        $shouldSupersede = $this->confirm(
-            "Supersede existing entry '{$existingId}' with this new entry?",
-            $confidence >= 70
-        );
-
-        if (! $shouldSupersede) {
-            error('Entry not created. Existing knowledge preserved.');
-
-            return self::FAILURE;
-        }
-
-        // Force-create the new entry (skip duplicate check)
-        $success = spin(
-            fn (): bool => $qdrant->upsert($data, 'default', false),
-            'Storing new knowledge entry...'
-        );
-
-        if (! $success) {
-            error('Failed to create knowledge entry');
-
-            return self::FAILURE;
-        }
-
-        // Mark the old entry as superseded
-        $reason = "Superseded by newer entry with {$percentage}% similarity";
-        $marked = $qdrant->markSuperseded($existingId, $data['id'], $reason);
-
-        if (! $marked) {
-            warning('New entry created but failed to mark old entry as superseded.');
-        }
-
-        info('Knowledge entry created! Previous entry marked as superseded.');
-
-        /** @var string $id */
-        $id = $data['id'];
-        /** @var string $title */
-        $title = $data['title'];
-        /** @var string|null $category */
-        $category = $data['category'] ?? null;
-        /** @var string $priority */
-        $priority = $data['priority'] ?? 'medium';
-
-        $this->displayEntryTable($id, $title, $category, $priority, $confidence, $data['tags'] ?? null);
+        $this->output->getErrorOutput()->write($this->shouldSilence() ? '' : "notice: already exists\n");
 
         return self::SUCCESS;
     }

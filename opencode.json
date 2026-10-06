@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen-coder-32k:latest",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "qwen-coder-32k:latest": {
+          "name": "Qwen coder 32k ctx",
+          "tools": true,
+          "limit": {
+            "context": 32768,
+            "output": 8192
+          }
+        }
+      }
+    }
+  }
+}

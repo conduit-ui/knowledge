@@ -106,30 +106,36 @@ describe('remember tool', function (): void {
 
         $response = $this->tool->handle($request);
 
-        expect($response->isError())->toBeTrue();
-    });
-
-    it('handles duplicate detection gracefully', function (): void {
-        $this->projectDetector->shouldReceive('detect')->once()->andReturn('default');
-        $this->gitContext->shouldReceive('isGitRepository')->once()->andReturn(false);
-        $this->writeGate->shouldReceive('evaluate')->once()->andReturn(['passed' => true]);
-        $this->qdrant->shouldReceive('upsert')->once()->andThrow(
-            DuplicateEntryException::similarityMatch('existing-id', 0.98)
-        );
-
-        $request = new Request([
-            'title' => 'Duplicate Entry',
-            'content' => 'This content already exists in the knowledge base.',
-        ]);
-
-        $response = $this->tool->handle($request);
-
         expect($response->isError())->toBeFalse();
 
         $data = json_decode((string) $response->content(), true);
-        expect($data['status'])->toBe('duplicate_detected')
-            ->and($data['existing_id'])->toBe('existing-id');
+        expect($data['status'])->toBe('rejected')
+            ->and($data['reason'])->toBe('Content too generic');
     });
+
+it('handles duplicate detection gracefully', function (): void {
+    $this->projectDetector->shouldReceive('detect')->once()->andReturn('default');
+    $this->gitContext->shouldReceive('isGitRepository')->once()->andReturn(false);
+    $this->writeGate->shouldReceive('evaluate')->once()->andReturn(['passed' => true]);
+    $this->qdrant->shouldReceive('upsert')->once()->andThrow(
+        DuplicateEntryException::similarityMatch('existing-id', 0.98, 'similar content')
+    );
+
+    $request = new Request([
+        'title' => 'Duplicate Entry',
+        'content' => 'This content already exists in the knowledge base.',
+    ]);
+
+    $response = $this->tool->handle($request);
+
+    expect($response->isError())->toBeFalse();
+
+    $data = json_decode((string) $response->content(), true);
+        expect($data['status'])->toBe('duplicate_detected')
+            ->and($data['existing_id'])->toBe('existing-id')
+            ->and($data['duplicate_type'])->toBe('similarity')
+            ->and($data['similarity_score'])->toBe(98);
+});
 
     it('uses explicit project when provided', function (): void {
         $this->projectDetector->shouldNotReceive('detect');

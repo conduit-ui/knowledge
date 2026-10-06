@@ -7,6 +7,8 @@ use App\Services\EnhancementQueueService;
 use App\Services\GitContextService;
 use App\Services\QdrantService;
 use App\Services\WriteGateService;
+use Illuminate\Console\OutputStyle;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 beforeEach(function (): void {
     $this->gitService = mock(GitContextService::class);
@@ -26,6 +28,9 @@ beforeEach(function (): void {
     $this->enhancementQueue->shouldReceive('queue')->zeroOrMoreTimes();
 
     config(['search.ollama.enabled' => true]);
+});
+
+afterEach(function (): void {
 });
 
 it('creates a knowledge entry with required fields', function (): void {
@@ -143,14 +148,21 @@ it('creates entry with tags', function (): void {
     ])->assertSuccessful();
 });
 
-it('validates category is valid', function (): void {
-    $this->qdrantService->shouldNotReceive('upsert');
+it('accepts unknown category and stores null', function (): void {
+    $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
+
+    $this->qdrantService->shouldReceive('upsert')
+        ->once()
+        ->with(Mockery::on(fn ($data): bool => $data['title'] === 'Test Entry'
+            && $data['content'] === 'Test content'
+            && $data['category'] === null), Mockery::any(), Mockery::any())
+        ->andReturn(true);
 
     $this->artisan('add', [
-        'title' => 'Invalid Category',
-        '--content' => 'Test',
+        'title' => 'Test Entry',
+        '--content' => 'Test content',
         '--category' => 'invalid-category',
-    ])->assertFailed();
+    ])->assertSuccessful();
 });
 
 it('validates priority is valid', function (): void {
@@ -341,7 +353,7 @@ describe('write gate integration', function (): void {
     });
 });
 
-it('fails on exact hash duplicate', function (): void {
+it('returns existing id on exact hash duplicate (non-TTY)', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
@@ -351,79 +363,47 @@ it('fails on exact hash duplicate', function (): void {
     $this->artisan('add', [
         'title' => 'Duplicate Entry',
         '--content' => 'Duplicate content',
-    ])->assertFailed();
+    ])->expectsOutputToContain('existing-id')->assertSuccessful();
 });
 
-it('prompts to supersede when similarity duplicate detected and user confirms', function (): void {
+it('returns existing id on similarity match (non-TTY)', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::any(), Mockery::any(), true)
-        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.97));
-
-    // User confirms supersession
-    $this->qdrantService->shouldReceive('upsert')
-        ->once()
-        ->with(Mockery::any(), 'default', false)
-        ->andReturn(true);
-
-    $this->qdrantService->shouldReceive('markSuperseded')
-        ->once()
-        ->with('existing-id', Mockery::type('string'), Mockery::type('string'))
-        ->andReturn(true);
+        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.92, 'similar content'));
 
     $this->artisan('add', [
-        'title' => 'Updated Entry',
-        '--content' => 'Updated content',
-        '--confidence' => 80,
-    ])
-        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
-        ->assertSuccessful();
+        'title' => 'Similar Entry',
+        '--content' => 'New content',
+    ])->expectsOutputToContain('existing-id')->assertSuccessful();
 });
 
-it('aborts when user declines supersession', function (): void {
+it('returns existing id on duplicate with non-zero exit on stderr when not quiet', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::any(), Mockery::any(), true)
-        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.96));
+        ->andThrow(DuplicateEntryException::hashMatch('existing-id-123', 'hash123'));
 
     $this->artisan('add', [
-        'title' => 'Updated Entry',
-        '--content' => 'Updated content',
-        '--confidence' => 80,
-    ])
-        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'no')
-        ->assertFailed();
+        'title' => 'Duplicate Entry',
+        '--content' => 'Duplicate content',
+    ])->expectsOutputToContain('existing-id-123')->assertSuccessful();
 });
 
-it('warns about low confidence when superseding', function (): void {
+it('returns existing id with quiet flag (stderr silenced)', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
     $this->qdrantService->shouldReceive('upsert')
         ->once()
-        ->with(Mockery::any(), Mockery::any(), true)
-        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.96));
-
-    $this->qdrantService->shouldReceive('upsert')
-        ->once()
-        ->with(Mockery::any(), 'default', false)
-        ->andReturn(true);
-
-    $this->qdrantService->shouldReceive('markSuperseded')
-        ->once()
-        ->andReturn(true);
+        ->andThrow(DuplicateEntryException::similarityMatch('existing-id-456', 0.88, 'similar'));
 
     $this->artisan('add', [
-        'title' => 'Low Confidence Entry',
-        '--content' => 'Content',
-        '--confidence' => 30,
-    ])
-        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
-        ->expectsOutputToContain('Knowledge entry created')
-        ->assertSuccessful();
+        'title' => 'Duplicate Quiet',
+        '--content' => 'Duplicate content',
+        '--quiet' => true,
+    ])->assertSuccessful();
 });
 
 it('skips duplicate detection with --force flag', function (): void {
@@ -441,60 +421,41 @@ it('skips duplicate detection with --force flag', function (): void {
     ])->assertSuccessful();
 });
 
-it('fails when re-upsert during supersession returns false', function (): void {
+it('handles WriteGate rejection with non-zero exit', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
-    // First upsert throws similarity match
-    $this->qdrantService->shouldReceive('upsert')
+    $this->writeGateService->shouldReceive('evaluate')
         ->once()
-        ->with(Mockery::any(), Mockery::any(), true)
-        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.95));
+        ->andReturn([
+            'passed' => false,
+            'matched' => [],
+            'reason' => 'Quality check failed',
+        ]);
 
-    // User confirms, but re-upsert (without duplicate check) returns false
-    $this->qdrantService->shouldReceive('upsert')
-        ->once()
-        ->with(Mockery::any(), 'default', false)
-        ->andReturn(false);
-
-    $this->qdrantService->shouldNotReceive('markSuperseded');
+    $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
-        'title' => 'Supersede Fail Entry',
-        '--content' => 'Content that fails on re-upsert',
-        '--confidence' => 80,
-    ])
-        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
-        ->assertFailed()
-        ->expectsOutputToContain('Failed to create knowledge entry');
+        'title' => 'Rejected Entry',
+        '--content' => 'Rejected content',
+    ])->assertFailed();
 });
 
-it('succeeds with warning when markSuperseded returns false', function (): void {
+it('handles WriteGate rejection with quiet flag (stderr silenced)', function (): void {
     $this->gitService->shouldReceive('isGitRepository')->andReturn(false);
 
-    // First upsert throws similarity match
-    $this->qdrantService->shouldReceive('upsert')
+    $this->writeGateService->shouldReceive('evaluate')
         ->once()
-        ->with(Mockery::any(), Mockery::any(), true)
-        ->andThrow(DuplicateEntryException::similarityMatch('existing-id', 0.92));
+        ->andReturn([
+            'passed' => false,
+            'matched' => [],
+            'reason' => 'Quality check failed',
+        ]);
 
-    // Re-upsert succeeds
-    $this->qdrantService->shouldReceive('upsert')
-        ->once()
-        ->with(Mockery::any(), 'default', false)
-        ->andReturn(true);
-
-    // markSuperseded fails
-    $this->qdrantService->shouldReceive('markSuperseded')
-        ->once()
-        ->with('existing-id', Mockery::type('string'), Mockery::type('string'))
-        ->andReturn(false);
+    $this->qdrantService->shouldNotReceive('upsert');
 
     $this->artisan('add', [
-        'title' => 'Supersede Mark Fail',
-        '--content' => 'Content where mark fails',
-        '--confidence' => 80,
-    ])
-        ->expectsConfirmation("Supersede existing entry 'existing-id' with this new entry?", 'yes')
-        ->expectsOutputToContain('failed to mark old entry as superseded')
-        ->assertSuccessful();
+        'title' => 'Quiet Rejected',
+        '--content' => 'Rejected content',
+        '--quiet' => true,
+    ])->assertFailed();
 });

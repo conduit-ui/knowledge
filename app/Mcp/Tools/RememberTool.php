@@ -71,19 +71,31 @@ class RememberTool extends Tool
         // Write gate validation
         $gateResult = $this->writeGate->evaluate($entry);
         if (! $gateResult['passed']) {
-            return Response::error('Write gate rejected: '.$gateResult['reason'].'. Improve the entry quality and try again.');
+            return Response::text(json_encode([
+                'status' => 'rejected',
+                'reason' => $gateResult['reason'],
+            ], JSON_THROW_ON_ERROR));
         }
 
         // Store with duplicate detection
         try {
             $this->qdrant->upsert($entry, $project, true);
         } catch (DuplicateEntryException $e) {
-            return Response::text(json_encode([
+            $result = [
                 'status' => 'duplicate_detected',
                 'existing_id' => $e->existingId,
-                'similarity' => $e->similarityScore !== null ? round($e->similarityScore * 100, 1) : null,
-                'message' => "Similar entry already exists (ID: {$e->existingId}). Use the `correct` tool to update it, or add more distinct content.",
-            ], JSON_THROW_ON_ERROR));
+                'duplicate_type' => match ($e->duplicateType) {
+                    DuplicateEntryException::TYPE_HASH => 'hash',
+                    DuplicateEntryException::TYPE_SIMILARITY => 'similarity',
+                    default => 'unknown',
+                },
+            ];
+
+            if ($e->similarityScore !== null) {
+                $result['similarity_score'] = round($e->similarityScore * 100, 1);
+            }
+
+            return Response::text(json_encode($result, JSON_THROW_ON_ERROR));
         }
 
         // Queue for Ollama auto-tagging
