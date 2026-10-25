@@ -284,7 +284,6 @@ class KnowledgeAddCommand extends Command
      *
      * @param  array<string>|null  $tags
      */
-
     private function emitError(string $message, bool $quiet = false): void
     {
         if ($quiet) {

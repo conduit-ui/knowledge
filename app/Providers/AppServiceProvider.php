@@ -166,6 +166,7 @@ class AppServiceProvider extends ServiceProvider
             scoreThreshold: (float) config('search.minimum_similarity', 0.7),
             cacheTtl: (int) config('search.qdrant.cache_ttl', 604800),
             cacheService: $app->make(KnowledgeCacheService::class),
+            projectDetector: $app->make(ProjectDetectorService::class),
         ));
 
         // Tiered search service

@@ -239,6 +239,16 @@ describe('hybridSearch', function (): void {
 
         expect($results)->toBeEmpty();
     });
+
+    it('does not create a collection when the target is missing', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeHybridRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockEmbedding->shouldReceive('embed')->never();
+
+        expect($this->hybridService->hybridSearch('test query'))->toBeEmpty();
+    });
 });
 
 describe('hybrid collection creation', function (): void {
