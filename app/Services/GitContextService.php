@@ -83,6 +83,66 @@ class GitContextService
     }
 
     /**
+     * Directory git commands run in.
+     */
+    public function getWorkingDirectory(): string
+    {
+        if ($this->workingDirectory !== null) {
+            return $this->workingDirectory;
+        }
+
+        $cwd = getcwd();
+
+        // @codeCoverageIgnoreStart
+        if ($cwd === false) {
+            return '';
+        }
+        // @codeCoverageIgnoreEnd
+
+        return $cwd;
+    }
+
+    /**
+     * True when this checkout is a linked git worktree rather than the main repository.
+     */
+    public function isWorktree(): bool
+    {
+        $gitDir = $this->absoluteGitPath('--git-dir');
+        $commonDir = $this->absoluteGitPath('--git-common-dir');
+
+        if ($gitDir === null || $commonDir === null) {
+            return false;
+        }
+
+        return $gitDir !== $commonDir;
+    }
+
+    /**
+     * Absolute path to the shared git directory (the main repository's .git).
+     */
+    public function getCommonGitDirectory(): ?string
+    {
+        return $this->absoluteGitPath('--git-common-dir');
+    }
+
+    /**
+     * Absolute path to the main repository a worktree was checked out from.
+     *
+     * For a normal checkout this is the repository itself. For a linked worktree
+     * it is the parent of the shared git directory.
+     */
+    public function getMainRepositoryPath(): ?string
+    {
+        $common = $this->getCommonGitDirectory();
+
+        if ($common === null) {
+            return null;
+        }
+
+        return dirname($common);
+    }
+
+    /**
      * Get the repository URL from remote origin
      *
      * Uses `git remote get-url origin` to retrieve the remote URL.
@@ -249,5 +309,29 @@ class GitContextService
         $process->run();
 
         return $process;
+    }
+
+    /**
+     * Resolve a git path flag to an absolute path, or null when git cannot answer.
+     */
+    private function absoluteGitPath(string $flag): ?string
+    {
+        if (! $this->isGitRepository()) {
+            return null;
+        }
+
+        $process = $this->runGitCommand(['rev-parse', '--path-format=absolute', $flag]);
+
+        if (! $process->isSuccessful()) {
+            return null;
+        }
+
+        $path = trim($process->getOutput());
+
+        if ($path === '') {
+            return null;
+        }
+
+        return rtrim($path, '/');
     }
 }

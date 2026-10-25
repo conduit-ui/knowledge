@@ -8,6 +8,7 @@ use App\Exceptions\Qdrant\DuplicateEntryException;
 use App\Exceptions\Qdrant\EmbeddingException;
 use App\Exceptions\Qdrant\UpsertException;
 use App\Services\KnowledgeCacheService;
+use App\Services\ProjectDetectorService;
 use App\Services\QdrantService;
 use Illuminate\Support\Facades\Cache;
 use Saloon\Exceptions\Request\RequestException;
@@ -1215,7 +1216,7 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns successor when entry is superseded', function (): void {
-        mockCollectionExists($this->mockQdrant, 3);
+        mockCollectionExists($this->mockQdrant, 2);
 
         $this->mockQdrant->shouldReceive('getPoints')
             ->twice()
@@ -1250,7 +1251,7 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns predecessors when entry supersedes others', function (): void {
-        mockCollectionExists($this->mockQdrant, 2);
+        mockCollectionExists($this->mockQdrant);
 
         $this->mockQdrant->shouldReceive('getPoints')
             ->once()
@@ -1289,7 +1290,7 @@ describe('getSupersessionHistory', function (): void {
     });
 
     it('returns empty predecessors when scroll fails', function (): void {
-        mockCollectionExists($this->mockQdrant, 2);
+        mockCollectionExists($this->mockQdrant);
 
         $this->mockQdrant->shouldReceive('getPoints')
             ->once()
@@ -1616,3 +1617,322 @@ describe('enhancement field round-trip', function (): void {
         expect($result)->toBeTrue();
     });
 });
+
+describe('lazy collection creation', function (): void {
+    it('does not create a collection when a read targets a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockEmbedding->shouldReceive('embed')->never();
+
+        expect($this->service->search('missing collection'))->toBeEmpty();
+    });
+
+    it('returns an empty result when search receives a 404', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+
+        expect($this->service->search('query'))->toBeEmpty();
+    });
+
+    it('returns null when getById targets a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockQdrant->shouldReceive('getPoints')->never();
+
+        expect($this->service->getById('missing'))->toBeNull();
+    });
+
+    it('returns an empty list when scrolling a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockQdrant->shouldReceive('scroll')->never();
+
+        expect($this->service->scroll())->toBeEmpty();
+    });
+
+    it('returns zero when counting a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockQdrant->shouldReceive('count')->never();
+
+        expect($this->service->count('missing'))->toBe(0);
+    });
+
+    it('returns false when deleting from a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockQdrant->shouldReceive('delete')->never();
+
+        expect($this->service->delete(['id-1']))->toBeFalse();
+    });
+
+    it('returns an empty list when findSimilar targets a missing collection', function (): void {
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+        $this->mockQdrant->shouldReceive('createCollection')->never();
+        $this->mockQdrant->shouldReceive('search')->never();
+
+        expect($this->service->findSimilar([0.1, 0.2, 0.3]))->toBeEmpty();
+    });
+
+    it('creates a collection on the first upsert', function (): void {
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->with('Title Body')
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('getCollection')
+            ->once()
+            ->andThrow(makeRequestException(404));
+
+        $this->mockQdrant->shouldReceive('createCollection')
+            ->once()
+            ->with('knowledge_demo', 384, 'Cosine', null)
+            ->andReturn(true);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->andReturn(makeUpsertResult());
+
+        expect($this->service->upsert([
+            'id' => '1',
+            'title' => 'Title',
+            'content' => 'Body',
+        ], 'demo', false))->toBeTrue();
+    });
+});
+
+describe('shared subagent collection', function (): void {
+    beforeEach(function (): void {
+        $detector = Mockery::mock(ProjectDetectorService::class);
+        $detector->shouldReceive('subagentId')->andReturn('agent-42')->byDefault();
+
+        $this->scoped = new QdrantService(
+            $this->mockEmbedding,
+            $this->mockQdrant,
+            projectDetector: $detector,
+        );
+        $this->detector = $detector;
+    });
+
+    it('stores subagent_id on upsert into the shared collection', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->with('knowledge_subagents', Mockery::on(function (array $points): bool {
+                return ($points[0]['payload']['subagent_id'] ?? null) === 'agent-42';
+            }))
+            ->andReturn(makeUpsertResult());
+
+        expect($this->scoped->upsert([
+            'id' => '1',
+            'title' => 'Title',
+            'content' => 'Body',
+        ], 'subagents', false))->toBeTrue();
+    });
+
+    it('filters search by subagent_id', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->withArgs(function (string $collection, array $vector, int $limit, ?array $filter, ?float $score = null): bool {
+                return $collection === 'knowledge_subagents'
+                    && $limit === 20
+                    && $score === 0.7
+                    && $vector !== []
+                    && filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn([]);
+
+        expect($this->scoped->search('query', [], 20, 'subagents'))->toBeEmpty();
+    });
+
+    it('filters scroll and count by subagent_id', function (): void {
+        mockCollectionExists($this->mockQdrant, 2);
+
+        $this->mockQdrant->shouldReceive('scroll')
+            ->once()
+            ->withArgs(function (string $collection, int $limit, ?array $filter, string|int|null $offset = null): bool {
+                return $collection === 'knowledge_subagents'
+                    && $offset === null
+                    && filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn(makeScrollResult([]));
+
+        $this->mockQdrant->shouldReceive('count')
+            ->once()
+            ->withArgs(function (string $collection, ?array $filter): bool {
+                return $collection === 'knowledge_subagents'
+                    && filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn(0);
+
+        expect($this->scoped->scroll([], 20, 'subagents'))->toBeEmpty()
+            ->and($this->scoped->count('subagents'))->toBe(0);
+    });
+
+    it('hides points that belong to a different subagent', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockQdrant->shouldReceive('getPoints')
+            ->once()
+            ->andReturn([
+                makeScoredPoint('other', 0.0, [
+                    'title' => 'Other',
+                    'content' => 'Elsewhere',
+                    'subagent_id' => 'someone-else',
+                ]),
+            ]);
+
+        expect($this->scoped->getById('other', 'subagents'))->toBeNull();
+    });
+
+    it('returns a point that matches the subagent filter', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockQdrant->shouldReceive('getPoints')
+            ->once()
+            ->andReturn([
+                makeScoredPoint('mine', 0.0, [
+                    'title' => 'Mine',
+                    'content' => 'Here',
+                    'subagent_id' => 'agent-42',
+                ]),
+            ]);
+
+        $result = $this->scoped->getById('mine', 'subagents');
+
+        expect($result)->not()->toBeNull()
+            ->and($result['subagent_id'])->toBe('agent-42')
+            ->and($result['title'])->toBe('Mine');
+    });
+
+    it('filters findSimilar by subagent_id', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->withArgs(function (string $collection, array $vector, int $limit, ?array $filter, ?float $score = null): bool {
+                return $collection === 'knowledge_subagents'
+                    && $vector !== []
+                    && filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn([]);
+
+        expect($this->scoped->findSimilar([0.1, 0.2], 'subagents'))->toBeEmpty();
+    });
+
+    it('does not apply the subagent filter on a normal project', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->withArgs(function (string $collection, array $vector, int $limit, ?array $filter, ?float $score = null): bool {
+                return $collection === 'knowledge_default'
+                    && ! filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn([]);
+
+        expect($this->scoped->search('query'))->toBeEmpty();
+    });
+
+    it('does not filter when the shared collection has no subagent id', function (): void {
+        $this->detector->shouldReceive('subagentId')->andReturn(null);
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('search')
+            ->once()
+            ->withArgs(function (string $collection, array $vector, int $limit, ?array $filter, ?float $score = null): bool {
+                return $collection === 'knowledge_subagents'
+                    && ! filterContainsSubagent($filter, 'agent-42');
+            })
+            ->andReturn([]);
+
+        expect($this->scoped->search('query', [], 20, 'subagents'))->toBeEmpty();
+    });
+
+    it('preserves a subagent_id supplied on the entry', function (): void {
+        mockCollectionExists($this->mockQdrant);
+
+        $this->mockEmbedding->shouldReceive('embed')
+            ->once()
+            ->andReturn([0.1, 0.2, 0.3]);
+
+        $this->mockQdrant->shouldReceive('upsert')
+            ->once()
+            ->with('knowledge_default', Mockery::on(function (array $points): bool {
+                return ($points[0]['payload']['subagent_id'] ?? null) === 'kept-id';
+            }))
+            ->andReturn(makeUpsertResult());
+
+        expect($this->service->upsert([
+            'id' => '1',
+            'title' => 'Title',
+            'content' => 'Body',
+            'subagent_id' => 'kept-id',
+        ], 'default', false))->toBeTrue();
+    });
+});
+
+if (! function_exists('filterContainsSubagent')) {
+    /**
+     * @param  array<string, mixed>|null  $filter
+     */
+    function filterContainsSubagent(?array $filter, string $id): bool
+    {
+        if ($filter === null || ! isset($filter['must']) || ! is_array($filter['must'])) {
+            return false;
+        }
+
+        foreach ($filter['must'] as $clause) {
+            if (! is_array($clause)) {
+                continue;
+            }
+
+            $match = $clause['match'] ?? null;
+
+            if (($clause['key'] ?? null) === 'subagent_id' && is_array($match) && ($match['value'] ?? null) === $id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

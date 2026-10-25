@@ -218,3 +218,70 @@ it('covers all error paths in git service methods', function (): void {
     $process = new \Symfony\Component\Process\Process(['rm', '-rf', $tempDir]);
     $process->run();
 });
+
+it('resolves the working directory it was given', function (): void {
+    $service = new GitContextService('/tmp');
+
+    expect($service->getWorkingDirectory())->toBe('/tmp');
+});
+
+it('uses the current directory when no working directory is configured', function (): void {
+    $service = new GitContextService;
+
+    expect($service->getWorkingDirectory())->toBe(getcwd());
+});
+
+it('reports a normal repository as the main checkout', function (): void {
+    $service = new GitContextService;
+
+    expect($service->isWorktree())->toBeFalse();
+
+    $common = $service->getCommonGitDirectory();
+    expect($common)->toBeString()->toEndWith('.git');
+    expect($service->getMainRepositoryPath())->toBe(dirname((string) $common));
+});
+
+it('reports linked worktrees against their main repository', function (): void {
+    $root = sys_get_temp_dir().'/know-git-'.uniqid();
+    $main = $root.'/main-repo';
+    $worktree = $root.'/linked-wt';
+    mkdir($main, 0777, true);
+
+    $git = function (string $path, array $args): void {
+        $process = new \Symfony\Component\Process\Process(['git', '-C', $path, ...$args]);
+        $process->mustRun();
+    };
+
+    try {
+        $git($main, ['init', '-b', 'main']);
+        $git($main, ['config', 'user.email', 'test@example.com']);
+        $git($main, ['config', 'user.name', 'Test']);
+        $git($main, ['commit', '--allow-empty', '-m', 'init']);
+        $git($main, ['worktree', 'add', '-b', 'linked', $worktree]);
+
+        $mainService = new GitContextService($main);
+        $linked = new GitContextService($worktree);
+
+        expect($mainService->isWorktree())->toBeFalse()
+            ->and($linked->isWorktree())->toBeTrue()
+            ->and($linked->getMainRepositoryPath())->toBe($mainService->getRepositoryPath())
+            ->and($linked->getCommonGitDirectory())->toBe($mainService->getCommonGitDirectory());
+    } finally {
+        $process = new \Symfony\Component\Process\Process(['rm', '-rf', $root]);
+        $process->run();
+    }
+});
+
+it('returns null worktree paths outside a git repository', function (): void {
+    $tempDir = sys_get_temp_dir().'/no-git-wt-'.uniqid();
+    mkdir($tempDir);
+
+    $service = new GitContextService($tempDir);
+
+    expect($service->isWorktree())->toBeFalse()
+        ->and($service->getCommonGitDirectory())->toBeNull()
+        ->and($service->getMainRepositoryPath())->toBeNull()
+        ->and($service->getWorkingDirectory())->toBe($tempDir);
+
+    rmdir($tempDir);
+});

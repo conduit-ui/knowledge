@@ -29,6 +29,7 @@ class QdrantService
         private readonly int $cacheTtl = 604800, // 7 days
         private readonly bool $hybridEnabled = false,
         private readonly ?KnowledgeCacheService $cacheService = null,
+        private readonly ?ProjectDetectorService $projectDetector = null,
     ) {}
 
     /**
@@ -49,28 +50,44 @@ class QdrantService
 
     /**
      * Ensure collection exists for the given project namespace.
+     *
+     * Creates the collection when it is missing. Call this from write paths only.
      */
     public function ensureCollection(string $project = 'default'): bool
     {
+        if ($this->collectionExists($project)) {
+            return true;
+        }
+
         $collectionName = $this->getCollectionName($project);
 
         try {
-            $this->qdrant->getCollection($collectionName);
+            $sparseVectors = $this->hybridEnabled
+                ? ['sparse' => ['modifier' => 'idf']]
+                : null;
+
+            $this->qdrant->createCollection($collectionName, $this->vectorSize, 'Cosine', $sparseVectors);
+
+            return true;
+        } catch (RequestException $createException) {
+            throw CollectionCreationException::withReason($collectionName, $createException->getMessage());
+        }
+    }
+
+    /**
+     * True when the collection is already present.
+     *
+     * A missing collection (HTTP 404) is reported as false and is not created.
+     */
+    private function collectionExists(string $project): bool
+    {
+        try {
+            $this->qdrant->getCollection($this->getCollectionName($project));
 
             return true;
         } catch (RequestException $e) {
             if ($e->getResponse()->status() === 404) {
-                try {
-                    $sparseVectors = $this->hybridEnabled
-                        ? ['sparse' => ['modifier' => 'idf']]
-                        : null;
-
-                    $this->qdrant->createCollection($collectionName, $this->vectorSize, 'Cosine', $sparseVectors);
-
-                    return true;
-                } catch (RequestException $createException) {
-                    throw CollectionCreationException::withReason($collectionName, $createException->getMessage());
-                }
+                return false;
             }
 
             throw ConnectionException::withMessage($e->getMessage());
@@ -97,7 +114,8 @@ class QdrantService
      *     evidence?: string|null,
      *     superseded_by?: string,
      *     superseded_date?: string,
-     *     superseded_reason?: string
+     *     superseded_reason?: string,
+     *     subagent_id?: string|null
      * }  $entry
      *
      * @throws DuplicateEntryException
@@ -174,6 +192,13 @@ class QdrantService
             }
         }
 
+        $subagentId = $this->subagentScope($project);
+        if ($subagentId !== null) {
+            $payload['subagent_id'] = $subagentId;
+        } elseif (array_key_exists('subagent_id', $entry)) {
+            $payload['subagent_id'] = $entry['subagent_id'];
+        }
+
         $point = ['id' => $entry['id'], 'payload' => $payload];
 
         if ($this->hybridEnabled && $this->sparseEmbeddingService instanceof SparseEmbeddingServiceInterface) {
@@ -218,9 +243,14 @@ class QdrantService
      */
     public function findSimilar(array $vector, string $project = 'default', float $threshold = 0.95): Collection
     {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return collect();
+        }
 
-        $filter = ['must' => [['is_empty' => ['key' => 'superseded_by']]]];
+        $filter = $this->scopeFilter(
+            ['must' => [['is_empty' => ['key' => 'superseded_by']]]],
+            $project,
+        );
 
         try {
             $results = $this->qdrant->search($this->getCollectionName($project), $vector, 5, $filter, $threshold);
@@ -258,9 +288,10 @@ class QdrantService
             }
         }
 
-        $this->ensureCollection($project);
-
-        $filter = ['must' => [['key' => 'superseded_by', 'match' => ['value' => (string) $id]]]];
+        $filter = $this->scopeFilter(
+            ['must' => [['key' => 'superseded_by', 'match' => ['value' => (string) $id]]]],
+            $project,
+        );
 
         try {
             $result = $this->qdrant->scroll($this->getCollectionName($project), 100, $filter);
@@ -307,7 +338,9 @@ class QdrantService
      */
     private function executeSearch(string $query, array $filters, int $limit, string $project): Collection
     {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return collect();
+        }
 
         $queryVector = $this->getCachedEmbedding($query);
 
@@ -315,7 +348,7 @@ class QdrantService
             return collect();
         }
 
-        $qdrantFilter = $this->buildFilter($filters);
+        $qdrantFilter = $this->scopeFilter($this->buildFilter($filters), $project);
 
         try {
             $results = $this->qdrant->search(
@@ -349,7 +382,9 @@ class QdrantService
             return $this->search($query, $filters, $limit, $project);
         }
 
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return collect();
+        }
 
         $denseVector = $this->getCachedEmbedding($query);
 
@@ -363,7 +398,7 @@ class QdrantService
             return $this->search($query, $filters, $limit, $project);
         }
 
-        $qdrantFilter = $this->buildFilter($filters);
+        $qdrantFilter = $this->scopeFilter($this->buildFilter($filters), $project);
 
         try {
             $results = $this->qdrant->hybridSearch(
@@ -394,9 +429,11 @@ class QdrantService
         string $project = 'default',
         string|int|null $offset = null
     ): Collection {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return collect();
+        }
 
-        $qdrantFilter = $filters === [] ? null : $this->buildFilter($filters);
+        $qdrantFilter = $this->scopeFilter($filters === [] ? null : $this->buildFilter($filters), $project);
 
         try {
             $result = $this->qdrant->scroll($this->getCollectionName($project), $limit, $qdrantFilter, $offset);
@@ -414,7 +451,9 @@ class QdrantService
      */
     public function delete(array $ids, string $project = 'default'): bool
     {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return false;
+        }
 
         try {
             $this->qdrant->delete($this->getCollectionName($project), $ids);
@@ -434,7 +473,9 @@ class QdrantService
      */
     public function getById(string|int $id, string $project = 'default'): ?array
     {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return null;
+        }
 
         try {
             $points = $this->qdrant->getPoints($this->getCollectionName($project), [$id]);
@@ -446,7 +487,14 @@ class QdrantService
             return null;
         }
 
-        return $this->mapScoredPointToEntry($points[0]);
+        $entry = $this->mapScoredPointToEntry($points[0]);
+        $subagentId = $this->subagentScope($project);
+
+        if ($subagentId !== null && ($entry['subagent_id'] ?? null) !== $subagentId) {
+            return null;
+        }
+
+        return $entry;
     }
 
     /**
@@ -510,10 +558,15 @@ class QdrantService
      */
     private function executeCount(string $project): int
     {
-        $this->ensureCollection($project);
+        if (! $this->collectionExists($project)) {
+            return 0;
+        }
 
         try {
-            return $this->qdrant->count($this->getCollectionName($project));
+            return $this->qdrant->count(
+                $this->getCollectionName($project),
+                $this->scopeFilter(null, $project),
+            );
         } catch (RequestException) {
             return 0;
         }
@@ -688,7 +741,53 @@ class QdrantService
             'enhanced_at' => $p['enhanced_at'] ?? null,
             'summary' => $p['summary'] ?? null,
             'concepts' => $p['concepts'] ?? null,
+            'subagent_id' => $p['subagent_id'] ?? null,
         ];
+    }
+
+    /**
+     * Subagent id that must be stored and matched when using the shared collection.
+     */
+    private function subagentScope(string $project): ?string
+    {
+        if ($this->projectDetector === null || $project !== ProjectDetectorService::SHARED_SUBAGENTS_PROJECT) {
+            return null;
+        }
+
+        $subagentId = $this->projectDetector->subagentId();
+
+        if ($subagentId === null || $subagentId === '') {
+            return null;
+        }
+
+        return $subagentId;
+    }
+
+    /**
+     * Restrict a Qdrant filter to the active subagent when the shared collection is in use.
+     *
+     * @param  array<string, mixed>|null  $filter
+     * @return array<string, mixed>|null
+     */
+    private function scopeFilter(?array $filter, string $project): ?array
+    {
+        $subagentId = $this->subagentScope($project);
+
+        if ($subagentId === null) {
+            return $filter;
+        }
+
+        $must = [];
+        if (is_array($filter) && isset($filter['must']) && is_array($filter['must'])) {
+            $must = $filter['must'];
+        }
+
+        $must[] = ['key' => 'subagent_id', 'match' => ['value' => $subagentId]];
+
+        $scoped = $filter ?? [];
+        $scoped['must'] = $must;
+
+        return $scoped;
     }
 
     /**
@@ -723,10 +822,10 @@ class QdrantService
 
     private function findByFingerprint(string $fingerprint, string $project): string|int|null
     {
-        $filter = ['must' => [
+        $filter = $this->scopeFilter(['must' => [
             ['key' => 'tags', 'match' => ['value' => $fingerprint]],
             ['is_empty' => ['key' => 'superseded_by']],
-        ]];
+        ]], $project);
 
         try {
             $result = $this->qdrant->scroll($this->getCollectionName($project), 1, $filter);
@@ -739,11 +838,11 @@ class QdrantService
 
     private function findByTitleAndCommit(string $title, string $commit, string $project): string|int|null
     {
-        $filter = ['must' => [
+        $filter = $this->scopeFilter(['must' => [
             ['key' => 'title', 'match' => ['text' => $title]],
             ['key' => 'commit', 'match' => ['value' => $commit]],
             ['is_empty' => ['key' => 'superseded_by']],
-        ]];
+        ]], $project);
 
         try {
             $result = $this->qdrant->scroll($this->getCollectionName($project), 1, $filter);
